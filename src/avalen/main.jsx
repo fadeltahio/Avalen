@@ -58,6 +58,7 @@ import {
 } from "./ui.jsx";
 import { Plan, Progress, Nutrition } from "./client.jsx";
 import { Appearance, ConnectedDevices } from "./preferences.jsx";
+import { openDevicesOnReturn } from "./wearables.jsx";
 import { ResumeWorkout } from "./resume.jsx";
 import { IntakeFlow } from "./IntakeFlow.jsx";
 import { EditorialHome, SessionDetail, SessionSearch, Splash } from "./editorial.jsx";
@@ -530,7 +531,7 @@ function You() {
       {connection() && <AISharingPreference/>}
       <Appearance />
       {!connection() && <MotionDetails className="settings-disclosure"><summary>Account & connection<ChevronRight size={18}/></summary><a className="simple-row" href="/?connected=1">Connect a private coaching workspace <ArrowRight size={18}/></a></MotionDetails>}
-      <MotionDetails className="settings-disclosure"><summary>Connected devices<small>Activity readings & device preferences</small><ChevronRight size={18}/></summary><ConnectedDevices /></MotionDetails>
+      <MotionDetails className="settings-disclosure" open={openDevicesOnReturn() || undefined}><summary>Connected devices<small>Sleep, recovery and activity from your wearable</small><ChevronRight size={18}/></summary><ConnectedDevices /></MotionDetails>
       <div className="card list">
         <button className="simple-row" onClick={() => setPrivacy(true)}>
           <Shield size={19} />

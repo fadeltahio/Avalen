@@ -180,6 +180,7 @@ export function startWorker(service) {
     running = true;
     try {
       await runJobs(service);
+      if (service.wearables) await service.wearables.runDue();
     } catch (e) {
       console.error("Avalen background task failed:", e.message);
     } finally {

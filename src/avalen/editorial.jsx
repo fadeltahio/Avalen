@@ -11,6 +11,9 @@ import { Avatar, Button, Empty, Field, IconButton, Modal } from './ui.jsx';
 import { ResumeWorkout } from './resume.jsx';
 import {CoachNutritionHome} from './nutrition-home.jsx';
 import {RecoveryMap} from './RecoveryMap.jsx';
+import {ClientWearableHome} from './wearables.jsx';
+import {CLIENT_WIDGETS, resolveLayout} from './home-layout.js';
+import {CustomiseHome, EditHomeButton} from './HomeEditor.jsx';
 import {ExerciseThumbnail, FoodLogger} from './client.jsx';
 import {PhotoMealLogger} from './meal-photo.jsx';
 import {CoachingUpdates} from './ecosystem/updates.jsx';
@@ -76,7 +79,7 @@ export function SessionCard({ day, date, index = 0, onSelect, saved = false }) {
 
 export function EditorialHome() {
   const { data, client, navigate, viewSession, openWorkout, openShare, ask, intakeDue, openIntake } = useApp();
-  const [mealEntry,setMealEntry]=useState(null), [plannedMeal, setPlannedMeal] = useState(null);
+  const [mealEntry,setMealEntry]=useState(null), [plannedMeal, setPlannedMeal] = useState(null), [editingHome, setEditingHome] = useState(false);
   const today = dayKey(), day = scheduleDay(client, today);
   const weekStart = offsetDay(-((new Date().getDay() + 6) % 7));
   const weekEnd = offsetDay(6, weekStart);
@@ -95,26 +98,37 @@ export function EditorialHome() {
   const todayCover = useFile(day?.coverFile?.id);
   const completedToday = data.sessions.find(s => s.clientId === client.id && s.date === today);
   const coachMessage = data.messages.filter(m => m.clientId === client.id && m.from === 'coach').at(-1);
-  return <div className="editorial-home">
-    <div className="home-greeting"><p>{new Intl.DateTimeFormat('en',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toUpperCase()}</p><h1>Make it count,<br/><span>{client.name.split(' ')[0]}.</span></h1><div><span className="home-coach-dot"/>Your coach. Your plan. Your pace.</div></div>
-    <PaymentDueNotice/>
-    {intakeDue && <button className="intake-prompt" onClick={openIntake}><span><b>Tell {data.coach.name.split(' ')[0]} about you</b><small>8 quick questions, about a minute</small></span><ArrowRight size={18}/></button>}
-    {data.drafts[client.id] && <div className="editorial-resume home-priority"><ResumeWorkout compact/></div>}
+  const homeWidgets = {
+    session: <>
     {!data.drafts[client.id] && <section className={`home-today-session ${completedToday ? 'is-complete' : day ? 'is-planned' : 'is-recovery'}`} aria-label="Today’s plan">
       <img data-session-hero="" style={{viewTransitionName: connectedHero === `${day?.id}:${today}` ? 'session-hero' : undefined}} src={todayCover || sessionPhoto(day)} alt=""/>
       <div className="home-today-content"><span className="eyebrow">{completedToday ? 'TODAY · COMPLETE' : day ? 'TODAY’S SESSION' : 'TODAY · RECOVERY'}</span><h2>{day?.name || 'Room to recover.'}</h2><p>{day ? `${day.minutes} min · ${day.exercises.length} exercises · ${sessionCategory(day)}` : 'Your next session is coming. Keep your recovery habits in reach.'}</p>
       <div>{day ? <><Button onClick={() => completedToday ? openShare(completedToday) : openWorkout(day,today)}>{completedToday ? 'View workout result' : 'Start Workout'}<ArrowRight size={18}/></Button><button className="hero-detail" aria-label={`View ${day.name}`} onClick={event => { document.querySelectorAll('[data-session-hero]').forEach(el => { el.style.viewTransitionName = 'none'; }); const image = event.currentTarget.closest('section').querySelector('img'); image.style.viewTransitionName = 'session-hero'; image.dataset.sessionSource = day.id; connectedHero = `${day.id}:${today}`; viewSession(day,today); }}>Session details</button></> : <Button onClick={() => navigate('plan','Habits')}>Recovery habits <ArrowRight size={18}/></Button>}</div></div>
     </section>}
-    <section className="home-essentials" aria-label="Daily essentials"><button className={checkinDue.due ? 'is-due' : ''} onClick={() => navigate('coach', 'Check-in')}><CalendarDays size={19}/><span><b>Check-in</b><small>{checkinDue.overdue ? 'Overdue · send your update' : checkinDue.due ? 'Due today' : `Next ${shortDate(checkinDue.dueDate)}`}</small></span><ChevronRight size={16}/></button><button onClick={() => navigate('plan', 'Habits')}><Footprints size={19}/><span><b>Daily habits</b><small>{client.habits.length ? `${habitsDone} of ${client.habits.length} targets reached` : 'View recovery habits'}</small></span><ChevronRight size={16}/></button></section>
-    <RecoveryMap compact clientId={client.id} day={completedToday ? null : day} onOpen={() => navigate('progress','Recovery')}/>
-    <CoachNutritionHome onPhoto={()=>setMealEntry('photo')} onAdd={()=>setMealEntry('food')} onPlanMeal={setPlannedMeal}/>
-    <div className="home-coaching-updates"><CoachingUpdates/></div>
+    </>,
+    essentials: <section className="home-essentials" aria-label="Daily essentials"><button className={checkinDue.due ? 'is-due' : ''} onClick={() => navigate('coach', 'Check-in')}><CalendarDays size={19}/><span><b>Check-in</b><small>{checkinDue.overdue ? 'Overdue · send your update' : checkinDue.due ? 'Due today' : `Next ${shortDate(checkinDue.dueDate)}`}</small></span><ChevronRight size={16}/></button><button onClick={() => navigate('plan', 'Habits')}><Footprints size={19}/><span><b>Daily habits</b><small>{client.habits.length ? `${habitsDone} of ${client.habits.length} targets reached` : 'View recovery habits'}</small></span><ChevronRight size={16}/></button></section>,
+    wearables: <ClientWearableHome/>,
+    recovery: <RecoveryMap compact clientId={client.id} day={completedToday ? null : day} onOpen={() => navigate('progress','Recovery')}/>,
+    nutrition: <CoachNutritionHome onPhoto={()=>setMealEntry('photo')} onAdd={()=>setMealEntry('food')} onPlanMeal={setPlannedMeal}/>,
+    updates: <div className="home-coaching-updates"><CoachingUpdates/></div>,
+    training: <>
     <div className="home-training-section"><div className="home-training-heading"><div><span className="eyebrow">YOUR COACH’S PROGRAMME</span><h2>Up next.</h2></div><button aria-label="Open training plan" onClick={()=>navigate('plan','Training')}><ArrowRight size={20}/></button></div>
     <div className="home-training-summary"><span>{client.program.name}</span><span><MotionNumber value={weekSessions.length} identity="week-sessions"/> / {planned} {planned === 1 ? 'session' : 'sessions'} this week</span></div>
     <WeeklyProgress value={weekSessions.length} target={planned} identity={`weekly:${weekStart}`}/>
     <WeekRhythm start={weekStart}/>
     {sessions.length ? <section className="editorial-session-grid essential-upcoming" aria-label="Your training sessions">{sessions.slice(0,2).map((s, i) => <SessionCard key={s.day.id} {...s} index={i} saved={Boolean(client.savedSessions?.includes(s.day.id))} onSelect={() => viewSession(s.day, s.date)}/>)}</section> : <Empty icon={Dumbbell} title="Room for your next chapter." detail="Your coach will add your next training sessions here." action={<Button onClick={() => ask('My training plan')}>Ask your coach <ArrowRight size={17}/></Button>}/>}
-    </div><section className="editorial-coach-note"><span className="eyebrow">IN YOUR CORNER</span><div><Avatar name={data.coach.name}/><span><b>{data.coach.name}</b><small>Your coach</small></span><MessageCircle size={20}/></div><p>{coachMessage?.text || 'A plan built around you. Talk to your coach about your next session, your progress, or how you’re feeling.'}</p><button className="text-link" onClick={() => navigate('coach','Messages')}>Open conversation <ArrowRight size={16}/></button></section>
+    </div>
+    </>,
+    coach: <section className="editorial-coach-note"><span className="eyebrow">IN YOUR CORNER</span><div><Avatar name={data.coach.name}/><span><b>{data.coach.name}</b><small>Your coach</small></span><MessageCircle size={20}/></div><p>{coachMessage?.text || 'A plan built around you. Talk to your coach about your next session, your progress, or how you’re feeling.'}</p><button className="text-link" onClick={() => navigate('coach','Messages')}>Open conversation <ArrowRight size={16}/></button></section>,
+  };
+  return <div className="editorial-home">
+    <div className="home-greeting"><p>{new Intl.DateTimeFormat('en',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toUpperCase()}</p><h1>Make it count,<br/><span>{client.name.split(' ')[0]}.</span></h1><div><span className="home-coach-dot"/>Your coach. Your plan. Your pace.</div></div>
+    <PaymentDueNotice/>
+    {intakeDue && <button className="intake-prompt" onClick={openIntake}><span><b>Tell {data.coach.name.split(' ')[0]} about you</b><small>8 quick questions, about a minute</small></span><ArrowRight size={18}/></button>}
+    {data.drafts[client.id] && <div className="editorial-resume home-priority"><ResumeWorkout compact/></div>}
+    {resolveLayout(client.homeLayout, CLIENT_WIDGETS).filter((w) => w.visible).map((w) => <React.Fragment key={w.id}>{homeWidgets[w.id]}</React.Fragment>)}
+    <EditHomeButton onClick={() => setEditingHome(true)}/>
+    {editingHome && <CustomiseHome widgets={CLIENT_WIDGETS} saved={client.homeLayout} role="client" onClose={() => setEditingHome(false)} write={(d, layout) => { const c = d.clients.find((x) => x.id === client.id); if (layout) c.homeLayout = layout; else delete c.homeLayout; }}/>}
     {mealEntry === 'photo' && <PhotoMealLogger onClose={()=>setMealEntry(null)}/>}
     {mealEntry === 'food' && <FoodLogger date={today} onClose={()=>setMealEntry(null)}/>}
     {plannedMeal && <PhotoMealLogger initialMeal={plannedMeal} requirePhoto={false} onClose={() => setPlannedMeal(null)}/>}

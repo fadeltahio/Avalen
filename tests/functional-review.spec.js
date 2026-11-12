@@ -45,31 +45,7 @@ test('switching the preview client loads that client’s profile editor',async({
   await expect(page.getByRole('dialog').getByLabel('Full name',{exact:true})).toHaveValue('Maya Chen');
 });
 
-test('manual device reading failure retains input and never shows false success',async({page})=>{
-  await demo(page); await nav(page,'More').click();
-  await page.locator('.settings-disclosure > summary').filter({hasText:'Connected devices'}).click();
-  await page.getByRole('button',{name:/Enter today’s readings manually/}).click();
-  const dialog=page.getByRole('dialog',{name:'Today’s activity readings',exact:true});
-  await dialog.getByLabel('Steps today',{exact:true}).fill('8450');
-  await dialog.getByLabel('Calories burned (kcal)',{exact:true}).fill('420');
-  await failSaves(page); await dialog.getByRole('button',{name:'Save manual readings',exact:true}).click();
-  await expect(dialog).toBeVisible(); await expect(dialog.getByRole('alert')).toContainText('couldn’t be saved');
-  await expect(dialog.getByLabel('Steps today',{exact:true})).toHaveValue('8450');
-  await expect(page.getByText('Today’s manual readings are saved.',{exact:false})).toHaveCount(0);
-  await page.evaluate(()=>window.restoreStorage()); await dialog.getByRole('button',{name:'Save manual readings',exact:true}).click();
-  await expect(dialog).toHaveCount(0); expect((await state(page)).activityLogs.at(-1).kcal).toBe(420);
-});
-
-test('preferred device remains open after a failed save and succeeds on retry',async({page})=>{
-  await demo(page); await nav(page,'More').click();
-  await page.locator('.settings-disclosure > summary').filter({hasText:'Connected devices'}).click();
-  await page.getByRole('button',{name:'Connect Apple Watch',exact:true}).click();
-  const dialog=page.getByRole('dialog',{name:'Connect Apple Watch',exact:true});
-  await failSaves(page); await dialog.getByRole('button',{name:'Choose as my preferred device',exact:true}).click();
-  await expect(dialog).toBeVisible(); await expect(dialog.getByRole('alert')).toContainText('couldn’t be saved');
-  await page.evaluate(()=>window.restoreStorage()); await dialog.getByRole('button',{name:'Choose as my preferred device',exact:true}).click();
-  await expect(dialog).toHaveCount(0); expect((await state(page)).clients[0].preferredWearable).toBe('apple');
-});
+// Manual wearable readings and device connections are covered in wearables.spec.js.
 
 for(const kind of ['brand','billing','habits','measurements']) test(`${kind} reports success only after saving and retains failed input`,async({page})=>{
   await demo(page,'coach');

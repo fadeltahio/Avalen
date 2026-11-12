@@ -82,7 +82,7 @@ test('weight-only updates preserve the latest known body measurements with their
 test('food search precedes recents and device settings remain available without dominating profile', async ({page}) => {
  await demo(page); await page.getByRole('button',{name:'Log food',exact:true}).click();await page.getByRole('dialog').waitFor();await page.evaluate(()=>Promise.all(document.getAnimations().map(a=>a.finished.catch(()=>{}))));const search=await page.getByLabel('Search food library').boundingBox(),recent=await page.locator('.recent-foods').boundingBox();expect(search.y).toBeLessThan(recent.y);
  await page.getByRole('button',{name:'Close dialog',exact:true}).click();await nav(page,'More').click(); await expect(page.getByRole('heading',{name:'Appearance',exact:true})).toBeInViewport();
- await page.locator('.settings-disclosure > summary').filter({hasText:'Connected devices'}).click();await expect(page.getByRole('button',{name:/Apple Watch/}).first()).toBeVisible();
+ await page.locator('.settings-disclosure > summary').filter({hasText:'Connected devices'}).click();await expect(page.locator('.device-row').filter({hasText:'Apple Health'})).toBeVisible();
 });
 
 test('dialogs follow the keyboard viewport and an inside-padding tap does not dismiss', async ({page}) => {

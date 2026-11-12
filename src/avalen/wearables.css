@@ -1,0 +1,91 @@
+.wearable-card { margin: 0 0 18px; padding: 18px; }
+.wearable-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; font-size: 12px; font-weight: 700; letter-spacing: .14em; }
+.wearable-heading > span { display: inline-flex; align-items: center; gap: 10px; }
+.wearable-heading > span::before { content: ""; width: 3px; height: 15px; border-radius: 2px; background: var(--text); }
+.wearable-heading small { color: var(--muted); font-size: var(--text-xs); font-weight: 600; letter-spacing: .04em; }
+.wearable-date { margin: 0 0 12px; color: var(--muted); font-size: 13px; }
+.wearable-empty, .wearable-note { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.wearable-note { margin-top: 10px; }
+
+.wearable-flag { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 10px 12px; border-left: 2px solid var(--amber); background: var(--surface-soft); }
+.wearable-flag.is-red { border-left-color: var(--red); }
+.wearable-flag b, .wearable-flag small { display: block; }
+.wearable-flag b { font-size: 14px; }
+.wearable-flag small { margin-top: 2px; color: var(--muted); font-size: 12px; }
+.wearable-flag .text-link { flex-shrink: 0; white-space: nowrap; }
+
+.wearable-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.wearable-tile { min-width: 0; padding: 12px 10px 12px 0; }
+.wearable-tile + .wearable-tile { padding-left: 12px; border-left: 1px solid var(--line); }
+.wearable-tile small, .wearable-tile b, .wearable-tile em { display: block; }
+.wearable-tile small { overflow: hidden; color: var(--muted); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
+.wearable-tile b { margin-top: 4px; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.wearable-tile em { margin-top: 2px; color: var(--muted); font-size: var(--text-xs); font-style: normal; }
+
+.wearable-details { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; margin: 14px 0 0; }
+.wearable-details > div { display: flex; justify-content: space-between; gap: 8px; min-width: 0; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.wearable-details dt { overflow: hidden; color: var(--muted); text-overflow: ellipsis; white-space: nowrap; }
+.wearable-details dd { margin: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+@media (max-width: 480px) { .wearable-details { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+.wearable-trend { margin-top: 16px; }
+.wearable-trend > small { display: block; margin-bottom: 8px; color: var(--muted); font-size: var(--text-xs); }
+.wearable-trend > div { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; align-items: end; height: 64px; }
+.wearable-trend span { display: grid; grid-template-rows: 1fr auto; gap: 4px; height: 100%; text-align: center; }
+.wearable-trend i { align-self: end; display: block; height: calc(var(--h) * 100%); min-height: 3px; border-radius: 2px 2px 0 0; background: var(--text); opacity: .82; transform-origin: bottom; animation: wearable-bar 420ms var(--ease-precise, ease-out) both; }
+.wearable-trend i.is-empty { height: 3px; background: var(--line); opacity: 1; }
+.wearable-trend span.is-low i { background: var(--red); opacity: 1; }
+.wearable-trend em { color: var(--muted); font-size: 10px; font-style: normal; }
+.wearable-source { margin: 14px 0 0; color: var(--muted); font-size: var(--text-xs); }
+
+.client-card .client-wearable, .client-wearable { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 10px; color: var(--text); font-size: 11px; font-variant-numeric: tabular-nums; }
+.client-wearable > svg { flex-shrink: 0; color: var(--muted); }
+.client-wearable em { color: var(--muted); font-style: normal; }
+.client-wearable em::before { content: "· "; }
+
+.wearable-connections .device-row .button, .wearable-connections .device-row button { flex-shrink: 0; }
+.wearable-mine > div { color: var(--text); }
+.wearable-share { display: grid; gap: 2px; margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--line); }
+.wearable-share > b { margin-bottom: 6px; font-size: 14px; }
+.wearable-share-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; cursor: pointer; }
+.wearable-share-row b, .wearable-share-row small { display: block; }
+.wearable-share-row small { margin-top: 2px; color: var(--muted); font-size: var(--text-xs); }
+.wearable-history { display: grid; gap: 10px; margin: 18px 0; padding: 0; border: 0; }
+.wearable-history legend { margin-bottom: 8px; font-weight: 600; }
+.wearable-history label { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+
+@keyframes wearable-bar { from { transform: scaleY(0); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .wearable-trend i { animation: none; } }
+[data-reduced-motion="true"] .wearable-trend i { animation: none; }
+
+.wearable-home { display: block; width: 100%; color: var(--text); text-align: left; cursor: pointer; }
+.wearable-home .wearable-tiles { border-bottom: 0; }
+.wearable-home .wearable-source { margin-top: 10px; }
+.wearable-home-connect { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--line); background: transparent; color: var(--text); text-align: left; }
+.wearable-home-connect > span { flex: 1; min-width: 0; }
+.wearable-home-connect b, .wearable-home-connect small { display: block; }
+.wearable-home-connect small { margin-top: 2px; color: var(--muted); font-size: 12px; }
+
+.coach-recovery-widget { margin-top: 18px; }
+.coach-recovery-list { display: grid; }
+.coach-recovery-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 16px; gap: 12px; align-items: center; width: 100%; min-height: 56px; padding: 8px 0; border-top: 1px solid var(--line); background: none; color: var(--text); text-align: left; }
+.coach-recovery-row > i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+.coach-recovery-row > i.is-red { background: var(--red); }
+.coach-recovery-row > i.is-amber { background: var(--amber); }
+.coach-recovery-row b, .coach-recovery-row small { display: block; }
+.coach-recovery-row span > small { margin-top: 2px; color: var(--muted); font-size: var(--text-xs); }
+.coach-recovery-row > svg { color: var(--muted); }
+.coach-recovery-values { display: flex; gap: 14px; }
+.coach-recovery-values em { font-style: normal; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.coach-recovery-values em small { display: block; color: var(--muted); font-size: 10px; font-weight: 400; }
+
+.home-edit-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 24px 0 8px; padding: 14px; border: 1px dashed var(--line); background: transparent; color: var(--muted); font-size: 14px; }
+.home-edit-button:hover { color: var(--text); border-color: var(--text); }
+.home-editor-list { display: grid; margin: 12px 0 18px; padding: 0; list-style: none; }
+.home-editor-list li { display: grid; grid-template-columns: minmax(0, 1fr) repeat(3, auto); gap: 4px; align-items: center; min-height: 60px; border-bottom: 1px solid var(--line); }
+.home-editor-list.is-hidden li { grid-template-columns: minmax(0, 1fr) auto; }
+.home-editor-list b, .home-editor-list small { display: block; }
+.home-editor-list small { margin-top: 2px; color: var(--muted); font-size: var(--text-xs); }
+.home-editor-list .icon-btn:disabled { opacity: .3; }
+.home-editor-heading { margin: 6px 0 0; font-size: 14px; }
+.home-editor-reset { display: flex; align-items: center; gap: 6px; margin: 14px auto 0; }

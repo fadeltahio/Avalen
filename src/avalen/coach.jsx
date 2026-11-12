@@ -44,6 +44,9 @@ import {
   round,
 } from "./store.js";
 import { defaultProgram, newClient } from "./seed.js";
+import { ClientRecoveryWidget, CoachWearableCard, WearableLine, useWearableSummary } from "./wearables.jsx";
+import { COACH_WIDGETS, resolveLayout } from "./home-layout.js";
+import { CustomiseHome, EditHomeButton } from "./HomeEditor.jsx";
 import {
   Avatar,
   Bars,
@@ -76,7 +79,8 @@ import { IntakeCard } from "./IntakeFlow.jsx";
 
 function ReviewQueue({category = 'All'}) {
   const {data, update, selectClient, ask} = useApp();
-  const rows = reviewQueue(data).map(row => ({...row, flags: row.flags.filter(flag => matchesReview(flag, category))})).filter(row => row.flags.length);
+  const wearables = useWearableSummary();
+  const rows = reviewQueue(data, wearables).map(row => ({...row, flags: row.flags.filter(flag => matchesReview(flag, category))})).filter(row => row.flags.length);
   const review = (client, flag) => flag.tab === 'Messages' ? ask('', '', client.id) : selectClient(client.id, flag.tab);
   return <MotionList className="review-queue">{rows.length ? rows.map(({client, flags},index) => <article className={`review-queue-item ${index===0?'review-queue-next':''}`} key={client.id}>
     {index===0 && <span className="review-next-label">UP NEXT <span>{rows.length} {rows.length===1?'client':'clients'} in this view</span></span>}
@@ -90,18 +94,28 @@ function ReviewQueue({category = 'All'}) {
 export function Dashboard() {
   const {data, navigate, selectClient} = useApp();
   const [category, setCategory] = useState('All');
-  const flagged = reviewQueue(data);
+  const wearables = useWearableSummary();
+  const flagged = reviewQueue(data, wearables);
   const active = data.clients.filter(client => !client.paused);
-  return <>
-    <Heading title={`Good ${new Date().getHours() < 12 ? 'morning' : 'afternoon'}, ${data.coach.name.split(' ')[0]}.`} subtitle="Review, respond, and get your clients moving."/>
-    <div className="coach-day-summary" aria-label="Coaching overview"><button onClick={() => navigate('clients')}><b>{active.length}</b><span>Active clients</span><ChevronRight size={15}/></button><button onClick={() => navigate('inbox', 'Check-ins')}><b>{data.checkins.filter(row => !row.reviewed && active.some(client => client.id === row.clientId)).length}</b><span>Check-ins to review</span><ChevronRight size={15}/></button></div>
+  const [editingHome, setEditingHome] = useState(false);
+  const homeWidgets = {
+    summary: <div className="coach-day-summary" aria-label="Coaching overview"><button onClick={() => navigate('clients')}><b>{active.length}</b><span>Active clients</span><ChevronRight size={15}/></button><button onClick={() => navigate('inbox', 'Check-ins')}><b>{data.checkins.filter(row => !row.reviewed && active.some(client => client.id === row.clientId)).length}</b><span>Check-ins to review</span><ChevronRight size={15}/></button></div>,
+    queue: <>
     <section className="coach-task-workspace" aria-label="Your review queue">
       <SectionHead title="Your review queue" action={<span className="muted">{flagged.length} {flagged.length === 1 ? 'client' : 'clients'}</span>}/>
       <Tabs label="Review type" items={['All', 'Check-ins', 'Messages', 'Technique'].map(name => [name, <React.Fragment key={name}>{name}<small>{flagged.filter(row => row.flags.some(flag => matchesReview(flag, name))).length}</small></React.Fragment>])} value={category} onChange={setCategory}/>
       <ReviewQueue category={category}/>
     </section>
-    <MotionDetails className="coach-secondary-section"><summary>Coaching insights <ChevronRight size={17}/></summary><Intelligence compact/></MotionDetails>
-    <MotionDetails className="coach-secondary-section"><summary>Client progress <ChevronRight size={17}/></summary>{data.clients.filter(client => !client.paused).slice(0, 3).map(client => <button className="simple-row" key={client.id} onClick={() => selectClient(client.id, 'Progress')}><Avatar name={client.name}/><span><b>{client.name}</b><small>{metrics(data, client.id).sessions.length} sessions completed in 28 days</small></span><ArrowRight size={15}/></button>)}</MotionDetails>
+    </>,
+    recovery: <ClientRecoveryWidget summary={wearables}/>,
+    insights: <MotionDetails className="coach-secondary-section"><summary>Coaching insights <ChevronRight size={17}/></summary><Intelligence compact/></MotionDetails>,
+    progress: <MotionDetails className="coach-secondary-section"><summary>Client progress <ChevronRight size={17}/></summary>{data.clients.filter(client => !client.paused).slice(0, 3).map(client => <button className="simple-row" key={client.id} onClick={() => selectClient(client.id, 'Progress')}><Avatar name={client.name}/><span><b>{client.name}</b><small>{metrics(data, client.id).sessions.length} sessions completed in 28 days</small></span><ArrowRight size={15}/></button>)}</MotionDetails>,
+  };
+  return <>
+    <Heading title={`Good ${new Date().getHours() < 12 ? 'morning' : 'afternoon'}, ${data.coach.name.split(' ')[0]}.`} subtitle="Review, respond, and get your clients moving."/>
+    {resolveLayout(data.coach.homeLayout, COACH_WIDGETS, 'coach').filter((w) => w.visible).map((w) => <React.Fragment key={w.id}>{homeWidgets[w.id]}</React.Fragment>)}
+    <EditHomeButton onClick={() => setEditingHome(true)}/>
+    {editingHome && <CustomiseHome widgets={COACH_WIDGETS} saved={data.coach.homeLayout} role="coach" onClose={() => setEditingHome(false)} write={(d, layout) => { if (layout) d.coach.homeLayout = layout; else delete d.coach.homeLayout; }}/>}
   </>;
 }
 
@@ -126,6 +140,7 @@ export function Clients() {
     clientTab,
     setClientTab,
   } = useApp();
+  const wearables = useWearableSummary();
   const [query, setQuery] = useState(""),
     [filter, setFilter] = useState("All"),
     [adding, setAdding] = useState(false);
@@ -139,7 +154,7 @@ export function Clients() {
         setTab={setClientTab}
       />
     );
-  const queue = reviewQueue(data);
+  const queue = reviewQueue(data, wearables);
   const clientFlags = client => queue.find(row => row.client.id === client.id)?.flags || [];
   const rows = data.clients.filter(
     (c) =>
@@ -212,6 +227,7 @@ export function Clients() {
                   <b>{m.lastWeight ?? "—"}</b>Weight · kg
                 </span>
               </div>
+              <WearableLine entry={wearables[c.id]} />
               <p
                 className={
                   c.paused ? "muted" : flags.length ? flags[0].tone : "green"
@@ -260,10 +276,11 @@ function ClientDetail({ client, tab, setTab }) {
   const { data, update, selectClient, navigate, ask, setMessageContext, notify } = useApp();
   const {save, saving, error:saveError} = useWorkspaceSave();
   const [pausing, setPausing] = useState(false), [progressTab, setProgressTab] = useState("Overview");
+  const wearables = useWearableSummary();
   const trainedToday = data.sessions.some(row => row.clientId === client.id && row.date === dayKey());
-  const flags = reviewQueue(data).find(row => row.client.id === client.id)?.flags || [],
+  const flags = reviewQueue(data, wearables).find(row => row.client.id === client.id)?.flags || [],
     m = metrics(data, client.id);
-  const queue = reviewQueue(data);
+  const queue = reviewQueue(data, wearables);
   const nextReview = queue.find((row,index) => index > queue.findIndex(r => r.client.id === client.id)) || queue.find(row => row.client.id !== client.id);
   const [edit, setEdit] = useState(false);
   return (
@@ -292,6 +309,7 @@ function ClientDetail({ client, tab, setTab }) {
           <IntakeCard client={client} />
           <ClientChanges key={client.id} client={client} />
           <RecoveryMap compact coach clientId={client.id} day={trainedToday ? null : scheduleDay(client, dayKey())} onOpen={() => { setProgressTab("Recovery"); setTab("Progress"); }} />
+          <CoachWearableCard key={`wearables-${client.id}`} client={client} onPlan={() => setTab("Plan")} />
           <div className="three-stats">
             <Stat
               label="Training"

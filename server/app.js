@@ -1,6 +1,7 @@
 import { validateMediaChanges } from "./media-permissions.js";
 import { explainInsight } from "./ai.js";
 import { paymobService, settle, validPhone } from "./paymob.js";
+import { wearableService } from "./wearables.js";
 import { queueTranscription, jobFor } from "./jobs.js";
 import http from "node:http";
 import {
@@ -87,10 +88,12 @@ export function createService({
   fetchImpl = globalThis.fetch,
   publicUrl = process.env.AVALEN_PUBLIC_URL,
   secretsKey,
+  wearableEnv = process.env,
 } = {}) {
   const db = openDatabase(root),
     mediaRoot = join(root, "media");
   const paymob = paymobService({ db, root, fetchImpl, publicUrl, secretsKey });
+  const wearables = wearableService({ db, root, fetchImpl, publicUrl, secretsKey, env: wearableEnv });
   mkdirSync(mediaRoot, { recursive: true, mode: 0o700 });
   const bootstrap = setupToken || token(),
     attempts = new Map();
@@ -299,6 +302,20 @@ export function createService({
     }
     if (url.pathname === "/api/paymob/callback" && req.method === "POST")
       return paymobCallback(req, url);
+    // Wearable OAuth returns arrive from the provider's site, so the SameSite=Strict
+    // session cookie is not sent; the single-use state identifies the client.
+    const wearableReturn = url.pathname.match(/^\/api\/wearables\/(whoop|google)\/callback$/);
+    if (wearableReturn && req.method === "GET") {
+      res.writeHead(302, { Location: await wearables.callback(wearableReturn[1], url.searchParams) });
+      res.end();
+      return;
+    }
+    if (url.pathname === "/api/wearables/whoop/webhook" && req.method === "POST") {
+      wearables.webhook(await body(req, 65536, true), req.headers);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
     if (url.pathname === "/api/paymob/return" && req.method === "GET") {
       const id = url.searchParams.get("payment") || "";
       res.writeHead(302, {
@@ -478,6 +495,32 @@ export function createService({
       if (req.method === "PUT")
         return paymob.connect(user.workspace_id, await body(req, 8192));
       if (req.method === "DELETE") return paymob.disconnect(user.workspace_id);
+    }
+    if (url.pathname.startsWith("/api/wearables/")) {
+      const part = url.pathname.slice("/api/wearables/".length).split("/");
+      if (part[0] === "status" && req.method === "GET")
+        return wearables.status(user, load(user).data);
+      if (part[0] === "days" && req.method === "GET")
+        return wearables.days(user, load(user).data, url.searchParams.get("clientId") || user.client_id, url.searchParams.get("count"));
+      if (part[0] === "summary" && req.method === "GET")
+        return wearables.summary(user, load(user).data);
+      if (part[0] === "upload" && req.method === "POST") {
+        limit(req, "wearable-upload");
+        return wearables.upload(user, await body(req, 65536));
+      }
+      if (part[0] === "sync" && req.method === "POST") {
+        limit(req, "wearable-sync");
+        const input = await body(req, 4096);
+        const clientId = user.role === "client" ? user.client_id : input.clientId;
+        requireClient(user, load(user).data, clientId);
+        return wearables.sync(user.workspace_id, clientId, input.provider, 14);
+      }
+      if (part[1] === "connect" && req.method === "POST") {
+        limit(req, "wearable-connect");
+        return wearables.start(user, part[0]);
+      }
+      if (part.length === 1 && req.method === "DELETE")
+        return wearables.disconnect(user, part[0], { keepHistory: url.searchParams.get("history") !== "delete" });
     }
     const checkout = url.pathname.match(/^\/api\/payments\/([\w-]{1,100})\/checkout$/);
     if (checkout && req.method === "POST") {
@@ -1048,6 +1091,7 @@ export function createService({
     load,
     commit,
     permittedMedia,
+    wearables,
     setCommandHandler: (fn) => (commandHandler = fn),
   };
 }
