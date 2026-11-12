@@ -131,3 +131,30 @@ test("a fixed weekly cadence stays on the coach-selected weekday after a late su
   );
   assert.equal(next.dueDate, "2026-10-19");
 });
+
+test("progress photos are optional on every check-in, even when the coach didn't ask for them, and are still checked", () => {
+  const fresh = () => {
+    const data = foundations(createWorkspace()), client = data.clients[0];
+    data.checkins = [];
+    client.checkinPlan = { intervalDays: 7, startDate: utcAdd(zonedDay("UTC"), -3), timezone: "UTC", fields: [{ id: "weight", label: "Weight", type: "number", min: 20, max: 400, unit: "kg", enabled: true, required: true }] };
+    return { data, client, user: { role: "client", id: "one", client_id: client.id } };
+  };
+  const files = { "img-1": { client_id: null, type: "image/jpeg" }, "img-2": { client_id: null, type: "image/png" }, "voice-1": { client_id: null, type: "audio/webm" } };
+  const mediaFor = (clientId) => (_user, id) => (files[id] ? { ...files[id], client_id: files[id].client_id ?? clientId } : null);
+
+  const a = fresh();
+  command(a.data, a.user, { action: "checkin.submit", clientId: a.client.id, payload: { id: "c1", answers: { weight: 80, photos: [{ id: "img-1", name: "front.jpg" }, { id: "img-2", name: "side.png" }] } } }, mediaFor(a.client.id));
+  const row = a.data.checkins.find((r) => r.id === "c1");
+  const field = row.schema.find((f) => f.type === "photos");
+  assert.ok(field && field.enabled && !field.required, "photos field is added as optional");
+  assert.equal(row.answers.photos.length, 2);
+
+  const b = fresh();
+  command(b.data, b.user, { action: "checkin.submit", clientId: b.client.id, payload: { id: "c2", answers: { weight: 80 } } }, mediaFor(b.client.id));
+  assert.equal(b.data.checkins[0].schema.some((f) => f.type === "photos"), false, "no photos, no photo field");
+
+  const c = fresh();
+  assert.throws(() => command(c.data, c.user, { action: "checkin.submit", clientId: c.client.id, payload: { id: "c3", answers: { weight: 80, photos: Array.from({ length: 5 }, (_, i) => ({ id: `img-${(i % 2) + 1}` })) } } }, mediaFor(c.client.id)), /up to four/);
+  assert.throws(() => command(c.data, c.user, { action: "checkin.submit", clientId: c.client.id, payload: { id: "c4", answers: { weight: 80, photos: [{ id: "voice-1" }] } } }, mediaFor(c.client.id)), /progress photos/);
+  assert.throws(() => command(c.data, c.user, { action: "checkin.submit", clientId: c.client.id, payload: { id: "c5", answers: { weight: 80, photos: [{ id: "img-1" }] } } }, mediaFor("another-client")), /progress photos/);
+});

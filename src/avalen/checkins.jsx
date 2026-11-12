@@ -67,6 +67,8 @@ function CheckinForm({ row, client, onClose }) {
   const requiredAnswered=requiredFields.filter(field=>hasAnswer(form.answers[field.id])).length;
   const mergedNote=form.schema.find(f=>f.id==='note' && f.builtin && f.label==='Anything else for your coach?');
   const setAnswer=(id,value)=>setForm(f=>({...f,answers:{...f.answers,[id]:value}}));
+  // Photos are always optional. When the coach hasn't asked for them, they sit with the update.
+  const photoField=form.schema.find(f=>f.type==='photos'), extraPhotos=photoField?[]:(form.answers.photos || []);
   async function upload(e,field) {
     const input=e.currentTarget,files=[...input.files || []];if(!files.length || lock.current)return;
     if(files.length+(form.answers[field.id]?.length || 0)>4){setError('Choose up to four progress photos.');input.value='';return;}
@@ -92,7 +94,8 @@ function CheckinForm({ row, client, onClose }) {
       })}
       <div className="checkin-reflection"><h3>Your update</h3>
       <Field label={mergedNote?.required?"Your update (required)":"Your update (optional)"}><textarea required={Boolean(mergedNote?.required)} value={form.updateText || (mergedNote?form.answers.note:'') || ''} maxLength={2000} placeholder="How are you feeling? What should your coach know?" onChange={e=>setForm(f=>({...f,updateText:e.target.value,answers:mergedNote?{...f.answers,note:e.target.value}:f.answers}))}/></Field>
-      <details className="checkin-voice-disclosure" open={Boolean(form.audio) || undefined}><summary>Add a voice update<span>Optional · up to 60 seconds</span></summary><VoiceRecording value={form.audio} onBusyChange={setVoiceBusy} clientId={client.id} onChange={audio=>setForm(f=>({...f,audio}))}/></details></div>
+      <details className="checkin-voice-disclosure" open={Boolean(form.audio) || undefined}><summary>Add a voice update<span>Optional · up to 60 seconds</span></summary><VoiceRecording value={form.audio} onBusyChange={setVoiceBusy} clientId={client.id} onChange={audio=>setForm(f=>({...f,audio}))}/></details>
+      {!photoField && <details className="checkin-voice-disclosure checkin-photo-disclosure" open={extraPhotos.length>0 || undefined}><summary>Add progress photos<span>Optional · up to 4 photos</span></summary><label className="upload-zone"><Upload size={20}/><b>Choose photos</b><small>Private to you and your coach</small><input type="file" accept="image/*" multiple disabled={uploading} aria-label="Add progress photos" onChange={e=>upload(e,{id:'photos'})}/></label>{extraPhotos.length>0 && <div className="checkin-photos">{extraPhotos.map(photo=><div key={photo.id}><Media fileId={photo.id} alt="Check-in progress photo"/><button type="button" aria-label={`Remove ${photo.name}`} onClick={()=>setAnswer('photos',extraPhotos.filter(p=>p.id!==photo.id))}><Trash2 size={15}/></button></div>)}</div>}</details>}</div>
       {editor.error && <p role="alert" className="error">{editor.error}</p>}
       {error && <p role="alert" className="error">{error}</p>}
       <div className="checkin-submit"><small>Every {client.checkinPlan?.intervalDays || 7} days · set by your coach.</small><Button type="submit" disabled={uploading || voiceBusy}>{uploading ? submitted.current ? 'Sending check-in…' : 'Saving photos…' : 'Send check-in'}<ArrowRight size={16}/></Button></div>

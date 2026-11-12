@@ -5,6 +5,7 @@ import {
   answerFor,
   schemaFor,
   hasAnswer,
+  CHECKIN_FIELDS,
 } from "../checkin-model.js";
 import { memory, newId } from "./memory.js";
 import { zonedDay, utcAdd, validTimezone } from "./time.js";
@@ -105,6 +106,10 @@ export function submitCheckin(data, user, client, p, media) {
   const schema = structuredClone(
     existing?.schema || plan.fields.filter((f) => f.enabled),
   );
+  // Progress photos are always optional, even when the coach hasn't asked for them;
+  // they are then checked like any requested photos below.
+  if (!schema.some((f) => f.type === "photos") && Array.isArray(p.answers?.photos) && p.answers.photos.length)
+    schema.push({ ...structuredClone(CHECKIN_FIELDS.find((f) => f.id === "photos")), enabled: true, required: false });
   for (const f of schema.filter((f) => f.type === "photos")) {
     const files = p.answers?.[f.id] || [];
     if (!Array.isArray(files) || files.length > 4)
