@@ -1,0 +1,18 @@
+# Connected coaching implementation
+
+Avalen’s existing visual identity, navigation, workout/nutrition records and device preview remain in place. The new features reuse those records and the existing timeline.
+
+| Phase | Implemented | Verified | Remaining dependency |
+| --- | --- | --- | --- |
+| Foundations / Memory | SQLite persistence, authenticated owner/client accounts and invitations, role/client projections, private media, immutable programme/nutrition revisions, dated private/shared notes and follow-up context | Cross-client denial, immutable history, consent ownership, stale writes and idempotent retries | Owner creates their account; deployment needs HTTPS and persistent backups |
+| Check-ins | Existing custom measurements/cadence, short text/audio, corrected transcripts, provenance-labelled summaries, feedback/follow-up queues, fixed weekly day or rolling cadence, local-time reminders | Client→coach→client text flow; voice upload; late periods; timezone boundary; reminder deduplication; interrupted save recovery | Transcription requires a configured adapter. Its contract was tested with a controlled provider fixture; no live provider is connected |
+| Rescheduling | Deterministic date proposals, before/after comparison, availability/recovery/order/frequency/window/priority rules, independent or coach-approved changes, explicit exceptions, notifications and memory | Client request→coach approval→updated calendar; prescriptions unchanged; completed-date protection; stale/conflicting proposal rejection | If a safe week cannot fit, the UI asks for a different arrangement or coach discussion rather than silently dropping sessions |
+| FormLab | Exercise/workout/set video context, validated private upload, preview/progress/retry, playback/speed/frame steps, normalized drawings, timestamped notes, voice feedback, review versions, viewed status, deletion/expiry and thumbnails when supported | Real playable test video in both browsers, drawn annotation replay, authorized range streaming, unrelated-client denial and deleted video/thumbnail denial | Camera/microphone use depends on browser permissions and HTTPS. No automatic biomechanics scoring is claimed |
+| Intelligence | Deterministic evidence-backed observations, dates/provenance/limitations, recent coaching context, decision history, snooze/dismiss/reject and reviewed prescription changes | Stored observations→fresh before/after approval→plan revisions and memory; suppression after rejection; missing nutrition excluded | Optional AI explanation adapter requires client opt-in and explicit coach approval per request; off by default |
+| Integration | Shared notifications, existing messages, existing workout/nutrition flows, per-account retry recovery and private browser-media import | Final focused run: **30 browser checks passed across Chrome and WebKit**. **37 unit/API checks passed**. Production build passed | External push/email delivery, wearable integrations, meal-image recognition and public hosting are separate configured services |
+
+The broader editorial, nutrition and product-refinement suites were also exercised during development. Navigation timing and Safari audio MIME/connection handling issues found in those runs were corrected. The final focused run includes existing check-in customization, workout logging and connected-account nutrition/workout completion.
+
+Actual UI captures, using isolated demonstration records: `output/ecosystem/index.html`. Browser tests and captures use temporary databases and separate browser profiles; they do not replace the user's saved workspace.
+
+Start and configuration: [ECOSYSTEM_SETUP.md](ECOSYSTEM_SETUP.md). Architecture and sequence: [ECOSYSTEM_PLAN.md](ECOSYSTEM_PLAN.md).

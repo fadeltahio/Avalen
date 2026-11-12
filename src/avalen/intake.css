@@ -1,0 +1,66 @@
+.intake-flow {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  padding: max(16px, env(safe-area-inset-top)) 22px max(20px, env(safe-area-inset-bottom));
+  overflow: auto;
+  background: var(--bg);
+  color: var(--text);
+  animation: intake-in var(--motion-sheet) var(--ease-sheet) both;
+}
+.intake-flow > header { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; min-height: 44px; }
+.intake-back { display: grid; place-items: center; width: 44px; height: 44px; margin-left: -12px; color: var(--text); }
+.intake-back:disabled { opacity: 0; }
+.intake-count { color: var(--muted); font-size: 13px; text-align: center; }
+.intake-skip { min-height: 44px; color: var(--muted); font-size: 13px; }
+.intake-progress { height: 2px; margin: 6px 0 0; background: var(--line); overflow: hidden; }
+.intake-progress > i { display: block; height: 100%; background: var(--text); transform-origin: left; transition: transform var(--motion-panel) var(--ease-precise); }
+.intake-step { flex: 1; padding-top: clamp(28px, 8dvh, 72px); animation: intake-step var(--motion-panel) var(--ease-precise) both; }
+.intake-step > h1 { max-width: 15em; margin: 0 0 28px; font-size: clamp(27px, 7.5vw, 36px); font-weight: 700; line-height: 1.14; letter-spacing: -.03em; text-wrap: balance; }
+.intake-options { display: grid; gap: 10px; }
+.intake-options.is-row { grid-template-columns: repeat(var(--count), minmax(0, 1fr)); }
+.intake-options > button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 60px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--card);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  text-align: left;
+  transition: background-color var(--motion-state) ease, color var(--motion-state) ease, border-color var(--motion-state) ease, transform var(--motion-press) var(--ease-precise);
+  animation: intake-option 420ms var(--ease-precise) both;
+  animation-delay: calc(var(--i) * 45ms + 90ms);
+}
+.intake-options.is-row > button { justify-content: center; padding: 0; font-size: 20px; }
+.intake-options > button.is-on { border-color: var(--text); background: var(--text); color: var(--bg); }
+.intake-step textarea { width: 100%; min-height: 130px; margin-top: 12px; padding: 14px; border: 1px solid var(--line); border-radius: 4px; background: var(--card); color: var(--text); font: inherit; font-size: 16px; resize: none; }
+.intake-step .notice { margin-top: 14px; }
+.intake-actions { padding-top: 16px; }
+.intake-actions > .primary { width: 100%; }
+
+.intake-flow.is-sent { align-items: center; justify-content: center; gap: 10px; text-align: center; }
+.intake-flow.is-sent h1 { margin: 14px 0 0; font-size: 32px; letter-spacing: -.03em; }
+.intake-flow.is-sent p { margin: 0 0 20px; color: var(--muted); }
+.intake-sent-mark { display: grid; place-items: center; width: 84px; height: 84px; border: 1px solid var(--green); border-radius: 50%; color: var(--green); animation: motion-check var(--motion-earned) var(--ease-settle) both; }
+
+.intake-prompt { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; margin: 0 0 16px; padding: 14px 16px; border: 1px solid var(--text); border-radius: 4px; background: none; color: var(--text); text-align: left; }
+.intake-prompt b { display: block; font-size: 15px; }
+.intake-prompt small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+
+.intake-card.is-flagged { border-color: var(--red); }
+.intake-flag { color: var(--red); font-size: 13px; }
+.intake-answers { display: grid; gap: 0; margin: 10px 0 14px; }
+.intake-answers > div { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+.intake-answers dt { color: var(--muted); font-size: 12px; }
+.intake-answers dd { margin: 0; font-size: 13px; line-height: 1.5; }
+
+@keyframes intake-in { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes intake-step { from { opacity: 0; transform: translateX(var(--from)); } to { opacity: 1; transform: none; } }
+@keyframes intake-option { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }

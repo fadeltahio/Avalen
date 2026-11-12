@@ -1,0 +1,193 @@
+import { randomUUID } from "node:crypto";
+import { readFileSync, existsSync, unlinkSync } from "node:fs";
+import { join } from "node:path";
+import { foundations, newId } from "../src/avalen/ecosystem/memory.js";
+import { reminderDue } from "../src/avalen/ecosystem/checkin-service.js";
+export function queueTranscription(service, user, clientId, mediaId) {
+  const id = `transcript:${mediaId}`,
+    payload = {
+      clientId,
+      mediaId,
+      userId: user.id,
+      consentAt: new Date().toISOString(),
+    };
+  service.db
+    .prepare(
+      "INSERT OR IGNORE INTO jobs(id,workspace_id,kind,record_id,run_at,payload) VALUES(?,?,'transcription',?,?,?)",
+    )
+    .run(id, user.workspace_id, mediaId, Date.now(), JSON.stringify(payload));
+  return { id };
+}
+export function jobFor(service, user, id) {
+  const row = service.db
+    .prepare("SELECT * FROM jobs WHERE id=? AND workspace_id=?")
+    .get(id, user.workspace_id);
+  if (!row) return null;
+  const payload = JSON.parse(row.payload);
+  if (user.role === "client" && payload.clientId !== user.client_id)
+    return null;
+  return {
+    id: row.id,
+    state: row.state,
+    attempts: row.attempts,
+    error: row.error,
+    result: payload.result || null,
+    clientId: payload.clientId,
+  };
+}
+export async function runJobs(service, { now = new Date() } = {}) {
+  const { db } = service;
+  for (const row of db.prepare("SELECT * FROM workspaces").all()) {
+    const data = foundations(JSON.parse(row.data));
+    let changed = false;
+    for (const client of data.clients) {
+      const due = reminderDue(client, data.checkins, now);
+      if (!due) continue;
+      const id = `checkin:${client.id}:${due.periodDate}`;
+      if (!data.notifications.some((n) => n.id === id)) {
+        data.notifications.push({
+          id,
+          clientId: client.id,
+          periodDate: due.periodDate,
+          kind: "checkin-reminder",
+          text: `Your check-in for ${due.periodDate} is ready. A short update helps your coach plan your next step.`,
+          at: now.toISOString(),
+          read: false,
+          delivery: "in-app",
+          timezone: due.timezone,
+        });
+        changed = true;
+      }
+    }
+    if (changed)
+      db.prepare(
+        "UPDATE workspaces SET data=?,revision=revision+1 WHERE id=?",
+      ).run(JSON.stringify(data), row.id);
+  }
+  const jobs = db
+    .prepare(
+      "SELECT * FROM jobs WHERE state IN ('pending','retry') AND run_at<=? ORDER BY run_at LIMIT 4",
+    )
+    .all(now.getTime());
+  for (const job of jobs) {
+    const claimed = db
+      .prepare(
+        "UPDATE jobs SET state='running',attempts=attempts+1 WHERE id=? AND state IN ('pending','retry')",
+      )
+      .run(job.id);
+    if (!claimed.changes) continue;
+    const payload = JSON.parse(job.payload);
+    try {
+      if (job.kind !== "transcription")
+        throw new Error("Unsupported processing task.");
+      if (!process.env.AVALEN_TRANSCRIPTION_URL)
+        throw new Error(
+          "No transcription provider is configured. Your coach can listen to the recording.",
+        );
+      const media = db
+        .prepare(
+          "SELECT * FROM media WHERE id=? AND workspace_id=? AND deleted=0",
+        )
+        .get(payload.mediaId, job.workspace_id);
+      if (!media || Date.parse(media.expires_at) <= Date.now())
+        throw new Error("This recording is no longer available.");
+      const endpoint = new URL(process.env.AVALEN_TRANSCRIPTION_URL);
+      if (
+        endpoint.protocol !== "https:" &&
+        !["127.0.0.1", "localhost"].includes(endpoint.hostname)
+      )
+        throw new Error("The transcription provider must use HTTPS.");
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(process.env.AVALEN_TRANSCRIPTION_TOKEN
+            ? {
+                Authorization: `Bearer ${process.env.AVALEN_TRANSCRIPTION_TOKEN}`,
+              }
+            : {}),
+        },
+        body: JSON.stringify({
+          audio: readFileSync(join(service.root, "media", media.id)).toString(
+            "base64",
+          ),
+          mimeType: media.type,
+          language: null,
+        }),
+        signal: AbortSignal.timeout(45000),
+      });
+      if (!response.ok)
+        throw new Error(
+          "Transcription provider could not process this recording.",
+        );
+      const result = await response.json();
+      if (
+        typeof result.text !== "string" ||
+        !result.text.trim() ||
+        result.text.length > 12000
+      )
+        throw new Error("The provider returned no usable transcript.");
+      if (
+        !db
+          .prepare("SELECT id FROM media WHERE id=? AND deleted=0")
+          .get(media.id)
+      )
+        throw new Error("Recording was removed during processing.");
+      payload.result = {
+        text: result.text,
+        source: "configured-provider",
+        at: new Date().toISOString(),
+      };
+      db.prepare(
+        "UPDATE jobs SET state='done',payload=?,error=NULL WHERE id=?",
+      ).run(JSON.stringify(payload), job.id);
+    } catch (e) {
+      const attempts = job.attempts + 1,
+        state =
+          attempts >= 3 || !process.env.AVALEN_TRANSCRIPTION_URL
+            ? "failed"
+            : "retry";
+      db.prepare("UPDATE jobs SET state=?,error=?,run_at=? WHERE id=?").run(
+        state,
+        e.message.slice(0, 300),
+        Date.now() + attempts * 30000,
+        job.id,
+      );
+    }
+  }
+  for (const media of db
+    .prepare("SELECT id FROM media WHERE deleted=0 AND expires_at<=?")
+    .all(now.toISOString())) {
+    const path = join(service.root, "media", media.id);
+    db.prepare("UPDATE media SET deleted=1 WHERE id=?").run(media.id);
+    if (existsSync(path)) unlinkSync(path);
+  }
+  for (const media of db
+    .prepare("SELECT id FROM media WHERE deleted=1")
+    .all()) {
+    const path = join(service.root, "media", media.id);
+    if (existsSync(path)) unlinkSync(path);
+  }
+  db.prepare("DELETE FROM sessions WHERE expires<?").run(now.getTime());
+}
+export function startWorker(service) {
+  service.db
+    .prepare("UPDATE jobs SET state='retry',run_at=? WHERE state='running'")
+    .run(Date.now());
+  let running = false;
+  const tick = async () => {
+    if (running) return;
+    running = true;
+    try {
+      await runJobs(service);
+    } catch (e) {
+      console.error("Avalen background task failed:", e.message);
+    } finally {
+      running = false;
+    }
+  };
+  const timer = setInterval(tick, 30000);
+  timer.unref();
+  tick();
+  return () => clearInterval(timer);
+}

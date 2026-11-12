@@ -1,0 +1,99 @@
+/* A real wait shows the mark. It stays hidden for a moment so a quick load never flashes it. */
+.route-loader { display: grid; place-items: center; min-height: 52dvh; color: var(--text); animation: route-loader-in 240ms ease 220ms both; }
+@keyframes route-loader-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Session rows open in place, in the order a client will train them. */
+.session-detail-exercises > .session-exercise { display: block; padding: 0; }
+.session-exercise-row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 76px; padding: 10px 0; color: var(--text); text-align: left; }
+.session-exercise-row:active { transform: none; }
+.session-exercise-row > span { flex: 1; min-width: 0; }
+.session-exercise-row > svg { flex: none; transition: transform var(--motion-state) var(--ease-settle); }
+.session-exercise.is-open .session-exercise-row > svg { transform: rotate(180deg); }
+.session-exercise-panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 300ms var(--ease-precise); }
+.session-exercise.is-open .session-exercise-panel { grid-template-rows: 1fr; }
+.session-exercise-panel > div { min-height: 0; overflow: hidden; visibility: hidden; transition: visibility 300ms; }
+.session-exercise.is-open .session-exercise-panel > div { visibility: visible; }
+.session-exercise-sets { margin: 0; padding: 0 0 12px; list-style: none; }
+.session-exercise-sets li { display: grid; grid-template-columns: 26px minmax(0,1fr) auto; gap: 10px; align-items: baseline; padding: 9px 0; border-top: 1px solid var(--line); font-size: 13px; }
+.session-exercise-sets li > :first-child, .session-exercise-sets li > :last-child { color: var(--muted); font-size: 12px; }
+.session-exercise-more { display: flex; align-items: center; justify-content: space-between; padding: 0 0 16px; color: var(--muted); font-size: 12px; }
+
+/* Start stays under the thumb however far the session is scrolled. */
+.session-start-bar { position: sticky; bottom: 0; z-index: 3; margin-top: 26px; padding: 18px 0 max(14px, env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--bg) 74%, transparent); }
+.session-start-bar .primary { width: 100%; min-height: 54px; }
+.session-detail-copy .session-detail-actions { grid-template-columns: auto; justify-content: start; }
+.session-detail-copy .session-detail-actions .secondary { min-height: 44px; padding: 10px 16px; font-size: 13px; }
+
+/* Exercise page: photograph, then a heading that stays while its sections pass beneath. */
+.viewing-exercise .app-header, .viewing-exercise .bottom-nav, .viewing-exercise .page-footer, .viewing-exercise .resume-dock { display: none; }
+.viewing-exercise .app-content { padding: 0; }
+.viewing-exercise .page { max-width: none; padding: 0 0 70px; }
+.strength-actions { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+.exercise-detail { position: relative; max-width: 760px; min-height: 100dvh; margin-inline: auto; padding: 0 16px; }
+.exercise-hero { position: absolute; inset: 0 0 auto; height: 300px; overflow: hidden; background: var(--card); -webkit-mask-image: linear-gradient(#000 45%, transparent); mask-image: linear-gradient(#000 45%, transparent); }
+.exercise-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(#000a, transparent 34%); }
+.exercise-hero img { width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
+.exercise-hero img.is-stock { filter: grayscale(1) contrast(1.05) brightness(.82); }
+.exercise-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 8px; min-height: 56px; margin-inline: -16px; padding: env(safe-area-inset-top) 12px 0; color: #fff; transition: background var(--motion-state) ease, color var(--motion-state) ease; }
+.exercise-bar.is-stuck { background: var(--bg); color: var(--text); }
+.exercise-bar > span { font-size: 10px; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; }
+.exercise-bar .icon-btn { color: inherit; }
+.exercise-sentinel { display: block; height: 146px; }
+.exercise-heading { position: sticky; top: calc(56px + env(safe-area-inset-top)); z-index: 4; margin-inline: -16px; padding: 14px 16px 12px; background: linear-gradient(to bottom, transparent, var(--bg) 18px); }
+.exercise-heading h1 { margin: 0 0 12px; font-size: clamp(26px, 7vw, 38px); font-weight: 720; line-height: 1.08; letter-spacing: -.03em; overflow-wrap: anywhere; }
+.exercise-heading nav { display: flex; gap: 6px; }
+.exercise-heading nav button { min-height: 38px; padding: 0 14px; border-radius: 999px; background: var(--card); color: var(--muted); font-size: 12px; font-weight: 600; transition: background var(--motion-state) ease, color var(--motion-state) ease; }
+.exercise-heading nav button.is-active { background: var(--text); color: var(--bg); }
+.exercise-section { padding: 20px 0 14px; scroll-margin-top: 170px; }
+.exercise-section:last-child { min-height: 64dvh; }
+.exercise-section h2 { margin: 30px 0 12px; font-size: 18px; font-weight: 650; }
+.exercise-section:not(:first-of-type) h2 { margin-top: 8px; }
+.exercise-quiet { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.exercise-notes { margin: 0; font-size: 15px; line-height: 1.55; }
+.exercise-demo { margin-bottom: 16px; }
+
+.exercise-summary { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+.exercise-readout small { display: block; color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; }
+.exercise-readout b { display: block; margin-top: 4px; font-size: 34px; font-weight: 720; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.exercise-readout em { color: var(--muted); font-size: 14px; font-style: normal; font-weight: 500; letter-spacing: 0; }
+.exercise-range { display: flex; flex: none; padding: 3px; border-radius: 10px; background: var(--card); }
+.exercise-range button { min-width: 44px; min-height: 36px; border-radius: 8px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.exercise-range button[aria-pressed="true"] { background: var(--bg); color: var(--text); }
+
+.volume-chart { display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 0 8px; }
+.volume-axis { display: flex; flex-direction: column; justify-content: space-between; height: 190px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.volume-plot { position: relative; height: 190px; overflow: hidden; border-block: 1px solid var(--line); background: linear-gradient(var(--line), var(--line)) 0 50% / 100% 1px no-repeat; cursor: pointer; touch-action: pan-y; }
+.volume-plot button { position: absolute; bottom: 0; left: calc(6px + (100% - 12px) * var(--at)); width: 6px; min-width: 0; min-height: 2px; margin-left: -3px; padding: 0; border-radius: 1px 1px 0 0; background: var(--text); transform-origin: bottom; transition: opacity 140ms ease; animation: volume-rise 520ms var(--ease-precise) both; animation-delay: calc(var(--bar) * 26ms); }
+.volume-plot button:active { transform: none; }
+.volume-plot button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.volume-plot.has-pick button { opacity: .24; }
+.volume-plot.has-pick button.is-picked { opacity: 1; }
+.volume-plot button.is-picked::after { content: ""; position: absolute; bottom: 100%; left: 50%; height: 190px; border-left: 1px dashed var(--muted); }
+@keyframes volume-rise { from { transform: scaleY(0); } to { transform: none; } }
+.volume-dates { display: flex; grid-column: 2; justify-content: space-between; padding-top: 6px; color: var(--muted); font-size: 10px; }
+
+.exercise-records { margin: 0; padding: 0; list-style: none; }
+.exercise-records li { display: grid; grid-template-columns: 26px minmax(0,1fr) auto; gap: 10px; align-items: center; min-height: 52px; border-top: 1px solid var(--line); }
+.exercise-records li > span { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--line); border-radius: 50%; color: var(--muted); font-size: 11px; font-weight: 600; }
+.exercise-records li:first-child > span { border-color: var(--text); background: var(--text); color: var(--bg); }
+.exercise-records b { font-size: 15px; font-weight: 620; }
+.exercise-records small, .exercise-history small { color: var(--muted); font-size: 12px; }
+.exercise-history details { border-top: 1px solid var(--line); }
+.exercise-history summary { display: flex; align-items: center; gap: 10px; min-height: 52px; cursor: pointer; list-style: none; }
+.exercise-history summary::-webkit-details-marker { display: none; }
+.exercise-history summary b { flex: 1; font-size: 15px; font-weight: 620; }
+.exercise-history summary svg { color: var(--muted); transition: transform var(--motion-state) var(--ease-settle); }
+.exercise-history details[open] summary svg { transform: rotate(180deg); }
+.exercise-history ol { margin: 0; padding: 0 0 12px; list-style: none; }
+.exercise-history li { display: flex; justify-content: space-between; padding: 5px 0; color: var(--muted); font-size: 13px; }
+.exercise-facts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin: 20px 0 0; }
+.exercise-facts dt { color: var(--muted); font-size: 11px; }
+.exercise-facts dd { margin: 3px 0 0; font-size: 14px; font-weight: 600; }
+
+@supports (animation-timeline: scroll()) {
+  .exercise-hero img { animation: hero-recede linear both; animation-timeline: scroll(root); animation-range: 0 240px; }
+  @keyframes hero-recede { to { transform: translateY(46px) scale(1.05); opacity: .1; } }
+}
+
+@media (prefers-reduced-motion: reduce) { .session-exercise-panel, .session-exercise-panel > div, .session-exercise-row > svg, .volume-plot button { transition: none; } }
+[data-motion="reduced"] .session-exercise-panel, [data-motion="reduced"] .session-exercise-panel > div, [data-motion="reduced"] .session-exercise-row > svg, [data-motion="reduced"] .volume-plot button { transition: none; }

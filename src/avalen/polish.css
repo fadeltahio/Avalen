@@ -1,0 +1,36 @@
+/* Launch polish: the last layer. Small, app-wide consistency fixes found in the
+   November competitive audit (see COMPETITIVE_AUDIT.md). */
+
+/* Readable small print: nothing a person needs to read sits below 10.5px. */
+.calendar button > small,
+.week-rhythm small,
+.home-macro > small,
+.home-macro-ring span small,
+.planned-meal > div > span,
+.three-stats .stat > span { font-size: 10.5px; }
+
+/* The coach's cue label sits on its own line above the cue. */
+.exercise-coach-cue { padding: 14px 0; line-height: 1.6; }
+.exercise-coach-cue > span { display: block; margin-bottom: 8px; font-size: 10.5px; letter-spacing: .12em; color: var(--muted); }
+.exercise-sheet-actions { display: grid; gap: 10px; margin-top: 16px; }
+.exercise-sheet-actions > button { width: 100%; margin: 0; }
+
+/* Milestones read left to right: mark, name, status. */
+.simple-row.milestone-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 12px; }
+.simple-row.milestone-row > b { margin-left: 0; font-size: 14px; font-weight: 500; text-align: left; white-space: normal; }
+.milestone-row > span:last-child { font-size: 12px; white-space: nowrap; }
+.milestone-row > span:first-child { display: grid; place-items: center; }
+
+/* Comfortable taps: every action in the coach queue and insight cards is at least 44px tall. */
+.review-queue .review-queue-item:not(.review-queue-next) .button-row .primary { min-height: 44px; }
+.review-queue-item > details > summary,
+.insight-card details > summary { padding-block: 13px; }
+
+/* Scrolling tab rows fade out at the edge instead of cutting a word in half. */
+@media (max-width: 720px) {
+  .page .tabs {
+    padding-inline-end: 30px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 30px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 30px), transparent);
+  }
+}

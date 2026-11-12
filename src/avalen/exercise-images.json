@@ -1,0 +1,57 @@
+{
+  "Bench press": {
+    "src": "/exercises/barbell-bench-press---medium-grip.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/1.jpg",
+    "exercise": "Barbell Bench Press - Medium Grip"
+  },
+  "Incline dumbbell press": {
+    "src": "/exercises/incline-dumbbell-press.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/1.jpg",
+    "exercise": "Incline Dumbbell Press"
+  },
+  "Seated cable row": {
+    "src": "/exercises/seated-cable-rows.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/1.jpg",
+    "exercise": "Seated Cable Rows"
+  },
+  "Lateral raise": {
+    "src": "/exercises/side-lateral-raise.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/1.jpg",
+    "exercise": "Side Lateral Raise"
+  },
+  "Triceps pushdown": {
+    "src": "/exercises/triceps-pushdown.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/1.jpg",
+    "exercise": "Triceps Pushdown"
+  },
+  "Back squat": {
+    "src": "/exercises/barbell-squat.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/1.jpg",
+    "exercise": "Barbell Squat"
+  },
+  "Romanian deadlift": {
+    "src": "/exercises/romanian-deadlift.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/1.jpg",
+    "exercise": "Romanian Deadlift"
+  },
+  "Walking lunge": {
+    "src": "/exercises/dumbbell-lunges.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/1.jpg",
+    "exercise": "Dumbbell Lunges"
+  },
+  "Calf raise": {
+    "src": "/exercises/standing-calf-raises.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/1.jpg",
+    "exercise": "Standing Calf Raises"
+  },
+  "Push-up": {
+    "src": "/exercises/pushups.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/1.jpg",
+    "exercise": "Pushups"
+  },
+  "Bodyweight squat": {
+    "src": "/exercises/bodyweight-squat.jpg",
+    "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/1.jpg",
+    "exercise": "Bodyweight Squat"
+  }
+}

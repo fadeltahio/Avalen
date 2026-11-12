@@ -1,0 +1,46 @@
+import { chromium, expect } from '@playwright/test';
+import { writeFile } from 'node:fs/promises';
+import { fixture } from '../tests/helpers/service.js';
+const service = await fixture();
+const browser = await chromium.launch({executablePath:'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'});
+try {
+  const context = await browser.newContext({viewport:{width:390,height:844},hasTouch:true});
+  const page = await context.newPage();
+  await page.addInitScript(()=>sessionStorage.setItem('avalen.editorial.splash','seen'));
+  await page.goto(`${service.base}/?connected=0`);
+  await page.getByRole('button',{name:'Explore demo'}).click();
+  await page.getByRole('button',{name:'Search sessions',exact:true}).click();
+  await page.waitForTimeout(350);
+  const cdp = await context.newCDPSession(page);
+  const header = await page.locator('.modal-drag-handle').boundingBox();
+  const x=header.x+60,y=header.y+20;
+  const touch = (type,dy=0) => cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'?[]:[{x,y:y+dy,id:1}]});
+  await touch('touchStart');await touch('touchMove',20);await touch('touchMove',40);
+  await page.waitForTimeout(50);
+  const dragOffset = await page.locator('dialog').evaluate(el=>new DOMMatrix(getComputedStyle(el).transform).m42);
+  if(dragOffset<10) throw new Error('The dialog did not follow the touch gesture.');
+  await touch('touchEnd');await page.waitForTimeout(250);
+  await expect(page.getByRole('dialog')).toHaveCount(1);
+  const resetOffset=await page.locator('dialog').evaluate(el=>getComputedStyle(el).transform==='none'?0:new DOMMatrix(getComputedStyle(el).transform).m42);
+  if(Math.abs(resetOffset)>1) throw new Error('Cancelled gesture did not settle.');
+  await touch('touchStart');await touch('touchMove',35);await touch('touchMove',90);await touch('touchEnd');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await cdp.send('Emulation.setCPUThrottlingRate',{rate:4});
+  await page.getByRole('button',{name:'Start Workout',exact:true}).click();
+  await page.evaluate(()=>{
+    window.motionSample=[];window.motionSampleDone=false;
+    const began=performance.now();let previous;
+    const tick=now=>{if(previous)window.motionSample.push(now-previous);previous=now;if(now-began<4000)requestAnimationFrame(tick);else window.motionSampleDone=true;};
+    requestAnimationFrame(tick);
+  });
+  await page.getByRole('button',{name:'Log set 1',exact:true}).click();
+  await page.getByRole('button',{name:'Pause rest',exact:true}).click();
+  await page.getByRole('button',{name:'+30s',exact:true}).click();
+  await page.getByRole('button',{name:'Resume rest',exact:true}).click();
+  await page.waitForFunction(()=>window.motionSampleDone);
+  const samples=await page.evaluate(()=>window.motionSample);
+  samples.sort((a,b)=>a-b);
+  const result={environment:'Production build, Chrome, 390×844 viewport, simulated touch, 4× CPU throttle; not a physical-device benchmark',gesture:{dragOffset,cancelledGestureRestored:Math.abs(resetOffset)<1,dismissed:true},frames:{samples:samples.length,medianMs:+samples[Math.floor(samples.length*.5)].toFixed(2),p95Ms:+samples[Math.floor(samples.length*.95)].toFixed(2),maxMs:+samples.at(-1).toFixed(2)}};
+  await writeFile('output/motion/quality.json',JSON.stringify(result,null,2));
+  console.log(JSON.stringify(result));
+} finally {await browser.close();await service.close();}

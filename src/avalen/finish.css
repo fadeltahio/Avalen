@@ -1,0 +1,242 @@
+/* Last layer: November audit. Calmer hierarchy, one colour story, finite motion.
+   Reduced motion is covered by the global guards in motion.css. */
+:root {
+  --motion-sheet: 420ms;
+  --motion-reveal: 460ms;
+  --ease-sheet: cubic-bezier(.32,.72,0,1);
+}
+
+/* Colour: black, white and photography. Green is kept for confirmed success. */
+img[src*="/exercises/"],
+.training-exercise-list .exercise-photo-number .exercise-thumb[src*="/exercises/"],
+.workout-modal .logger-background > img[src*="/exercises/"] { filter: grayscale(1) contrast(1.06) brightness(.94); }
+.liquid-canvas { filter: grayscale(1) contrast(1.12) brightness(.74); }
+.water-heading > svg { color: #fff; }
+.water-heading p { color: #ffffffb8; }
+.hydration, .water-history { border-radius: var(--radius-card); }
+.water-history { margin-top: 0; }
+.water-actions button { border-radius: 0; background: #0000006b; border: 1px solid #ffffff3d; color: #fff; }
+.water-actions button:last-child { background: #fff; border-color: #fff; color: #000; }
+.modal { scrollbar-color: #ffffff33 transparent; }
+:root[data-theme='light'] .modal { scrollbar-color: #0003 transparent; }
+@media (pointer: coarse) { .modal { scrollbar-width: none; } }
+
+/* A hard-coded dark fill made these fields unreadable in the light theme. */
+.stepper { background: var(--surface-inset); border-color: var(--line); }
+
+/* Dates carry their month, including weeks that cross one. */
+.calendar-month { margin: 0 0 10px; color: var(--muted); font-size: 12px; letter-spacing: .02em; }
+
+/* Workout: the log button never moves. Rest rises from the dock instead. */
+.focused-workout .set-action-area > .primary {
+  background: var(--primary);
+  color: var(--on-primary);
+  border-color: var(--primary);
+}
+.focused-workout .set-action-area > .primary.set-just-logged { animation: set-logged 760ms ease-out both; }
+.focused-workout .set-action-area > .primary.set-just-logged svg { animation: motion-check var(--motion-panel) var(--ease-settle) both; }
+.logger-dock-stack { position: sticky; bottom: 0; z-index: 4; margin-top: 10px; background: var(--bg); }
+.focused-workout .logger-dock-stack .logger-exercise-dock { position: static; margin: 0; }
+.workout-modal .logger-dock-stack .logger-rest {
+  position: relative;
+  top: auto;
+  margin: 0;
+  border-radius: 0;
+  border-inline: 0;
+  border-bottom: 0;
+  background: var(--surface-inset);
+  color: var(--text);
+  animation: rest-rise var(--motion-sheet) var(--ease-sheet) both;
+}
+.logger-feedback:empty { min-height: 0; }
+.logger-rest .rest-orbit svg circle:not(.rest-track) { transition: stroke-dashoffset 250ms linear; }
+.logger-rest.rest-complete { animation: rest-done 700ms ease-out both; }
+@keyframes set-logged {
+  0%, 38% { background-color: var(--green); border-color: var(--green); }
+  100% { background-color: var(--primary); border-color: var(--primary); }
+}
+@keyframes rest-rise { from { transform: translateY(100%); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes rest-done { 0% { box-shadow: inset 0 0 0 1px var(--green); } 100% { box-shadow: inset 0 0 0 1px transparent; } }
+
+/* Result: the share actions stay within reach below the artwork. */
+.share-modal .share-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin: 16px -18px 0;
+  padding: 12px 18px max(14px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: var(--card);
+}
+
+/* Settings switch. */
+.simple-row input[type="checkbox"][role="switch"] {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 46px;
+  height: 28px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-inset);
+  cursor: pointer;
+  transition: background-color var(--motion-state) ease, border-color var(--motion-state) ease;
+}
+.simple-row input[type="checkbox"][role="switch"]::before {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform var(--motion-state) var(--ease-settle), background-color var(--motion-state) ease;
+}
+.simple-row input[type="checkbox"][role="switch"]:checked { background: var(--text); border-color: var(--text); }
+.simple-row input[type="checkbox"][role="switch"]:checked::before { transform: translateX(18px); background: var(--bg); }
+
+/* Nutrition: the disclosure's summary already names this section. */
+.nutrition-updates { border-block: 1px solid var(--line); margin: 0 0 26px; }
+.nutrition-updates > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 17px 0; cursor: pointer; font-size: 14px; }
+.nutrition-updates > summary small { display: block; margin-top: 5px; color: var(--muted); font-size: 12px; }
+.nutrition-updates[open] > summary > svg { transform: rotate(90deg); }
+.nutrition-updates .daily-updates > h2 { display: none; }
+.photo-ai-status { padding-block: 8px; opacity: .78; }
+
+/* Coach: one primary action per screen. */
+.review-queue-item:not(.review-queue-next) .button-row .primary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.review-client-navigation { margin-bottom: 14px; }
+.review-client-navigation .back-link { margin: 0; min-height: 44px; }
+.client-pause-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 8px; padding-block: 14px; border-top: 1px solid var(--line); }
+.client-pause-row b { display: block; font-size: 13px; font-weight: 600; }
+.client-pause-row small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+.client-pause-row > .text-link { flex: none; min-height: 44px; font-size: 13px; }
+@media (max-width: 760px) {
+  .client-sections { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: center; }
+  .client-sections > .client-more-sections { grid-column: 1 / -1; }
+  .client-sections > .tabs { grid-template-columns: repeat(5, auto); justify-content: space-between; }
+  .client-sections > .tabs button { padding-inline: 0; }
+  .client-more-toggle { padding: 0; gap: 3px; }
+}
+
+/* Inbox: a list of people, then one conversation. */
+.page-inbox .inbox-workspace { margin-top: 4px; }
+.page-inbox .inbox-client-list { display: grid; gap: 0; overflow: visible; margin: 0; padding: 0; }
+.page-inbox .inbox-client-list > button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 76px;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  color: var(--text);
+  text-align: left;
+}
+.inbox-client-list > button > span:nth-of-type(2) { min-width: 0; }
+.inbox-client-list b { display: block; font-size: 15px; font-weight: 600; }
+.inbox-client-list > button > span:nth-of-type(2) small { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.inbox-thread-meta { display: grid; justify-items: end; gap: 5px; }
+.inbox-thread-meta time, .inbox-thread-meta small { color: var(--muted); font-size: 11px; }
+.inbox-thread-meta em { display: grid; place-items: center; min-width: 20px; height: 20px; padding-inline: 5px; border-radius: 999px; background: var(--text); color: var(--bg); font-size: 11px; font-style: normal; font-weight: 700; }
+.inbox-back { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; margin: 0 0 6px; }
+@media (max-width: 760px) {
+  .inbox-workspace.is-list > .inbox-thread, .inbox-workspace.is-thread > .inbox-client-list { display: none; }
+  .inbox-workspace.is-thread > .inbox-thread { animation: thread-in var(--motion-panel) var(--ease-precise) both; }
+}
+@media (min-width: 761px) {
+  .inbox-back { display: none; }
+  .page-inbox .inbox-client-list > button { padding-inline: 10px; }
+  .page-inbox .inbox-client-list > button[aria-current="true"] { background: var(--surface-soft); }
+}
+@keyframes thread-in { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+
+/* Dialogs are sheets on a phone: they rise from where the thumb already is. */
+.modal-drag-handle { position: relative; }
+@media (max-width: 760px) {
+  .modal:not(.focused-workout) {
+    width: 100%;
+    max-width: none;
+    margin: auto 0 0;
+    border-width: 1px 0 0;
+    border-radius: 14px 14px 0 0;
+  }
+  .modal:not(.focused-workout) > .modal-drag-handle::before {
+    content: "";
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--line);
+    transform: translateX(-50%);
+  }
+  .modal:not(.focused-workout) > .modal-body { padding-bottom: max(18px, env(safe-area-inset-bottom)); }
+  .modal[open] { animation: motion-sheet var(--motion-sheet) var(--ease-sheet) backwards; }
+}
+@keyframes motion-sheet { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+/* The global reduced-motion guards use `*`, which never reaches ::backdrop. */
+@media (prefers-reduced-motion: reduce) { .modal::backdrop { animation: none; } }
+[data-motion="reduced"] .modal::backdrop { animation: none; }
+
+/* Coach lists: only the next item is a full card, the rest read as a list. */
+.review-queue-item:not(.review-queue-next) { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; align-items: center; padding-block: 12px; }
+.review-queue-item:not(.review-queue-next) > .review-queue-person { grid-column: 1 / -1; margin-bottom: 2px; }
+.review-queue-item:not(.review-queue-next) .review-queue-person small,
+.review-queue-item:not(.review-queue-next) > p,
+.review-queue-item:not(.review-queue-next) > details,
+.review-queue-item:not(.review-queue-next) .button-row .text-link { display: none; }
+.coach-task-workspace .review-queue-item:not(.review-queue-next) > h3 { margin: 0; color: var(--muted); font-size: 13px; font-weight: 500; }
+.review-queue-item:not(.review-queue-next) > .button-row { margin: 0; }
+.review-queue-item:not(.review-queue-next) .button-row .primary { width: auto; min-height: 38px; padding-inline: 12px; font-size: 12px; }
+.client-card { padding: 14px 16px; }
+.client-card .client-mini { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 8px 0 0; padding: 0; border: 0; }
+.client-card .client-mini span { display: inline-flex; align-items: baseline; gap: 5px; color: var(--muted); font-size: 11px; white-space: nowrap; }
+.client-card .client-mini b { color: var(--text); font-size: 14px; }
+.client-card > p { margin: 8px 0 0; font-size: 12px; }
+.client-sections { position: sticky; top: 0; z-index: 6; background: var(--bg); }
+
+/* Load-in: the mark in #boot draws itself, then the screen fades up beneath it. */
+.brand-splash { z-index: 60; transition: opacity 380ms ease; }
+.brand-splash.is-lifting { opacity: 0; pointer-events: none; }
+
+/* First impression: mark, then photograph, then words. */
+.editorial-welcome { overflow: clip; }
+.editorial-welcome-photo { animation: photo-settle 1500ms var(--ease-precise) both; }
+.editorial-welcome-wordmark { animation: rise-in 620ms var(--ease-precise) 140ms both; }
+.motion-stage > * { animation: rise-in 620ms var(--ease-precise) both; }
+.motion-stage > :nth-child(1) { animation-delay: 220ms; }
+.motion-stage > :nth-child(2) { animation-delay: 280ms; }
+.motion-stage > :nth-child(3) { animation-delay: 360ms; }
+.motion-stage > :nth-child(4) { animation-delay: 420ms; }
+.motion-stage > :nth-child(5) { animation-delay: 470ms; }
+.motion-stage > :nth-child(n+6) { animation-delay: 540ms; }
+@keyframes photo-settle { from { transform: scale(1.07); opacity: .4; } to { transform: scale(1); opacity: 1; } }
+@keyframes rise-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* The first arrival on Home in a session settles the hero photograph once. */
+[data-first-visit] .home-today-session > img { animation: photo-settle 1200ms var(--ease-precise) both; }
+.home-today-session { overflow: hidden; }
+
+/* Small confirmations. */
+.bottom-nav button.active svg { animation: nav-pop 340ms var(--ease-settle); }
+@keyframes nav-pop { 0% { transform: translateY(-1px) scale(.84); } 100% { transform: translateY(-1px) scale(1); } }
+.primary > svg.lucide-arrow-right { transition: transform var(--motion-state) var(--ease-settle); }
+.primary:active:not(:disabled) > svg.lucide-arrow-right { transform: translateX(3px); }
+@media (hover: hover) { .primary:hover:not(:disabled) > svg.lucide-arrow-right { transform: translateX(3px); } }

@@ -1,0 +1,98 @@
+/* Workout logger, premium layer. Loaded last and scoped to the focused workout,
+   so earlier logger layers stay as fallbacks and nothing else in Avalen changes. */
+.workout-modal.focused-workout { --lg-ease: cubic-bezier(.16, 1, .3, 1); --lg-pop: cubic-bezier(.34, 1.56, .64, 1); }
+
+/* Exercise heading and prescription */
+.workout-modal.focused-workout .logger-workout-heading h2 { font-size: 30px; line-height: 1.05; letter-spacing: -.02em; font-weight: 650; text-wrap: balance; }
+.workout-modal.focused-workout .logger-target-line { gap: 6px; margin-top: 2px; }
+.workout-modal.focused-workout .logger-target-line > span { border: 1px solid var(--line); border-radius: 999px; padding: 5px 10px; font-size: 11.5px; line-height: 1.2; }
+.workout-modal.focused-workout .logger-target-line > span:first-child { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+/* Set editor */
+.workout-modal.focused-workout .set-editor-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
+.workout-modal.focused-workout .set-editor-heading > b { font-size: 17px; letter-spacing: -.01em; }
+.workout-modal.focused-workout .set-editor-heading > span:last-child { margin-left: auto; }
+.set-pips { display: flex; gap: 5px; }
+.set-pips i { width: 18px; height: 4px; border-radius: 4px; background: var(--line); transition: background 300ms ease; }
+.set-pips .is-done { background: var(--green); }
+.set-pips .is-skipped { background: var(--muted); opacity: .45; }
+.set-pips .is-current { background: var(--text); animation: lg-breathe 1.6s ease-in-out 2; }
+@keyframes lg-breathe { 50% { opacity: .35; } }
+
+.workout-modal.focused-workout .set-controls { gap: 10px; }
+.workout-modal.focused-workout .set-control { border-radius: 18px; border-color: transparent; background: var(--card); transition: border-color 200ms ease, background 200ms ease; }
+.workout-modal.focused-workout .set-control:focus-within { border-color: var(--green); }
+.workout-modal.focused-workout .set-control label { padding-top: 14px; }
+.workout-modal.focused-workout .set-control label > span { padding: 0 16px; font-size: 10px; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+.workout-modal.focused-workout .set-control label small { font-size: 10px; letter-spacing: .08em; }
+.workout-modal.focused-workout .set-control input { height: 74px; font-size: 50px; font-weight: 650; letter-spacing: -.03em; }
+.workout-modal.focused-workout .set-adjust { border-top: 0; padding: 0 10px 12px; }
+.workout-modal.focused-workout .set-adjust button { width: 46px; height: 46px; min-height: 46px; border-radius: 50%; background: var(--surface-raised); color: var(--text); transition: transform 120ms var(--lg-ease), background 160ms ease; }
+.workout-modal.focused-workout .set-adjust button:active:not(:disabled) { transform: scale(.86); background: var(--line); }
+.workout-modal.focused-workout .set-adjust button:disabled { opacity: .35; }
+
+.workout-modal.focused-workout .set-action-area > .primary { min-height: 60px; border-radius: 16px; font-size: 17px; font-weight: 650; letter-spacing: -.01em; transition: transform 140ms var(--lg-ease), background-color 200ms ease; }
+.workout-modal.focused-workout .set-action-area > .primary:active:not(:disabled) { transform: scale(.97); }
+.workout-modal.focused-workout .set-action-area > .primary:disabled { border-radius: 16px; }
+.workout-modal.focused-workout .set-editor.is-ready .set-action-area > .primary { animation: lg-ready 1.2s var(--lg-ease) both; }
+@keyframes lg-ready {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green) 70%, transparent); transform: scale(1); }
+  18% { transform: scale(1.02); }
+  70% { box-shadow: 0 0 0 16px transparent; transform: scale(1); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Logged sets: soft cards, the newest one lands with a small pop */
+.workout-modal.focused-workout .logger-set-labels { padding-inline: 14px; }
+.workout-modal.focused-workout .logger-set-row { border-top: 0; border-radius: 14px; margin-top: 6px; padding-inline: 14px 4px; min-height: 50px; background: var(--card); }
+.workout-modal.focused-workout .logger-set-row.current { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.workout-modal.focused-workout .logger-set-row.done .set-number { color: var(--green); font-weight: 650; }
+.workout-modal.focused-workout .logger-set-row.just-saved { animation: lg-row-in 560ms var(--lg-pop) both; }
+@keyframes lg-row-in { from { transform: scale(.95); background: color-mix(in srgb, var(--green) 24%, var(--card)); } }
+
+/* Rest: a card rises from the bottom. When time is up the ring closes,
+   a check draws itself and one button moves you on. */
+.workout-modal.focused-workout .logger-dock-stack .logger-rest {
+  position: relative; overflow: hidden; display: grid; grid-template-columns: 64px minmax(0, 1fr); align-items: center; gap: 14px 16px;
+  margin: 0 0 max(10px, env(safe-area-inset-bottom)); padding: 16px; border: 1px solid var(--line); border-radius: 22px;
+  background: var(--surface-raised); color: var(--text); box-shadow: 0 -10px 36px color-mix(in srgb, #000 40%, transparent);
+  animation: lg-rest-rise 460ms var(--lg-ease) both;
+}
+@keyframes lg-rest-rise { from { transform: translateY(24px); opacity: 0; } }
+.workout-modal.focused-workout .logger-rest .rest-orbit { width: 64px; height: 64px; color: var(--green); }
+.workout-modal.focused-workout .logger-rest .rest-orbit circle { stroke-width: 4; }
+.workout-modal.focused-workout .logger-rest .rest-orbit > span i { display: block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.workout-modal.focused-workout .logger-rest .rest-copy > b { display: block; font-size: 32px; line-height: 1; font-weight: 650; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.workout-modal.focused-workout .logger-rest .rest-copy > span { display: block; margin-top: 7px; font-size: 12px; color: var(--muted); }
+.workout-modal.focused-workout .logger-rest .rest-orbit, .workout-modal.focused-workout .logger-rest .rest-copy { grid-row: 1; }
+.workout-modal.focused-workout .logger-rest .rest-controls { grid-column: 1 / -1; grid-row: 2; display: flex; gap: 8px; border-top: 0; padding: 0; justify-content: stretch; }
+.workout-modal.focused-workout .logger-rest .rest-controls > button { flex: 1; min-height: 46px; border-radius: 14px; border: 0; padding: 0 12px; background: var(--card); color: var(--text); font-size: 13px; font-weight: 600; text-decoration: none; transition: transform 120ms var(--lg-ease); }
+.workout-modal.focused-workout .logger-rest .rest-controls > button:first-child:not(.rest-next) { flex: 0 0 46px; padding: 0; }
+.workout-modal.focused-workout .logger-rest .rest-controls > button:active { transform: scale(.95); }
+.workout-modal.focused-workout .logger-rest .rest-controls > .rest-next { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; border-radius: 16px; background: var(--green); color: var(--on-accent); font-size: 16px; font-weight: 650; animation: lg-next-in 520ms var(--lg-pop) 260ms both; }
+@keyframes lg-next-in { from { transform: translateY(12px) scale(.94); opacity: 0; } }
+
+.workout-modal.focused-workout .logger-dock-stack .logger-rest.rest-complete { border-color: color-mix(in srgb, var(--green) 45%, transparent); background: color-mix(in srgb, var(--green) 9%, var(--surface-raised)); animation: lg-rest-rise 460ms var(--lg-ease) both; }
+.workout-modal.focused-workout .logger-rest.rest-paused .rest-orbit { color: var(--muted); }
+.rest-check { fill: none; stroke: var(--green); stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: lg-draw 520ms var(--lg-ease) 140ms forwards; }
+@keyframes lg-draw { to { stroke-dashoffset: 0; } }
+.workout-modal.focused-workout .rest-just-done .rest-orbit { animation: lg-pop 640ms var(--lg-pop) both; }
+@keyframes lg-pop { 0% { transform: scale(.82); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.rest-ripple { position: absolute; left: 16px; top: 16px; width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--green); pointer-events: none; opacity: 0; animation: lg-ripple 1.2s ease-out 120ms 2 both; }
+@keyframes lg-ripple { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(2.8); opacity: 0; } }
+
+/* Exercise complete */
+.logger-complete-mark { display: block; width: 58px; height: 58px; margin: 6px 0 14px; overflow: visible; }
+.logger-complete-mark circle { fill: color-mix(in srgb, var(--green) 12%, transparent); stroke: var(--green); stroke-width: 3; stroke-dasharray: 1; stroke-dashoffset: 1; transform: rotate(-90deg); transform-origin: center; animation: lg-draw 640ms var(--lg-ease) forwards; }
+.logger-complete-mark path { fill: none; stroke: var(--green); stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: lg-draw 440ms var(--lg-ease) 460ms forwards; }
+.workout-modal.focused-workout .logger-complete > span { display: block; color: var(--text); font-size: 24px; font-weight: 650; letter-spacing: -.02em; }
+.workout-modal.focused-workout .logger-complete .primary { min-height: 56px; border-radius: 16px; font-size: 16px; }
+.workout-modal.focused-workout .logger-up-next { border: 0; border-radius: 16px; background: var(--card); padding: 16px; }
+
+/* Reduced motion: no movement, but every check and ring is shown finished. */
+@media (prefers-reduced-motion: reduce) {
+  .rest-check, .logger-complete-mark circle, .logger-complete-mark path { animation: none !important; stroke-dashoffset: 0 !important; }
+  .rest-ripple { display: none; }
+}
+[data-motion="reduced"] .rest-check, [data-motion="reduced"] .logger-complete-mark circle, [data-motion="reduced"] .logger-complete-mark path { animation: none !important; stroke-dashoffset: 0 !important; }
+[data-motion="reduced"] .rest-ripple { display: none; }

@@ -1,0 +1,696 @@
+/* Avalen: precise presses, connected context, earned completion. */
+:root {
+  --motion-press: 110ms;
+  --motion-state: 180ms;
+  --motion-panel: 280ms;
+  --motion-screen: 320ms;
+  --motion-earned: 640ms;
+  --ease-precise: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-settle: cubic-bezier(0.16, 1.08, 0.32, 1);
+}
+/* Remove inherited blanket/staggered page reveals. Context moves as one surface. */
+.page,
+.page > :is(.card, .dashboard-grid, .three-stats, .today-grid, .client-grid),
+.metric-value,
+.logger-set-row.done,
+.logger-set-row.current {
+  animation: none;
+}
+button,
+.text-link,
+summary {
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--motion-press) var(--ease-precise),
+    background-color var(--motion-state) ease,
+    color var(--motion-state) ease,
+    border-color var(--motion-state) ease;
+}
+button:active:not(:disabled),
+summary:active {
+  transform: scale(0.98);
+}
+:is(
+    .icon-btn,
+    .log-set-check,
+    .set-adjust button,
+    .logger-exercises button
+  ):active:not(:disabled) {
+  transform: scale(0.91);
+}
+button:disabled {
+  cursor: default;
+}
+:where(input, textarea, select) {
+  transition:
+    border-color var(--motion-state) ease,
+    box-shadow var(--motion-state) ease;
+}
+:where(input, textarea, select):focus-visible {
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--surface-raised);
+}
+.set-value-pill:focus-within {
+  border-color: var(--text);
+  background: var(--surface-raised);
+}
+:is(
+  .metric-value,
+  .motion-number,
+  .set-value-pill input,
+  .chart-readout,
+  .record-time
+) {
+  font-variant-numeric: tabular-nums;
+}
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--green);
+}
+.tabs {
+  position: relative;
+  isolation: isolate;
+}
+.tabs button.active, .daily-updates .tabs button.active {
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+.motion-tab-indicator {
+  position: absolute;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background: var(--text);
+  transform-origin: left center;
+  pointer-events: none;
+}
+.bottom-nav {
+  position: fixed;
+  isolation: isolate;
+}
+.bottom-nav button {
+  position: relative;
+  z-index: 1;
+}
+.bottom-nav button.active::before {
+  display: none;
+}
+.motion-nav-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  background: var(--text);
+  transform-origin: left center;
+  pointer-events: none;
+}
+.bottom-nav button svg {
+  transition:
+    stroke-width var(--motion-state) ease,
+    transform var(--motion-state) var(--ease-settle);
+}
+.bottom-nav button.active svg {
+  transform: translateY(-1px);
+}
+@media (min-width: 761px) {
+  .motion-nav-indicator {
+    display: none;
+  }
+}
+/* Native dialog retains focus, Escape and modal semantics throughout dismissal. */
+.modal[open] {
+  animation: motion-dialog var(--motion-panel) var(--ease-settle) backwards;
+}
+.modal::backdrop {
+  animation: motion-backdrop var(--motion-state) ease backwards;
+}
+.modal[data-closing="true"]::backdrop {
+  background: #0000;
+  transition: background var(--motion-state);
+}
+.modal-drag-handle {
+  touch-action: pan-x;
+}
+@keyframes motion-dialog {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes motion-backdrop {
+  from {
+    background-color: #0000;
+  }
+  to {
+    background-color: #000b;
+  }
+}
+.motion-list {
+  position: relative;
+}
+.motion-details {
+  box-sizing: border-box;
+}
+.motion-details > summary {
+  cursor: pointer;
+}
+.meter {
+  overflow: hidden;
+}
+.meter > i {
+  width: 100% !important;
+  transform-origin: left;
+  transition: transform var(--motion-screen) var(--ease-precise);
+}
+.mini-bars > i {
+  transition: height var(--motion-panel) var(--ease-precise);
+}
+.editorial-goal-track > i {
+  transition: background-color var(--motion-panel) ease;
+}
+.home-today-session.is-complete .home-today-content .eyebrow {
+  color: var(--green);
+}
+.home-today-session {
+  transition: border-color var(--motion-panel) ease;
+}
+.home-today-session.is-complete {
+  border-color: var(--green);
+}
+.home-today-session .primary svg,
+.hero-detail,
+.editorial-session-photo img {
+  transition: transform var(--motion-panel) var(--ease-precise);
+}
+@media (hover: hover) {
+  .home-today-session .primary:hover svg {
+    transform: translateX(3px);
+  }
+  .editorial-session:hover .editorial-session-photo img {
+    transform: scale(1.025);
+  }
+}
+.logger-saved {
+  animation: motion-confirm var(--motion-state) var(--ease-precise) both;
+}
+.set-undo {
+  animation: none;
+}
+.set-undo svg {
+  animation: motion-check var(--motion-panel) var(--ease-settle) both;
+}
+.set-editor {
+  animation: motion-current var(--motion-state) ease-out both;
+}
+.logger-complete {
+  animation: motion-confirm var(--motion-panel) var(--ease-precise) both;
+}
+@keyframes motion-check {
+  from {
+    opacity: 0.25;
+    transform: scale(0.65);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes motion-confirm {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes motion-current {
+  from {
+    border-color: var(--text);
+  }
+  to {
+    border-color: var(--line);
+  }
+}
+.logger-rest {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 8px 12px;
+  padding: 12px;
+  border-radius: 3px;
+  animation: motion-confirm var(--motion-panel) var(--ease-precise) both;
+}
+.logger-rest .rest-orbit {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex: none;
+  display: grid;
+  place-items: center;
+}
+.rest-orbit > svg:first-child {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.rest-orbit circle {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 250ms linear;
+}
+.rest-orbit .rest-track {
+  stroke: var(--line);
+}
+.rest-orbit > span {
+  color: inherit;
+  display: grid;
+  place-items: center;
+}
+.logger-rest .rest-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  grid-column: 1/-1;
+  border-top: 1px solid var(--line);
+  gap: 10px;
+}
+.rest-controls button {
+  min-width: 44px;
+  display: grid;
+  place-items: center;
+  text-decoration: none;
+}
+.rest-paused {
+  color: var(--muted);
+  border-color: var(--line);
+}
+.rest-complete .rest-orbit > svg:last-child {
+  animation: motion-check var(--motion-panel) var(--ease-settle) both;
+}
+.logger-rest .rest-copy > span {
+  display: block;
+}
+.workout-earned {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 24px;
+}
+.workout-earned h2 {
+  font-size: clamp(23px, 4vw, 30px);
+  margin: 4px 0 8px;
+  letter-spacing: -0.04em;
+}
+.workout-earned p {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.earned-mark {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 54px;
+  height: 54px;
+  border: 1px solid var(--green);
+  color: var(--green);
+  border-radius: 50%;
+  animation: motion-earned var(--motion-earned) var(--ease-settle) both;
+}
+.earned-mark svg {
+  animation: motion-check var(--motion-earned) var(--ease-settle) both;
+}
+.earned-poster .share-result > i {
+  transform-origin: left;
+  animation: motion-earned-line var(--motion-earned) var(--ease-precise) both;
+}
+@keyframes motion-earned {
+  0% {
+    opacity: 0;
+    transform: scale(0.75) rotate(-12deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.04) rotate(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes motion-earned-line {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.voice-meter {
+  width: 100%;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 0;
+}
+.voice-meter i {
+  display: block;
+  height: 100%;
+  width: 4px;
+  background: var(--green);
+  transform: scaleY(0.03);
+  transform-origin: center;
+}
+.record-control[data-recording="paused"] .voice-meter i {
+  background: var(--muted);
+}
+.record-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 24px;
+}
+.record-status::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+  border-radius: 50%;
+}
+.record-control[data-recording="recording"] .record-status {
+  color: var(--green);
+}
+.formlab-timeline {
+  position: relative;
+}
+.formlab-timeline input {
+  width: 100%;
+}
+.formlab-markers {
+  position: relative;
+  height: 32px;
+  margin-inline: 9px;
+}
+.formlab-markers button {
+  position: absolute;
+  top: 0;
+  width: 28px;
+  min-height: 30px;
+  padding: 0;
+  transform: translateX(-50%);
+  display: grid;
+  place-items: center;
+}
+.formlab-markers button::after {
+  content: "";
+  width: 5px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--amber);
+  transition:
+    height var(--motion-state),
+    background-color var(--motion-state);
+}
+.formlab-markers button[aria-pressed="true"]::after {
+  height: 18px;
+  background: var(--text);
+}
+.formlab-markers button:active {
+  transform: translateX(-50%) scale(0.92);
+}
+.annotation-item[aria-current="true"] {
+  border-color: var(--amber);
+  background: var(--surface-raised);
+}
+/* Never transform, resize or interpolate annotation coordinates. */
+.annotation-stage,
+.annotation-stage * {
+  animation: none !important;
+  transition: none !important;
+}
+.schedule-date-destination {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.schedule-moved .schedule-date-destination {
+  animation: motion-date var(--motion-screen) var(--ease-precise) both;
+}
+.schedule-date-destination svg {
+  flex-shrink: 0;
+  color: var(--amber);
+}
+.schedule-comparison[data-state="confirmed"] .schedule-date-destination svg {
+  color: var(--green);
+}
+@keyframes motion-date {
+  from {
+    opacity: 0.2;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.chart-readout {
+  min-height: 35px;
+}
+.chart svg {
+  touch-action: pan-y;
+}
+.chart-cursor,
+.chart svg > circle:last-of-type {
+  transition:
+    x1 110ms ease-out,
+    x2 110ms ease-out,
+    cx 110ms ease-out,
+    cy 110ms ease-out;
+}
+/* Native snapshots are progressive enhancement. No root crossfade over controls. */
+:root {
+  view-transition-name: none;
+  --motion-push: 400ms;
+  --ease-push: cubic-bezier(0.32, 0.72, 0, 1);
+}
+.app-header {
+  view-transition-name: avalen-header;
+}
+.page {
+  view-transition-name: avalen-content;
+}
+.bottom-nav {
+  view-transition-name: avalen-navigation;
+}
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(*) {
+  animation-duration: var(--motion-screen);
+  animation-timing-function: var(--ease-precise);
+}
+/* Each kind of move looks like what it is (see routeMotion in navigation.js).
+   Old and new never sit on top of each other half-faded: the old view leaves
+   first, then the new one settles. */
+::view-transition-old(avalen-content),
+::view-transition-new(avalen-content) {
+  mix-blend-mode: normal;
+}
+/* swap: the same screen changes in place. */
+::view-transition-old(avalen-content) {
+  animation: route-out 90ms linear both;
+}
+::view-transition-new(avalen-content) {
+  animation: route-in 220ms var(--ease-precise) 60ms both;
+}
+/* tab: fade through, nudged the way the tab bar travels. */
+[data-route-kind="tab"]::view-transition-old(avalen-content) {
+  animation: route-tab-out 110ms ease-in both;
+}
+[data-route-kind="tab"]::view-transition-new(avalen-content) {
+  animation: route-tab-in 260ms var(--ease-precise) 70ms both;
+}
+[data-route-kind="tab"][data-route-direction="back"]::view-transition-old(avalen-content) {
+  animation-name: route-tab-out-back;
+}
+[data-route-kind="tab"][data-route-direction="back"]::view-transition-new(avalen-content) {
+  animation-name: route-tab-in-back;
+}
+/* expand: a session grows out of its photo, so the page around it only fades through. */
+[data-route-kind="expand"]::view-transition-old(avalen-content) {
+  animation: route-out 120ms linear both;
+}
+[data-route-kind="expand"]::view-transition-new(avalen-content) {
+  animation: route-in 300ms var(--ease-precise) 90ms both;
+}
+/* push: a deeper page slides in over the one beneath; Back pulls it away. */
+[data-route-kind="push"]::view-transition-old(avalen-content) {
+  animation: route-under-out var(--motion-push) var(--ease-push) both;
+}
+[data-route-kind="push"]::view-transition-new(avalen-content) {
+  animation: route-push-in var(--motion-push) var(--ease-push) both;
+}
+/* A sliding page is a solid sheet: nothing beneath shows through it. */
+[data-route-kind="push"]::view-transition-new(avalen-content),
+[data-route-kind="push"][data-route-direction="back"]::view-transition-old(avalen-content) {
+  background: var(--bg);
+  box-shadow: -18px 0 40px #0006;
+}
+[data-route-kind="push"][data-route-direction="back"]::view-transition-old(avalen-content) {
+  animation-name: route-push-out;
+  z-index: 1;
+}
+[data-route-kind="push"][data-route-direction="back"]::view-transition-new(avalen-content) {
+  animation-name: route-under-in;
+}
+/* The header and tab bar stay still between tabs, and step out of the way for full-screen pages. */
+::view-transition-old(avalen-navigation),
+::view-transition-new(avalen-navigation),
+::view-transition-old(avalen-header),
+::view-transition-new(avalen-header) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(avalen-navigation):only-child {
+  animation: route-bar-down 200ms ease-in both;
+}
+::view-transition-new(avalen-navigation):only-child {
+  animation: route-bar-down 300ms var(--ease-precise) 120ms reverse both;
+}
+::view-transition-old(avalen-header):only-child {
+  animation: route-out 140ms linear both;
+}
+::view-transition-new(avalen-header):only-child {
+  animation: route-in 260ms var(--ease-precise) 120ms both;
+}
+::view-transition-old(session-hero),
+::view-transition-new(session-hero) {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+@keyframes route-out {
+  to { opacity: 0; }
+}
+@keyframes route-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@keyframes route-tab-out {
+  to { opacity: 0; transform: translateX(-10px); }
+}
+@keyframes route-tab-out-back {
+  to { opacity: 0; transform: translateX(10px); }
+}
+@keyframes route-tab-in {
+  from { opacity: 0; transform: translateX(18px); }
+}
+@keyframes route-tab-in-back {
+  from { opacity: 0; transform: translateX(-18px); }
+}
+@keyframes route-push-in {
+  from { transform: translateX(100%); }
+}
+@keyframes route-push-out {
+  to { transform: translateX(100%); }
+}
+@keyframes route-under-out {
+  to { opacity: 0.3; transform: translateX(-22%); }
+}
+@keyframes route-under-in {
+  from { opacity: 0.3; transform: translateX(-22%); }
+}
+@keyframes route-bar-down {
+  to { opacity: 0; transform: translateY(100%); }
+}
+/* Browsers without view transitions get one quiet settle. */
+@keyframes motion-context-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@supports not (view-transition-name: avalen-content) {
+  .page {
+    animation: motion-context-in var(--motion-panel) var(--ease-precise) both;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after,
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+[data-motion="reduced"] *,
+[data-motion="reduced"] *::before,
+[data-motion="reduced"] *::after,
+[data-motion="reduced"]::view-transition-group(*),
+[data-motion="reduced"]::view-transition-old(*),
+[data-motion="reduced"]::view-transition-new(*) {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
+}
+.resume-dock > i,
+.resume-progress > i {
+  width: 100%;
+  transform-origin: left;
+  transition: transform var(--motion-screen) var(--ease-precise);
+}
+.memory-timeline {
+  padding-left: 12px;
+  border-left: 1px solid var(--line);
+}
+.memory-entry {
+  position: relative;
+}
+.memory-entry::before {
+  content: "";
+  position: absolute;
+  top: 24px;
+  left: -17px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  border: 2px solid var(--bg);
+}
+.memory-compare > div:last-child {
+  border-top: 2px solid var(--green);
+}
+.home-week-goal {
+  margin: -12px 0 28px;
+}
+.weekly-track {
+  height: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+.weekly-track > i {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  transform-origin: left;
+}
+.weekly-complete {
+  display: block;
+  padding-top: 10px;
+  font-size: 11px;
+  color: var(--green);
+}
+.goal-earned .weekly-complete {
+  animation: motion-confirm var(--motion-earned) var(--ease-precise) both;
+}

@@ -1,0 +1,36 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+output/
+.DS_Store
+.env
+.env.*
+!.env.example
+.avalen-data/
+
+# Build and test output
+build/
+coverage/
+.vite/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Keys, certificates and credentials (never commit these)
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+secrets*
+
+# Local databases outside the data folder
+*.sqlite
+*.sqlite3
+*.db
+
+# Personal editor and assistant settings
+.claude/settings.local.json
+.vscode/
+.idea/

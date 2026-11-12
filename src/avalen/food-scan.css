@@ -1,0 +1,28 @@
+/* Food logging: barcode entry, scanner and Arabic names in results. */
+.food-scan-entry { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 64px; margin: 4px 0 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); color: var(--text); text-align: left; transition: transform 140ms cubic-bezier(.16, 1, .3, 1), border-color 160ms ease; }
+.food-scan-entry:active { transform: scale(.98); }
+.food-scan-entry > span { flex: 1; min-width: 0; }
+.food-scan-entry b { display: block; font-size: 14px; }
+.food-scan-entry small { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+.food-ar { display: inline-block; margin-left: 8px; font-weight: 500; font-size: .92em; color: var(--muted); }
+
+.barcode-scan { display: grid; gap: 14px; animation: food-in 360ms cubic-bezier(.16, 1, .3, 1) both; }
+@keyframes food-in { from { transform: translateY(8px); opacity: 0; } }
+.barcode-viewfinder { position: relative; aspect-ratio: 4 / 3; border-radius: 18px; overflow: hidden; background: #000; }
+.barcode-viewfinder video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.barcode-frame { position: absolute; inset: 28% 12%; border: 2px solid #fff; border-radius: 14px; box-shadow: 0 0 0 999px #0007; }
+.barcode-laser { position: absolute; left: 14%; right: 14%; top: 50%; height: 2px; background: var(--green); box-shadow: 0 0 12px var(--green); animation: food-laser 1.6s ease-in-out infinite alternate; }
+@keyframes food-laser { from { transform: translateY(-34px); } to { transform: translateY(34px); } }
+.barcode-viewfinder p { position: absolute; left: 0; right: 0; bottom: 12px; margin: 0; text-align: center; color: #fff; font-size: 13px; }
+.barcode-entry { display: flex; align-items: flex-end; gap: 8px; }
+.barcode-entry label { flex: 1; min-width: 0; display: grid; gap: 6px; font-size: 12px; color: var(--muted); }
+.barcode-entry input { min-height: 48px; padding: 0 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--card); color: var(--text); font-size: 18px; letter-spacing: .06em; font-variant-numeric: tabular-nums; }
+.barcode-entry input { width: 100%; min-width: 0; }
+.barcode-scan .barcode-entry .primary { flex: none; width: auto; min-height: 48px; margin: 0; padding: 0 16px; border-radius: 14px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; }
+.barcode-status { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 13px; color: var(--text); }
+.barcode-status i { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line); border-top-color: var(--text); animation: food-spin 700ms linear infinite; }
+@keyframes food-spin { to { transform: rotate(360deg); } }
+.barcode-note { font-size: 12px; margin: 0; }
+.barcode-back { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; justify-self: start; }
+@media (prefers-reduced-motion: reduce) { .barcode-scan, .barcode-laser { animation: none; } }
+[data-motion="reduced"] .barcode-scan, [data-motion="reduced"] .barcode-laser { animation: none; }

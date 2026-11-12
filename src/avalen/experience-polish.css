@@ -1,0 +1,247 @@
+/* Premium refinement of existing components: clear tasks, quiet context, honest feedback. */
+:root { --text-xs:12px; --text-sm:13px; --motion-screen:240ms; }
+.app-shell { -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+.page-heading { margin-bottom:26px; }
+.page-heading h1 { font-size:clamp(28px,3vw,40px); line-height:1.18; letter-spacing:-.045em; text-wrap:balance; }
+.page-heading > p { font-size:13px; line-height:1.65; margin-top:10px; max-width:60ch; }
+.section-head h2 { font-size:16px; line-height:1.4; font-weight:600; letter-spacing:-.02em; }
+.card { border-radius:var(--radius-card); }
+.field { font-size:13px; line-height:1.5; }
+.field > span { color:var(--muted); }
+.field input,.field select,.field textarea { font-size:16px; color:var(--text); background:var(--surface-inset); border-color:var(--line); border-radius:3px; }
+.field textarea { line-height:1.6; resize:vertical; }
+.field input::placeholder,.field textarea::placeholder { color:var(--muted); opacity:.8; }
+.search { min-height:50px; border-radius:3px; background:var(--surface-inset); border:1px solid var(--line); }
+.search input { font-size:16px; color:var(--text); }
+.page .fine-print,.modal .fine-print { font-size:12px; line-height:1.6; }
+.text-link { min-height:44px; font-size:13px; }
+.icon-btn { min-width:44px; min-height:44px; }
+button:focus-visible,summary:focus-visible,a:focus-visible { outline:2px solid var(--text); outline-offset:4px; }
+.primary:disabled,.secondary:disabled { cursor:not-allowed; }
+.page .simple-row { min-height:68px; }
+.simple-row > span > small { font-size:12px; line-height:1.5; }
+.simple-row > span > b { font-size:14px; line-height:1.5; }
+:is(.card,.simple-row,.exercise-row,.editorial-session,.theme-option,.review-queue-item) button:active:not(:disabled),button:is(.simple-row,.exercise-row,.editorial-session,.theme-option,.client-card):active:not(:disabled) { transform:scale(.995); }
+:is(.icon-btn,.set-adjust button):active:not(:disabled) { transform:scale(.95); }
+/* Work first; programme commentary and schedule adjustments follow. */
+.page-plan .program-title { margin-bottom:16px; }
+.page-plan > .week-strip { margin-top:0; }
+.training-start-action { margin:14px 0 4px; }
+.training-start-action .primary { width:100%; min-height:52px; }
+.page-plan .training-detail-link { margin:0 0 16px; min-height:44px; font-size:13px; }
+.training-exercise-list { margin-bottom:24px; }
+.training-exercise-list .exercise-row { min-height:92px; }
+.training-exercise-list .exercise-prescription { font-size:12px; }
+.programme-overview { margin:22px 0; border-block:1px solid var(--line); }
+.programme-overview > summary { display:flex; align-items:center; justify-content:space-between; min-height:76px; cursor:pointer; font-size:14px; }
+.programme-overview > summary small { display:block; margin-top:6px; font-size:12px; color:var(--muted); }
+.programme-overview .program-title { margin:0 0 18px; }
+.programme-overview[open] > summary > svg { transform:rotate(90deg); }
+/* Meals retain their plan and portion semantics. Search is always the first field. */
+.nutrition-target-context { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:8px; padding-top:14px; margin-top:14px; border-top:1px solid var(--line); font-size:13px; }
+.nutrition-target-context small { color:var(--muted); font-size:12px; }
+.food-logger-modal .search { margin:0 0 18px; }
+.food-logger-modal .recent-foods { padding-bottom:12px; margin-bottom:16px; border-bottom:1px solid var(--line); }
+.food-logger-modal .recent-foods button { padding-block:12px; min-height:64px; }
+.food-logger-modal .food-option > button:first-child { min-height:68px; }
+.food-logger-modal .food-option b { font-size:14px; }
+.food-logger-modal .food-option small { font-size:12px; line-height:1.5; }
+.nutrition-day-status { margin-bottom:18px; }
+.coach-meal-editor { padding:0 !important; }
+.coach-meal-editor > summary { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px; min-height:80px; cursor:pointer; }
+.coach-meal-editor > summary > span:first-child { min-width:0; }
+.coach-meal-editor > summary b { display:block; font-size:15px; }
+.coach-meal-editor > summary small { display:block; font-size:12px; line-height:1.5; color:var(--muted); margin-top:6px; }
+.coach-meal-editor > summary > span:last-child { display:flex; align-items:center; gap:8px; flex-shrink:0; font-size:12px; color:var(--muted); }
+.coach-meal-editor[open] > summary { border-bottom:1px solid var(--line); }
+.coach-meal-editor[open] > summary svg { transform:rotate(90deg); }
+.coach-meal-fields { padding:20px 18px 8px; }
+/* Profile is a useful identity block, not another full hero. */
+.you-profile { display:grid; grid-template-columns:48px minmax(0,1fr) auto; column-gap:14px; align-items:center; padding:20px; text-align:left; }
+.you-profile > .avatar { width:48px; height:48px; font-size:15px; grid-column:1; grid-row:1 / 3; margin:0; }
+.you-profile > h2 { grid-column:2; grid-row:1; margin:0; font-size:20px; line-height:1.3; }
+.you-profile > p { grid-column:2; grid-row:2; margin:6px 0 0; font-size:12px; line-height:1.5; }
+.you-profile > button { grid-column:3; grid-row:1 / 3; padding-inline:12px; font-size:12px; margin:0; }
+.settings-disclosure { margin:0 0 18px; border-block:1px solid var(--line); }
+.settings-disclosure > summary { position:relative; display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; min-height:64px; padding:14px 28px 14px 0; font-size:14px; cursor:pointer; }
+.settings-disclosure > summary small { flex-basis:100%; font-size:12px; color:var(--muted); }
+.settings-disclosure > summary > svg { position:absolute; right:0; top:22px; }
+.settings-disclosure[open] > summary > svg { transform:rotate(90deg); }
+.settings-disclosure .card { margin:12px 0 18px; }
+.settings-disclosure .empty { padding:20px 10px; min-height:0; }
+.appearance-settings { margin-top:22px; }
+.appearance-settings > p,.appearance-settings > small { font-size:12px; line-height:1.6; }
+/* Real-data shortcuts; missing body readings never become zero or disappear. */
+.progress-snapshot { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); border-block:1px solid var(--line); margin-bottom:24px; }
+.progress-snapshot > button { display:flex; flex-direction:column; align-items:flex-start; text-align:left; gap:9px; padding:18px 12px 18px 0; min-width:0; }
+.progress-snapshot > button + button { border-left:1px solid var(--line); padding-left:20px; }
+.progress-snapshot small { color:var(--muted); font-size:12px; }
+.progress-snapshot b { font-size:28px; font-weight:550; font-variant-numeric:tabular-nums; }
+.progress-snapshot em { font-size:12px; font-style:normal; color:var(--muted); font-weight:400; }
+.progress-snapshot span { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
+.progress-focus { padding:0 0 20px; }
+.progress-focus h2 { font-size:22px; line-height:1.3; }
+.progress-focus > p { margin-bottom:12px; font-size:13px; }
+.page-progress .stat > small { font-size:12px; line-height:1.6; }
+.page-progress .photo-add { min-height:110px; }
+/* Required check-in answers are in reach before optional reflection/audio. */
+.checkin-form-progress { display:flex; flex-wrap:wrap; align-items:center; gap:6px; padding:12px 0 18px; margin-bottom:16px; border-bottom:1px solid var(--line); font-size:13px; }
+.checkin-form-progress > span:not(.checkin-progress-dot) { display:block; flex-basis:100%; font-size:12px; color:var(--muted); padding-top:4px; }
+.checkin-form .checkin-field-required { font-size:11px; color:var(--accent-name); }
+.checkin-form .checkin-answer-field { margin-bottom:24px; }
+.checkin-form .checkin-answer-field > small { display:block; margin-top:7px; font-size:12px; line-height:1.5; }
+.checkin-reflection { margin-top:26px; border-top:1px solid var(--line); padding-top:20px; }
+.checkin-reflection h3 { font-size:16px; margin-bottom:16px; }
+.checkin-voice-disclosure { border-top:1px solid var(--line); margin-top:18px; }
+.checkin-voice-disclosure > summary { min-height:64px; cursor:pointer; font-size:13px; padding:14px 0; }
+.checkin-voice-disclosure > summary span { display:block; color:var(--muted); font-size:12px; margin:6px 0 0 16px; }
+.checkin-form .checkin-submit { z-index:3; }
+/* Consistent conversation on both sides, with an honest draft and delivery state. */
+.refined-messages { padding:18px; }
+.conversation-heading { display:flex; align-items:center; gap:12px; padding-bottom:16px; border-bottom:1px solid var(--line); }
+.conversation-heading > span:nth-child(2) { flex:1; min-width:0; }
+.conversation-heading .avatar { flex-shrink:0; width:36px; height:36px; font-size:12px; }
+.conversation-heading h2 { font-size:15px; font-weight:600; line-height:1.4; }
+.conversation-heading small { color:var(--muted); font-size:12px; display:block; margin-top:4px; }
+.conversation-privacy { color:var(--muted); font-size:11px; }
+.refined-messages .message-thread { height:clamp(180px,calc(var(--avalen-viewport-height,100dvh) - 540px),400px); max-height:none; min-height:0; overflow:auto; padding:16px 0; display:flex; flex-direction:column; gap:12px; scrollbar-width:thin; scroll-padding:14px; overscroll-behavior:contain; }
+.message-date { display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:11px; margin:2px 0 4px; }
+.refined-messages .message { max-width:88%; border-radius:10px 10px 10px 2px; padding:12px 14px; background:var(--surface-inset); color:var(--text); border:1px solid var(--line); margin:0; flex-shrink:0; }
+.refined-messages .message.mine { border-radius:10px 10px 2px 10px; background:var(--accent-soft); border-color:var(--accent-line); }
+.refined-messages .message > p { font-size:13px; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
+.refined-messages .message > small { font-size:10px; color:var(--muted); display:flex; gap:5px; align-items:center; justify-content:flex-end; margin-top:8px; }
+.refined-messages .message blockquote { font-size:12px; color:var(--muted); border-color:var(--accent-name); }
+.refined-messages .message-compose { display:flex; gap:6px; align-items:flex-end; border:1px solid var(--line); background:var(--surface-inset); border-radius:4px; padding:4px; margin-top:6px; }
+.refined-messages .message-compose textarea { flex:1; width:100%; min-width:0; height:44px; min-height:44px; max-height:120px; resize:none; font-size:16px; line-height:1.45; border:0; border-radius:0; color:var(--text); background:transparent; padding:10px 4px; box-shadow:none; overflow:auto; }
+.refined-messages .message-compose .icon-btn { flex-shrink:0; width:44px; height:44px; border:0; background:transparent; color:var(--text); }
+.refined-messages .message-compose button:disabled { color:var(--muted); opacity:.5; }
+.refined-messages .message-compose button[type='submit']:not(:disabled) { background:var(--primary); color:var(--on-primary); border-radius:2px; }
+.message-status { min-height:24px; padding-top:8px; font-size:11px; color:var(--muted); line-height:1.5; }
+.message-attachment { display:flex; gap:8px; align-items:center; padding:4px 0; font-size:12px; }
+.message-attachment > span { flex:1; overflow-wrap:anywhere; }
+.message-jump { display:flex; gap:6px; justify-content:center; align-items:center; min-height:36px; width:100%; color:var(--accent-name); font-size:12px; }
+.saved-replies { border-top:1px solid var(--line); margin-top:8px; }
+.saved-replies > summary { display:flex; align-items:center; gap:6px; min-height:38px; color:var(--muted); font-size:12px; cursor:pointer; }
+.saved-replies .field { margin:8px 0 14px; }
+.inbox-client-list > button { min-height:74px; }
+/* Native dialogs follow the actual mobile viewport, including the keyboard. */
+.modal { inset-block-start:var(--avalen-viewport-top,0px); inset-block-end:max(0px,calc(100dvh - var(--avalen-viewport-top,0px) - var(--avalen-viewport-height,100dvh))); max-height:calc(var(--avalen-viewport-height,100dvh) - 24px); }
+.modal > header { min-height:62px; padding:10px 20px; }
+.modal > header h2 { font-size:16px; line-height:1.4; }
+.modal-body { padding:22px; }
+.modal[aria-busy='true'] > header .icon-btn { opacity:.45; }
+.modal .notice { font-size:13px; line-height:1.6; }
+@media (max-width:760px) {
+ .page-inbox .inbox-client-list { display:none; }
+ .page-inbox .refined-messages .message-thread { height:clamp(140px,calc(var(--avalen-viewport-height,100dvh) - 700px),340px); }
+ .page-inbox .inbox-workspace { margin-top:18px; }
+ .you-profile { padding:18px; grid-template-columns:44px minmax(0,1fr); }
+ .you-profile > button { grid-column:2; grid-row:3; justify-self:start; margin-top:10px; min-height:36px; padding:0; border:0; text-decoration:underline; text-underline-offset:4px; }
+ .you-profile > .avatar { width:44px; height:44px; align-self:start; }
+ .you-profile > h2 { font-size:19px; }
+ .page .home-essentials small { font-size:11px; }
+ .page .home-section-label { font-size:11px; }
+ .page .editorial-session-meta,.page .editorial-session-duration { font-size:12px; }
+ .page .home-training-summary { font-size:12px; }
+}
+@media (max-width:600px) {
+ .focused-workout { height:var(--avalen-viewport-height,100dvh); max-height:var(--avalen-viewport-height,100dvh); }
+ .modal:not(.focused-workout) { width:calc(100% - 20px); }
+}
+@media (max-width:360px) {
+ .modal-body { padding:18px; }
+ .progress-snapshot b { font-size:25px; }
+ .coach-meal-editor > summary { gap:10px; padding:16px; }
+ .refined-messages { padding:14px; }
+ .conversation-privacy { display:none; }
+}
+:root[data-keyboard='open'] .bottom-nav { visibility:hidden; }
+:root[data-keyboard='open'] .edit-save-bar { bottom:0; }
+@media (prefers-reduced-motion:reduce) { .refined-messages .message-thread { scroll-behavior:auto; } }
+[data-motion='reduced'] .refined-messages .message-thread { scroll-behavior:auto; }
+.checkin-answers { border:0; padding:0; margin:0; min-width:0; }
+.checkin-answers > p { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:12px; }
+.feature-loading { min-height:112px; padding:20px; border:1px solid var(--line); }
+.feature-loading > span { display:block; height:20px; width:45%; margin-bottom:16px; }
+.feature-loading > p { color:var(--muted); font-size:13px; }
+.training-exercise-list .exercise-row { display:grid; grid-template-columns:58px minmax(0,1fr) 18px; gap:14px; padding:16px 0; text-align:left; }
+.training-exercise-list .exercise-photo-number { position:relative; display:block; width:58px; height:70px; }
+.training-exercise-list .exercise-photo-number .exercise-thumb { width:58px; height:70px; object-fit:cover; display:block; border-radius:2px; filter:grayscale(.35); }
+.training-exercise-list .exercise-photo-number > i { position:absolute; left:4px; bottom:4px; padding:2px 4px; font-size:10px; font-style:normal; background:#000b; color:#fff; }
+.training-exercise-list .exercise-row-copy { display:block; min-width:0; }
+.training-exercise-list .exercise-row-copy > .exercise-group { display:block; font-size:11px; color:var(--muted); margin-bottom:5px; }
+.training-exercise-list .exercise-row-copy > b { display:block; font-size:15px; font-weight:600; line-height:1.4; margin-bottom:7px; }
+.training-exercise-list .exercise-prescription { display:flex; flex-wrap:wrap; align-items:center; gap:5px 12px; font-size:12px; color:var(--muted); }
+.training-exercise-list .exercise-prescription strong { font-weight:400; color:var(--text); }
+.training-exercise-list .exercise-prescription > span { display:flex; gap:4px; align-items:center; }
+.training-exercise-list .exercise-row > svg:last-child { color:var(--muted); }
+.checkin-progress-dot { display:block; flex:0 0 12px; width:12px; height:12px; border:1px solid var(--muted); border-radius:50%; margin-right:3px; }
+.page-progress .photo-add { height:110px; }
+
+/* Flow continuity: a clear position, one next action, and finite confirmation. */
+.home-priority .resume-dock { margin:0; width:100%; }
+.flow-back { display:flex; align-items:center; gap:8px; min-height:44px; font-size:13px; color:var(--muted); margin:-6px 0 14px; }
+.flow-back:hover { color:var(--text); }
+.week-rhythm { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; margin:18px 0 26px; }
+.week-rhythm > button { display:grid; justify-items:center; gap:9px; padding:12px 0 10px; border:1px solid transparent; border-radius:4px; min-height:83px; }
+.week-rhythm small { font-size:10px; color:var(--muted); }
+.week-rhythm > button > span { height:22px; display:grid; place-items:center; font-size:14px; font-variant-numeric:tabular-nums; }
+.week-rhythm i { width:3px; height:3px; border-radius:50%; background:var(--line); }
+.week-rhythm .is-planned i { background:var(--text); }
+.week-rhythm .is-complete { color:var(--green); }
+.week-rhythm .is-complete i { background:var(--green); }
+.week-rhythm > [aria-current='date'] { background:var(--surface-raised); border-color:var(--line); }
+.week-rhythm > [aria-current='date'] small { color:var(--text); }
+.review-next-label { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 18px; color:var(--accent-name); font-size:10px; letter-spacing:.14em; }
+.review-next-label > span { font-size:11px; letter-spacing:0; color:var(--muted); }
+.coach-task-workspace .review-queue-next { border-top:1px solid var(--accent-line); }
+.review-queue-next > .button-row > .primary { min-height:46px; }
+.review-queue-person b { font-size:15px; }
+.review-client-navigation button { min-height:44px; }
+.logger-exercise-rail { display:flex; gap:7px; overflow:auto; scrollbar-width:none; padding:4px 0 10px; margin-bottom:4px; }
+.logger-exercise-rail > button { position:relative; flex:1 0 42px; max-width:80px; min-height:40px; border:1px solid transparent; color:var(--muted); border-radius:3px; overflow:hidden; }
+.logger-exercise-rail > button > span { display:grid; place-items:center; min-height:36px; font-size:11px; font-variant-numeric:tabular-nums; }
+.logger-exercise-rail > button > i { position:absolute; bottom:0; inset-inline:0; height:2px; background:var(--muted); transform-origin:left; transition:transform var(--motion-state) var(--ease-precise); }
+.logger-exercise-rail > button[aria-current='step'] { background:var(--surface-raised); border-color:var(--line); color:var(--text); }
+.logger-exercise-rail > button.is-logged { color:var(--green); }
+.logger-exercise-rail > button.is-logged > i { background:var(--green); }
+.logger-exercise-rail > button.is-handled { color:var(--muted); }
+.focused-workout .logger-workout-heading { padding-top:2px; }
+.focused-workout .logger-workout-heading > span { font-size:10px; letter-spacing:.1em; }
+.focused-workout .set-editor { animation:set-input-ready 180ms var(--ease-precise) backwards; }
+@keyframes set-input-ready { from { opacity:.5; transform:translateY(4px); } to { opacity:1; transform:translateY(0); } }
+.logger-set-row.just-saved .set-number { color:var(--green); }
+.logger-set-row.just-saved .set-result { animation:saved-set-confirm 240ms var(--ease-precise); }
+@keyframes saved-set-confirm { from { opacity:.4; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
+.logger-feedback > svg { stroke-dasharray:40; stroke-dashoffset:0; animation:draw-confirm 260ms var(--ease-precise) backwards; }
+@keyframes draw-confirm { from { stroke-dashoffset:40; opacity:.5; } to { stroke-dashoffset:0; opacity:1; } }
+.workout-review-title { font-size:26px; line-height:1.2; letter-spacing:-.04em; margin:12px 0 24px; }
+.workout-review-totals { display:grid; grid-template-columns:1fr 1fr; gap:24px; padding-bottom:24px; border-bottom:1px solid var(--line); }
+.workout-review-totals > span { display:grid; gap:8px; font-size:12px; color:var(--muted); }
+.workout-review-totals b { font-size:30px; font-weight:550; line-height:1.2; color:var(--text); font-variant-numeric:tabular-nums; letter-spacing:-.03em; }
+.workout-review-totals b small { font-size:13px; letter-spacing:0; font-weight:400; }
+.workout-review-list { margin:8px 0 20px; }
+.workout-review-list > div { display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--line); padding:12px 0; min-height:72px; }
+.workout-review-list > div > span:nth-child(2) { flex:1; min-width:0; }
+.workout-review-list b { display:block; font-size:14px; line-height:1.4; }
+.workout-review-list small { display:block; font-size:12px; line-height:1.5; margin-top:5px; color:var(--muted); }
+.workout-review-list .text-link { display:flex; gap:4px; align-items:center; font-size:12px; flex-shrink:0; }
+.review-exercise-check { display:grid; place-items:center; width:22px; height:22px; flex-shrink:0; color:var(--muted); border:1px solid var(--line); border-radius:50%; }
+.review-exercise-check > span { width:4px; height:4px; background:var(--muted); border-radius:50%; }
+.review-exercise-check.is-complete { color:var(--green); border-color:var(--green); }
+.workout-review-actions { position:sticky; bottom:-22px; display:flex; flex-direction:column; padding:16px 0 12px; background:var(--card); border-top:1px solid var(--line); margin-bottom:-22px; }
+.workout-review-actions > button { width:100%; min-height:48px; }
+@media (max-width:360px) {
+ .week-rhythm { gap:3px; }
+ .week-rhythm small { font-size:9px; }
+ .logger-exercise-rail { gap:5px; }
+ .logger-exercise-rail > button { flex-basis:36px; }
+ .workout-review-title { font-size:23px; }
+ .workout-review-totals b { font-size:26px; }
+}
+@media (prefers-reduced-motion:reduce) {
+ .focused-workout .set-editor,.logger-set-row.just-saved .set-result,.logger-feedback > svg { animation:none; }
+}
+[data-motion='reduced'] .focused-workout .set-editor,[data-motion='reduced'] .logger-set-row.just-saved .set-result,[data-motion='reduced'] .logger-feedback > svg { animation:none; }
+/* Preserve form layout while disabling all fields during an acknowledged save. */
+.save-fields { display: contents; }

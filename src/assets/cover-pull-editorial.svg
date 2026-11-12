@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0a0a0c"/><stop offset="1" stop-color="#3d2b49"/></linearGradient>
+    <linearGradient id="line" x1="0" x2="1"><stop stop-color="#b69ac2" stop-opacity="0"/><stop offset=".5" stop-color="#d8c7de" stop-opacity=".45"/><stop offset="1" stop-color="#8d6b9e" stop-opacity="0"/></linearGradient>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="3"/><feColorMatrix values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 .11 0"/></filter>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <g transform="rotate(-18 600 450)">
+    <rect x="-100" y="180" width="1400" height="110" fill="#6d4e7e" opacity=".16"/>
+    <rect x="-100" y="380" width="1400" height="2" fill="url(#line)"/>
+    <rect x="-100" y="545" width="1400" height="70" fill="#d7c5dc" opacity=".09"/>
+    <rect x="-100" y="710" width="1400" height="2" fill="url(#line)"/>
+  </g>
+  <circle cx="900" cy="240" r="180" fill="#9b77ad" opacity=".08"/>
+  <rect width="1200" height="900" filter="url(#grain)" opacity=".4"/>
+</svg>

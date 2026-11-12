@@ -1,0 +1,42 @@
+# Avalen — essential flow refinement
+
+This pass preserves the existing editorial identity, programme structure, persisted records, optional connected service, and client/coach features. It changes the hierarchy and interaction of frequent tasks.
+
+## Problems addressed
+
+- The home page repeated links to training and recovery, while check-ins were visible only when due. Large upcoming session cards made daily actions feel scattered.
+- The workout logger placed the active editor within the set list. Every logged set moved the next editor downward. Small checkmarks carried too much meaning: submit, saved, undo, and planned.
+- Every typed character in an active set saved an entire workspace, including a server update in connected mode.
+- Coaches saw ten horizontally scrolling client sections with equal priority. Generic review buttons did not explain their destination.
+- Dashboard review flags and roster attention flags disagreed. Pending technique videos were missing from the main work queue.
+
+## Resulting flows
+
+**Client:** Home → today's workout or resume → daily check-in/habits → nutrition. Upcoming workouts use compact image rows. Duplicate recovery and programme links are consolidated; messaging remains accessible from the header and the coach note.
+
+**Workout:** View the target and coach cue → adjust two clearly labelled working values → tap the full-width Log set button → rest or continue → see the next set in the same working area → move to the named next exercise. History stays below the active editor, with separate Edit and Undo controls. A named exercise picker shows actual completion and skipped sets. Finish review explains remaining work before saving.
+
+**Nutrition:** Home → Log this meal → confirm the portion → save. Opening the coach plan reveals the meal plan immediately. Existing photo, food library, manual, correction and removal/undo workflows remain.
+
+**Coach:** Dashboard → filter All / Check-ins / Messages / Technique → a specific review action → the selected client's correct section. Client workspaces keep five daily sections in view, with Intelligence, FormLab, Coaching Memory, Billing and Documents under More sections. Existing deep links to secondary sections still reveal the selected section. Plan tools separate Programme, Schedule and Habits; pending schedule approvals open the Schedule view directly. Programme days expand on demand.
+
+## Data behavior
+
+Saved workout sets, workout completion, check-ins, nutrition and prescriptions still use their existing authoritative store and service paths. Corrections wait for save acknowledgment before closing their editor. Duplicate-tap protection remains.
+
+Unlogged set values use a small device draft keyed by workout, exercise and set. This makes typing independent of a full workspace/server save while retaining immediate refresh recovery. Pausing or changing exercises also merges pending values into the normal workout draft. Set-specific matching prevents previous typed values from replacing later sets; logging, swapping, undoing and completing clear the corresponding device draft. Storage failures show inline feedback. These are unpublished input values; cross-device synchronization of an unfinished input is not promised.
+
+The shared review model uses real unreviewed check-ins, pending FormLab submissions, pending schedule approvals, unread messages and existing attention rules. It respects paused clients and snoozes. Dashboard, roster filters/status and client overview use the same result.
+
+No backend schema changes or new dependencies are required. AI services remain deferred as requested.
+
+## Verification
+
+- Production build passes; no new dependencies.
+- 47 unit and service checks pass.
+- The final focused client/coach/phone run passed 36/36 browser scenarios across Chrome and WebKit, including immediate input refresh recovery, set corrections, exercise switching, quick meal logging, check-in customization and trends, client sections, and plan tools.
+- Connected-account regression passed 6/6: schedule approval, Intelligence/Coaching Memory, nutrition logging and workout completion in both browsers.
+- Rest pause/extend/resume regression passed 2/2 in both browsers, preserving saved performance after reload.
+- The initial broader visual/navigation/nutrition regression passed 53/54. A WebKit test-proxy connection reset interrupted its LAN test; bounded retries were added to the test transport, and that scenario passed in the final focused run. All 90 distinct browser scenarios exercised across these verification runs passed; this is not a single 90-case final run.
+- Mobile viewports of 320/390 pixels, desktop layouts, both appearance themes, browser Back, and existing saved draft recovery were exercised. Physical-device comfort and keyboard behavior still benefit from the user's phone pass.
+- Ten screenshots and a before/after gallery are available at `/output/essential-flows/index.html`, generated by `tools/capture-essential-flows.mjs` in isolated browser profiles. The Mac's and user's phone's saved records were not altered.

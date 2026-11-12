@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script src="/theme.js"></script>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#000000" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; media-src 'self' blob:; connect-src 'self' https://world.openfoodfacts.org ws://127.0.0.1:* ws://localhost:*; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta
+      name="description"
+      content="Avalen — coaching that sees what matters."
+    />
+    <link rel="icon" href="/app-icon.svg" />
+    <link rel="apple-touch-icon" href="/app-icon.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Avalen — Coaching that sees what matters</title>
+    <style>
+      /* Inline so the mark is already drawing before the app has loaded. */
+      .brand-mark { display: block; width: 48px; height: 48px; fill: none; stroke: currentColor; }
+      .brand-mark circle { stroke-width: 2.4; stroke-linecap: round; stroke-dasharray: 283 283; animation: mark-ring 1200ms cubic-bezier(.45,.05,.55,.95) infinite; }
+      .brand-mark path { stroke-width: 5.5; stroke-miterlimit: 10; stroke-dasharray: 90 90; animation: mark-letter 1200ms cubic-bezier(.65,0,.35,1) infinite; }
+      @keyframes mark-ring {
+        0% { stroke-dasharray: 0 283; stroke-dashoffset: 0; }
+        45% { stroke-dasharray: 84 283; stroke-dashoffset: -125; }
+        80%, 100% { stroke-dasharray: 283 0; stroke-dashoffset: -283; }
+      }
+      @keyframes mark-letter {
+        0%, 28% { stroke-dashoffset: 90; }
+        78%, 100% { stroke-dashoffset: 0; }
+      }
+      #boot { position: fixed; inset: 0; z-index: 61; display: grid; place-items: center; background: #000; color: #fff; pointer-events: none; transition: opacity 380ms ease; }
+      #boot .brand-mark { width: 92px; height: 92px; transition: transform 380ms ease; }
+      #boot.is-leaving { opacity: 0; }
+      #boot.is-leaving .brand-mark { transform: scale(1.06); }
+      #boot.is-leaving .brand-mark * { animation-play-state: paused; }
+      /* Launch: once the mark is drawn, the name opens out of it. */
+      #boot .boot-lockup { display: flex; align-items: center; }
+      #boot .boot-word { display: block; overflow: hidden; white-space: nowrap; max-width: 0; margin-left: 0; opacity: 0; clip-path: inset(0 100% 0 0); font: 750 30px/1 'Manrope', -apple-system, 'Helvetica Neue', Arial, sans-serif; letter-spacing: .5em; transition: max-width 900ms cubic-bezier(.16,1,.3,1), margin 900ms cubic-bezier(.16,1,.3,1), clip-path 980ms cubic-bezier(.16,1,.3,1) 80ms, letter-spacing 1200ms cubic-bezier(.16,1,.3,1), opacity 260ms ease 80ms; }
+      #boot.is-naming .brand-mark { width: 58px; height: 58px; transition: width 900ms cubic-bezier(.16,1,.3,1), height 900ms cubic-bezier(.16,1,.3,1), transform 380ms ease; }
+      #boot.is-naming .brand-mark * { animation: none; }
+      #boot.is-naming .boot-word { max-width: 6.4em; margin-left: 20px; margin-right: -.22em; opacity: 1; clip-path: inset(0 0 0 0); letter-spacing: .22em; }
+      @media (max-width: 360px) { #boot .boot-word { font-size: 24px; } }
+      @media (prefers-reduced-motion: reduce) {
+        .brand-mark circle, .brand-mark path { animation: none; }
+        #boot, #boot .brand-mark, #boot .boot-word { transition: none !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="boot" aria-hidden="true"><div class="boot-lockup"><svg class="brand-mark" viewBox="0 0 100 100"><circle cx="50" cy="50" r="45" transform="rotate(-60 50 50)"/><path d="M29.5 72 50 33 70.5 72"/></svg><span class="boot-word">AVALEN</span></div></div>
+    <div id="root"></div>
+    <script type="module" src="/src/avalen/main.jsx"></script>
+  </body>
+</html>

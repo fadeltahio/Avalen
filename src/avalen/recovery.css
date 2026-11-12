@@ -1,0 +1,86 @@
+/* Live recovery stays a dark instrument in both themes: colour reads as heat only
+   against black. Green, amber and red are data here, not decoration. */
+.recovery-card {
+  --rec-hot: #ff5b4d;
+  --rec-warm: #f4c44e;
+  --rec-ready: #57dc9a;
+  --rec-idle: #2e2e2e;
+  --rec-muted: #a3a3a3;
+  --rec-line: #ffffff1f;
+  display: block;
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid var(--rec-line);
+  border-radius: 14px;
+  background: radial-gradient(120% 70% at 30% 0%, #2a120f 0%, #0c0c0c 58%);
+  color: #fff;
+  text-align: left;
+}
+.recovery-card.is-compact { padding: 16px; }
+.recovery-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; color: #efe9dc; font-size: 12px; font-weight: 700; letter-spacing: .14em; }
+.recovery-heading > span { display: inline-flex; align-items: center; gap: 10px; }
+.recovery-heading > span::before { content: ""; width: 3px; height: 15px; border-radius: 2px; background: var(--rec-hot); }
+.recovery-pressure { margin: 0 0 14px; padding: 10px 12px; border-left: 2px solid var(--rec-warm); background: #f4c44e12; color: #f1e7cf; font-size: 13px; line-height: 1.5; }
+.recovery-pressure b { color: #fff; font-weight: 600; }
+.recovery-main { display: grid; grid-template-columns: minmax(0, 46%) minmax(0, 1fr); gap: 14px; align-items: center; }
+.recovery-compact { display: grid; grid-template-columns: minmax(0, 52%) minmax(0, 1fr); gap: 12px; align-items: center; }
+.recovery-bodies { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+
+.recovery-stage { position: relative; display: grid; gap: 12px; padding: 12px 10px; overflow: hidden; border: 1px solid var(--rec-line); border-radius: 12px; background: #000; perspective: 900px; }
+.recovery-stage::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 54px;
+  background: linear-gradient(180deg, transparent, #57dc9a2e 72%, #57dc9a99 98%, transparent);
+  pointer-events: none;
+  animation: body-scan 1200ms var(--ease-precise) 120ms both;
+}
+.body-flip { position: relative; transform-style: preserve-3d; transition: transform 640ms var(--ease-settle); }
+.recovery-stage[data-side="back"] .body-flip { transform: rotateY(180deg); }
+.body-face { backface-visibility: hidden; }
+.body-face.is-back { position: absolute; inset: 0; transform: rotateY(180deg); }
+.body-svg { display: block; width: 100%; height: auto; overflow: visible; }
+.body-base { fill: #1f1f1f; }
+.body-muscle { cursor: pointer; transform-box: fill-box; transform-origin: center; animation: muscle-in 560ms var(--ease-settle) both; animation-delay: calc(var(--i) * 34ms + 160ms); }
+.body-muscle path { fill: var(--rec-idle); stroke: #000; stroke-width: .6; transition: fill 620ms ease, opacity var(--motion-state) ease; }
+.body-muscle.is-ready path { fill: var(--rec-ready); }
+.body-muscle.is-recovering path { fill: var(--rec-warm); }
+.body-muscle.is-hot path { fill: var(--rec-hot); }
+.body-muscle.is-hot { filter: drop-shadow(0 0 5px #ff5b4d8c); }
+.body-muscle.is-hot path { animation: muscle-heat 1700ms ease-in-out 1100ms 3; }
+.body-muscle.is-dimmed path { opacity: .28; }
+.body-muscle.is-selected { filter: drop-shadow(0 0 6px #ffffff8c); }
+
+.recovery-segments { position: relative; display: grid; grid-template-columns: repeat(var(--count), minmax(0, 1fr)); padding: 3px; border: 1px solid var(--rec-line); border-radius: 999px; background: #0000005c; }
+.recovery-segments > i { position: absolute; inset-block: 3px; left: 3px; width: calc((100% - 6px) / var(--count)); border-radius: 999px; background: #ffffff21; transform: translateX(calc(var(--active) * 100%)); transition: transform 320ms var(--ease-settle); }
+.recovery-segments > button { position: relative; z-index: 1; min-height: 38px; border: 0; background: none; color: var(--rec-muted); font-size: 12px; font-weight: 600; }
+.recovery-segments > button[aria-pressed="true"] { color: #fff; }
+.recovery-card > .recovery-segments { margin-top: 14px; }
+
+.recovery-list { display: grid; gap: 2px; min-width: 0; }
+.recovery-row { display: grid; grid-template-columns: 11px minmax(0, 1fr); gap: 11px; align-items: center; width: 100%; min-height: 46px; padding: 3px 4px; border: 0; border-radius: 8px; background: none; color: #fff; text-align: left; animation: row-in 420ms var(--ease-precise) both; animation-delay: calc(var(--i) * 45ms); }
+.recovery-row > i, .recovery-legend i { display: block; width: 10px; height: 10px; border-radius: 50%; background: var(--rec-idle); box-shadow: inset 0 0 0 1px #ffffff2e; }
+.recovery-row.is-ready > i, .recovery-legend .is-ready i { background: var(--rec-ready); }
+.recovery-row.is-recovering > i, .recovery-legend .is-recovering i { background: var(--rec-warm); }
+.recovery-row.is-hot > i, .recovery-legend .is-hot i { background: var(--rec-hot); box-shadow: 0 0 9px #ff5b4d; }
+.recovery-row b { display: block; font-size: 15px; font-weight: 600; }
+.recovery-row small { display: block; margin-top: 1px; color: var(--rec-muted); font-size: 12px; }
+.recovery-row.is-selected { background: #ffffff14; }
+.recovery-detail { margin-top: 12px; padding: 12px; border-radius: 10px; background: #ffffff0f; animation: row-in 280ms var(--ease-precise) both; }
+.recovery-detail b { font-size: 14px; }
+.recovery-detail p { margin: 4px 0 0; color: #d6d6d6; font-size: 13px; line-height: 1.5; }
+.recovery-legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px; margin-top: 14px; color: var(--rec-muted); font-size: 12px; }
+.recovery-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.recovery-empty, .recovery-note { margin: 10px 0 0; color: var(--rec-muted); font-size: 12px; line-height: 1.5; text-align: center; }
+.recovery-card.is-compact .recovery-empty { text-align: left; }
+.recovery-card.is-compact .recovery-pressure { margin: 12px 0 0; }
+.recovery-card.is-compact .body-muscle { animation-delay: calc(var(--i) * 22ms); }
+
+@keyframes body-scan { 0% { transform: translateY(-60px); opacity: 1; } 90% { opacity: 1; } 100% { transform: translateY(420px); opacity: 0; } }
+@keyframes muscle-in { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: scale(1); } }
+@keyframes muscle-heat { 0%, 100% { opacity: 1; } 50% { opacity: .62; } }
+@keyframes row-in { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
