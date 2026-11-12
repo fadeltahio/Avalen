@@ -89,3 +89,10 @@
 .home-editor-list .icon-btn:disabled { opacity: .3; }
 .home-editor-heading { margin: 6px 0 0; font-size: 14px; }
 .home-editor-reset { display: flex; align-items: center; gap: 6px; margin: 14px auto 0; }
+
+.account-legal-links { margin: 18px 0 6px; color: var(--muted); font-size: 13px; }
+.account-legal-links a { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.account-delete { margin: 12px 0 18px; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.account-delete > summary { color: var(--red); cursor: pointer; font-weight: 600; }
+.account-delete > p { margin: 10px 0 0; font-size: 14px; line-height: 1.5; }
+.account-delete form { margin-top: 12px; }

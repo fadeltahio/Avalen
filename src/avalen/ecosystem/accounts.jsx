@@ -279,6 +279,8 @@ export function AccountSettings({ onClose }) {
           </details>
         </>
       )}
+      <p className="account-legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">Privacy policy</a> · <a href="/support.html" target="_blank" rel="noreferrer">Help & support</a></p>
+      <DeleteAccount role={account.user.role} />
       {error && <Notice>{error}</Notice>}
       <Button
         secondary
@@ -299,5 +301,47 @@ export function AccountSettings({ onClose }) {
         Sign out
       </Button>
     </Modal>
+  );
+}
+
+// Apple requires that people can delete their account from inside the app.
+function DeleteAccount({ role }) {
+  const [open, setOpen] = useState(false),
+    [password, setPassword] = useState(""),
+    [confirm, setConfirm] = useState(""),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const coach = role === "coach";
+  async function remove(e) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await request("/account/delete", { method: "POST", body: { password, confirm } });
+      location.replace("/");
+    } catch (cause) {
+      setError(cause.message);
+      setBusy(false);
+    }
+  }
+  return (
+    <details className="account-delete" open={open || undefined} onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary>Delete account</summary>
+      <p>
+        {coach
+          ? "This permanently deletes your coaching workspace: every client’s records, logins, photos, videos, voice notes, wearable readings and your Paymob connection. Your clients will no longer be able to sign in."
+          : "This permanently deletes your account and everything about you: workouts, check-ins, messages, photos, voice notes, measurements and wearable readings. Connected wearables are disconnected. Your coach keeps payment records without your personal details."}
+      </p>
+      <p className="muted">This can’t be undone.</p>
+      <form onSubmit={remove}>
+        <fieldset disabled={busy} className="save-fields">
+          <Field label="Your password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Field label="Type DELETE to confirm" autoComplete="off" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          {error && <p className="error" role="alert">{error}</p>}
+          <Button type="submit" disabled={confirm !== "DELETE" || !password}>{busy ? "Deleting…" : coach ? "Delete workspace and account" : "Delete my account"}</Button>
+        </fieldset>
+      </form>
+    </details>
   );
 }

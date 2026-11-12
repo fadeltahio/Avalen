@@ -405,5 +405,19 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
     return done;
   }
 
-  return { status, start, callback, sync, disconnect, upload, days, summary, webhook, runDue, configured };
+  // Account deletion: revoke access at each provider (best effort), then remove
+  // links, readings and pending sign-ins. clientId null means the whole workspace.
+  async function forget(ws, clientId = null) {
+    const where = clientId ? 'workspace_id=? AND client_id=?' : 'workspace_id=?';
+    const args = clientId ? [ws, clientId] : [ws];
+    for (const row of db.prepare(`SELECT * FROM wearable_links WHERE ${where}`).all(...args)) {
+      try {
+        if (row.provider === 'whoop') await call(`${WHOOP.api}/user/access`, { method: 'DELETE', headers: { Authorization: `Bearer ${await accessToken(row)}` } }, 'WHOOP');
+        else if (row.refresh_token) await call(GOOGLE.revoke, form({ token: box.open(row.refresh_token) }), 'Google');
+      } catch {}
+    }
+    for (const table of ['wearable_links', 'wearable_days', 'wearable_states']) db.prepare(`DELETE FROM ${table} WHERE ${where}`).run(...args);
+  }
+
+  return { status, start, callback, sync, disconnect, upload, days, summary, webhook, runDue, configured, forget };
 }

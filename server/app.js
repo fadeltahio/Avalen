@@ -37,6 +37,7 @@ import {
   memory,
 } from "../src/avalen/ecosystem/memory.js";
 import { createWorkspace, newClient } from "../src/avalen/seed.js";
+import { removeClientData } from "../src/avalen/account-deletion.js";
 import { parseWorkspace } from "../src/avalen/persistence.js";
 const exec = promisify(execFile),
   hash = (value) => createHash("sha256").update(value).digest("hex");
@@ -488,6 +489,58 @@ export function createService({
         "avalen_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0",
       );
       return { ok: true };
+    }
+    if (url.pathname === "/api/account/delete" && req.method === "POST") {
+      limit(req, "account-delete");
+      const input = await body(req, 4096);
+      if (input.confirm !== "DELETE") fail(400, "Type DELETE to confirm.");
+      const stored = db.prepare("SELECT password FROM users WHERE id=?").get(user.id);
+      if (typeof input.password !== "string" || !stored || !checkPassword(input.password, stored.password))
+        fail(401, "Your password is incorrect.");
+      const ws = user.workspace_id, clientId = user.role === "client" ? user.client_id : null;
+      await wearables.forget(ws, clientId);
+      const mediaRows = clientId
+        ? db.prepare("SELECT id FROM media WHERE workspace_id=? AND client_id=?").all(ws, clientId)
+        : db.prepare("SELECT id FROM media WHERE workspace_id=?").all(ws);
+      const ids = mediaRows.map((r) => r.id);
+      const files = [...ids, ...ids.flatMap((id) => db.prepare("SELECT child_id FROM media_links WHERE parent_id=?").all(id).map((r) => r.child_id))];
+      transaction(db, () => {
+        for (const id of ids) {
+          db.prepare("DELETE FROM media_access WHERE media_id=?").run(id);
+          db.prepare("DELETE FROM media_links WHERE parent_id=? OR child_id=?").run(id, id);
+          db.prepare("DELETE FROM media WHERE id=?").run(id);
+        }
+        if (clientId) {
+          // The client's login and everything about them; the coach keeps an anonymous entry.
+          const users = db.prepare("SELECT id FROM users WHERE workspace_id=? AND client_id=?").all(ws, clientId);
+          for (const u of users) {
+            db.prepare("DELETE FROM sessions WHERE user_id=?").run(u.id);
+            db.prepare("DELETE FROM requests WHERE user_id=?").run(u.id);
+            db.prepare("DELETE FROM users WHERE id=?").run(u.id);
+          }
+          db.prepare("DELETE FROM invitations WHERE workspace_id=? AND client_id=?").run(ws, clientId);
+          db.prepare("DELETE FROM jobs WHERE workspace_id=? AND json_extract(payload,'$.clientId')=?").run(ws, clientId);
+          const row = db.prepare("SELECT data FROM workspaces WHERE id=?").get(ws);
+          const data = removeClientData(foundations(JSON.parse(row.data)), clientId);
+          data.updatedAt = new Date().toISOString();
+          db.prepare("UPDATE workspaces SET data=?,revision=revision+1 WHERE id=?").run(JSON.stringify(data), ws);
+        } else {
+          // The owner deletes the whole workspace, including every client login.
+          for (const u of db.prepare("SELECT id FROM users WHERE workspace_id=?").all(ws)) {
+            db.prepare("DELETE FROM sessions WHERE user_id=?").run(u.id);
+            db.prepare("DELETE FROM requests WHERE user_id=?").run(u.id);
+          }
+          for (const table of ["users", "invitations", "jobs", "imports", "payment_accounts"])
+            db.prepare(`DELETE FROM ${table} WHERE workspace_id=?`).run(ws);
+          db.prepare("DELETE FROM workspaces WHERE id=?").run(ws);
+        }
+      });
+      for (const id of files) {
+        const path = join(mediaRoot, id);
+        if (existsSync(path)) unlinkSync(path);
+      }
+      res.setHeader("Set-Cookie", "avalen_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
+      return { deleted: true };
     }
     if (url.pathname === "/api/payments/account") {
       coachOnly(user);
