@@ -14,11 +14,14 @@
     "dev:connected": "node tools/dev-connected.mjs"
   },
   "dependencies": {
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3",
     "lucide-react": "1.31.0",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@capacitor/cli": "8.5.3",
     "@playwright/test": "^1.63.0",
     "@vitejs/plugin-react": "6.0.5",
     "vite": "8.2.1"
