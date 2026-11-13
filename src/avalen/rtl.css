@@ -7,8 +7,8 @@
 
 /* In Arabic, one family for both scripts keeps headings, labels and numbers in harmony.
    Letter spacing pulls joined Arabic letters apart, so it is always removed. */
-:root[lang='ar'] body, :root[lang='ar'] body *:not(.header-wordmark):not(.editorial-welcome-wordmark):not(.boot-word), :root[lang='ar'] body *::before, :root[lang='ar'] body *::after,
-:root[lang='ar'] input, :root[lang='ar'] textarea, :root[lang='ar'] select, :root[lang='ar'] button {
+:root[lang='ar'] body, :root[lang='ar'] body *:not(.header-wordmark):not(.editorial-welcome-wordmark):not(.boot-word):not(.account-wordmark):not(.coach-code):not(.coach-code-input), :root[lang='ar'] body *::before, :root[lang='ar'] body *::after,
+:root[lang='ar'] input:not(.coach-code-input), :root[lang='ar'] textarea, :root[lang='ar'] select, :root[lang='ar'] button {
   font-family: 'Readex Pro Variable', 'Manrope', Arial, sans-serif !important;
   letter-spacing: 0 !important;
 }
@@ -19,7 +19,8 @@
 [dir='rtl'] svg.lucide-chevron-right, [dir='rtl'] svg.lucide-chevron-left,
 [dir='rtl'] svg.lucide-chevrons-right, [dir='rtl'] svg.lucide-chevrons-left,
 [dir='rtl'] svg.lucide-arrow-up-right, [dir='rtl'] svg.lucide-arrow-down-right,
-[dir='rtl'] svg.lucide-move-right, [dir='rtl'] svg.lucide-undo-2, [dir='rtl'] svg.lucide-redo-2 { transform: scaleX(-1); }
+[dir='rtl'] svg.lucide-move-right, [dir='rtl'] svg.lucide-undo-2, [dir='rtl'] svg.lucide-redo-2,
+[dir='rtl'] svg.lucide-log-out { transform: scaleX(-1); }
 
 /* Numbers, times and measurements stay left-to-right inside Arabic sentences. */
 [dir='rtl'] input[type='number'], [dir='rtl'] input[type='tel'], [dir='rtl'] input[type='email'] { direction: ltr; text-align: end; }

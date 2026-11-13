@@ -1,4 +1,4 @@
-import { connection } from "./connection.js";
+import { apiUrl, connection } from "./connection.js";
 import { saveFile } from "../store.js";
 export async function inspectVideo(file) {
   if (file.size > 100 * 1024 * 1024)
@@ -54,7 +54,7 @@ export async function uploadVideo(file, clientId, onProgress, signal) {
   }
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/media");
+    xhr.open("POST", apiUrl("/media"));
     xhr.withCredentials = true;
     xhr.setRequestHeader("X-Avalen", "1");
     xhr.setRequestHeader("X-Media-Purpose", "formlab");

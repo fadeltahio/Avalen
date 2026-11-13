@@ -18,6 +18,7 @@ async function login(
   route = "#/coach/dashboard",
 ) {
   await page.goto(`${service.base}/?connected=1${route}`);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.getByLabel("Email", { exact: true }).fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();

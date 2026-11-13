@@ -119,17 +119,24 @@ test('travel session details open the prescribed travel workout from Home and Tr
   await page.screenshot({path:`output/functional-review/travel-details-${testInfo.project.name}.png`,fullPage:true});
 });
 
-test('account service outage offers an in-place retry without erasing typed email',async({page})=>{
+test('account service outage offers an in-place retry, and a failed sign-in keeps what was typed',async({page})=>{
   await page.route('**/api/session',route=>route.abort('failed'));
   await page.route('**/api/status',route=>route.abort('failed'));
   await page.goto('/?connected=1');await expect(page.getByRole('alert')).toContainText('unavailable');
-  await page.getByLabel('Email',{exact:true}).fill('review@example.test');
+  await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeDisabled();
   await page.unroute('**/api/session');await page.unroute('**/api/status');
   await page.route('**/api/session',route=>route.fulfill({json:{user:null}}));
-  await page.route('**/api/status',route=>route.fulfill({json:{configured:true}}));
+  await page.route('**/api/status',route=>route.fulfill({json:{configured:true,coachSignup:true}}));
   await page.getByRole('button',{name:'Retry connection',exact:true}).click();
   await expect(page.getByRole('button',{name:'Sign in',exact:true})).toBeEnabled();
+  await page.getByRole('button',{name:'Sign in',exact:true}).click();
+  await page.getByLabel('Email',{exact:true}).fill('review@example.test');
+  await page.getByLabel('Password',{exact:true}).fill('a-password-of-length');
+  await page.route('**/api/login',route=>route.abort('failed'));
+  await page.getByRole('button',{name:'Sign in',exact:true}).click();
+  await expect(page.getByRole('alert').first()).toContainText('interrupted');
   await expect(page.getByLabel('Email',{exact:true})).toHaveValue('review@example.test');
+  await expect(page.getByLabel('Password',{exact:true})).toHaveValue('a-password-of-length');
 });
 
 test('custom exercise failure keeps its fields and retry adds one library movement',async({page})=>{
@@ -171,6 +178,7 @@ for(const kind of ['profile','billing'])test(`connected ${kind} guards pending s
       email='client@test.app';password='client-password-123';
     }
     await page.goto(`${service.base}/?connected=1${kind==='profile'?'#/client/you':`#/coach/clients?client=${clientId}&section=Billing`}`);
+    await page.getByRole('button',{name:'Sign in',exact:true}).click();
     await page.getByLabel('Email',{exact:true}).fill(email);await page.getByLabel('Password',{exact:true}).fill(password);
     await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.getByRole('button',{name:'Account',exact:true})).toBeVisible();
     let input,save;
@@ -200,6 +208,7 @@ test('connected client can save, search and unsave sessions without changing the
     const invite=await service.call('/api/invitations',{method:'POST',account:service.coach,body:{clientId}});
     await service.call('/api/join',{method:'POST',body:{invite:invite.invite,email:'client@test.app',password:'client-password-123'}});
     await page.goto(`${service.base}/?connected=1`);
+    await page.getByRole('button',{name:'Sign in',exact:true}).click();
     await page.getByLabel('Email',{exact:true}).fill('client@test.app');await page.getByLabel('Password',{exact:true}).fill('client-password-123');
     await page.getByRole('button',{name:'Sign in',exact:true}).click();await expect(page.getByRole('button',{name:'Account',exact:true})).toBeVisible();
     await page.getByRole('button',{name:'Search sessions',exact:true}).click();

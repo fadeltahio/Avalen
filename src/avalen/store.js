@@ -5,7 +5,7 @@ import { checkinSchedule } from "./checkin-model.js";
 import { nutritionScore } from "./nutrition-model.js";
 import { parseWorkspace } from "./persistence.js";
 import { foundations } from "./ecosystem/memory.js";
-import { connection, subscribe, connectedUpdate, request, refreshConnection, hasPendingChanges, unsavedAction } from "./ecosystem/connection.js";
+import { API_BASE, apiUrl, connection, subscribe, connectedUpdate, request, refreshConnection, hasPendingChanges, unsavedAction } from "./ecosystem/connection.js";
 
 import { commitLocalWorkspace } from "./local-transaction.js";
 
@@ -359,7 +359,7 @@ export async function saveFile(file, { types = ["image/"], maxMB = 10, clientId,
   return { id, name: file.name, type: file.type, size: file.size };
 }
 export async function getFile(id) {
-  if(connection()) {const response=await fetch(`/api/media/${encodeURIComponent(id)}`,{credentials:'same-origin'});if(!response.ok)throw new Error(t('This recording is unavailable or access has expired.'));return response.blob();}
+  if(connection()) {const response=await fetch(apiUrl(`/media/${encodeURIComponent(id)}`),{credentials:API_BASE?'include':'same-origin'});if(!response.ok)throw new Error(t('This recording is unavailable or access has expired.'));return response.blob();}
   return getDeviceFile(id);
 }
 export async function deleteDeviceFile(id){const database=await db();return new Promise((resolve,reject)=>{const tx=database.transaction('files','readwrite');tx.objectStore('files').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}

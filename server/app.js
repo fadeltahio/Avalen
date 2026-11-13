@@ -24,6 +24,7 @@ import { join, resolve, extname } from "node:path";
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 import { openDatabase, transaction } from "./database.js";
+import { coachCodes, formatCode } from "./coach-codes.js";
 import {
   coachOnly,
   fail,
@@ -88,6 +89,7 @@ export function createService({
   dist = resolve("dist"),
   fetchImpl = globalThis.fetch,
   publicUrl = process.env.AVALEN_PUBLIC_URL,
+  coachSignup = process.env.AVALEN_COACH_SIGNUP !== "off",
   secretsKey,
   wearableEnv = process.env,
 } = {}) {
@@ -97,7 +99,29 @@ export function createService({
   const wearables = wearableService({ db, root, fetchImpl, publicUrl, secretsKey, env: wearableEnv });
   mkdirSync(mediaRoot, { recursive: true, mode: 0o700 });
   const bootstrap = setupToken || token(),
-    attempts = new Map();
+    attempts = new Map(),
+    codes = coachCodes(db);
+  // A client added to a workspace today: dated from today, with a 12-week programme.
+  const freshClient = (name, email) => {
+    const client = newClient(name.trim().slice(0, 100), email);
+    client.created = new Date().toISOString().slice(0, 10);
+    client.schedule = client.schedule.filter((s) => s.date >= client.created);
+    client.programEnd = new Date(Date.now() + 83 * 86400000).toISOString().slice(0, 10);
+    return client;
+  };
+  // A new coach workspace with no demo records.
+  const emptyWorkspace = (coachName) => {
+    const data = createWorkspace();
+    for (const key of Object.keys(data))
+      if (Array.isArray(data[key]) && !["library", "templates", "savedReplies"].includes(key)) data[key] = [];
+    data.demo = false;
+    data.onboarded = true;
+    data.coach = { name: coachName.trim().slice(0, 100), brand: "Avalen", logo: null };
+    return data;
+  };
+  const insertUser = (user) =>
+    db.prepare("INSERT INTO users VALUES(?,?,?,?,?,?)").run(user.id, user.email, user.password, user.role, user.workspace_id, user.client_id);
+  const emailTaken = (email) => Boolean(db.prepare("SELECT id FROM users WHERE email=?").get(email));
   let commandHandler = null;
   const load = (user) => {
     const row = db
@@ -335,6 +359,7 @@ export function createService({
     if (url.pathname === "/api/status")
       return {
         configured: Boolean(db.prepare("SELECT id FROM users LIMIT 1").get()),
+        coachSignup,
         transcription: Boolean(process.env.AVALEN_TRANSCRIPTION_URL),
         ai: Boolean(process.env.AVALEN_AI_URL),
         privateStorage: true,
@@ -427,6 +452,52 @@ export function createService({
       });
       return login(res, user);
     }
+    // Any coach can create an account: a workspace of their own and a coach code.
+    if (url.pathname === "/api/signup/coach" && req.method === "POST") {
+      limit(req, "signup");
+      if (!coachSignup) fail(403, "Coach sign-up is closed on this service.");
+      const input = await body(req, 4096),
+        email = account(input),
+        name = String(input.name || "").trim();
+      if (!name) fail(400, "Enter your name.");
+      if (emailTaken(email)) fail(409, "An account with this email already exists. Sign in instead.");
+      const data = emptyWorkspace(name);
+      data.clients = [];
+      data.activeClientId = null;
+      foundations(data);
+      const user = { id: randomUUID(), email, password: passwordHash(input.password), role: "coach", workspace_id: randomUUID(), client_id: null };
+      transaction(db, () => {
+        db.prepare("INSERT INTO workspaces(id,data) VALUES(?,?)").run(user.workspace_id, JSON.stringify(data));
+        insertUser(user);
+        codes.active(user.workspace_id);
+      });
+      return login(res, user);
+    }
+    // A client joins a coach with the coach's code and becomes one of their clients.
+    if (url.pathname === "/api/signup/client" && req.method === "POST") {
+      limit(req, "signup");
+      const input = await body(req, 4096),
+        email = account(input),
+        name = String(input.name || "").trim();
+      if (!name) fail(400, "Enter your name.");
+      const workspaceId = codes.find(input.code);
+      if (!workspaceId) fail(404, "This coach code was not found. Check it with your coach.");
+      if (emailTaken(email)) fail(409, "An account with this email already exists. Sign in instead.");
+      const user = { id: randomUUID(), email, password: passwordHash(input.password), role: "client", workspace_id: workspaceId, client_id: null };
+      transaction(db, () => {
+        const row = db.prepare("SELECT data FROM workspaces WHERE id=?").get(workspaceId);
+        if (!row) fail(404, "This coach code was not found. Check it with your coach.");
+        const data = foundations(JSON.parse(row.data)),
+          client = freshClient(name, email);
+        data.clients.push(client);
+        data.activeClientId ||= client.id;
+        memory(data, client.id, "Account", "Joined with your coach code", "", { by: "client" });
+        user.client_id = client.id;
+        insertUser(user);
+        db.prepare("UPDATE workspaces SET data=?,revision=revision+1 WHERE id=?").run(JSON.stringify(data), workspaceId);
+      });
+      return login(res, user);
+    }
     if (url.pathname === "/api/join" && req.method === "POST") {
       limit(req, "join");
       const input = await body(req, 4096),
@@ -490,6 +561,15 @@ export function createService({
       );
       return { ok: true };
     }
+    if (url.pathname === "/api/coach-code" && req.method === "GET") {
+      coachOnly(user);
+      return { code: formatCode(codes.active(user.workspace_id)) };
+    }
+    if (url.pathname === "/api/coach-code/replace" && req.method === "POST") {
+      coachOnly(user);
+      limit(req, "coach-code");
+      return { code: formatCode(transaction(db, () => codes.replace(user.workspace_id))) };
+    }
     if (url.pathname === "/api/account/delete" && req.method === "POST") {
       limit(req, "account-delete");
       const input = await body(req, 4096);
@@ -530,7 +610,7 @@ export function createService({
             db.prepare("DELETE FROM sessions WHERE user_id=?").run(u.id);
             db.prepare("DELETE FROM requests WHERE user_id=?").run(u.id);
           }
-          for (const table of ["users", "invitations", "jobs", "imports", "payment_accounts"])
+          for (const table of ["users", "invitations", "coach_codes", "jobs", "imports", "payment_accounts"])
             db.prepare(`DELETE FROM ${table} WHERE workspace_id=?`).run(ws);
           db.prepare("DELETE FROM workspaces WHERE id=?").run(ws);
         }

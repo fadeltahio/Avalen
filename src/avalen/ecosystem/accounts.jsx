@@ -1,22 +1,53 @@
 import { migrateDeviceMedia, collectDeviceMedia } from "./migration.js";
 import React, { useEffect, useState } from "react";
+import { ArrowLeft, Languages, LogOut } from "lucide-react";
 import { Button, Field, Notice, Modal, SectionHead } from "../ui.jsx";
 import { leaveBoot } from "../BrandMark.jsx";
 import {
   acceptConnection,
   connection,
   connectedMode,
+  hasPendingChanges,
+  nativeApp,
   request,
+  unsavedAction,
 } from "./connection.js";
-import { t } from '../i18n.js';
+import { LANGUAGES, language, setLanguage, t } from '../i18n.js';
+// The way into a connected workspace: sign in, create a coach account, or join a
+// coach with their code. Invitation links and the original owner setup still work.
+// Changing language reloads the app; the screen and what was typed (never the
+// password) are kept for that one reload.
+const DRAFT = "avalen.account.draft";
+const readDraft = () => {
+  try { const value = JSON.parse(sessionStorage.getItem(DRAFT) || "null"); sessionStorage.removeItem(DRAFT); return value || {}; }
+  catch { return {}; }
+};
+const draft = typeof sessionStorage === "undefined" ? {} : readDraft();
+const startMode = () => (new URLSearchParams(location.search).has("invite") ? "join" : draft.mode || "welcome");
+function switchLanguage(lang, mode) {
+  try {
+    const form = document.querySelector(".account-screen form");
+    const fields = form ? Object.fromEntries([...new FormData(form)].filter(([key]) => ["name", "email", "code", "invite"].includes(key))) : {};
+    sessionStorage.setItem(DRAFT, JSON.stringify({ mode, fields }));
+  } catch {}
+  setLanguage(lang);
+}
+// One button that offers the other language, written in that language.
+function LanguageSwitch({ mode }) {
+  const [id, l] = Object.entries(LANGUAGES).find(([key]) => key !== language());
+  return (
+    <button type="button" className="account-language" lang={id} dir={l.dir} aria-label={`${t('Language')}: ${l.name}`} onClick={() => switchLanguage(id, mode)}>
+      <Languages size={16} aria-hidden="true" />{l.name}
+    </button>
+  );
+}
 export function AccountGate({ children }) {
   const [ready, setReady] = useState(!connectedMode()),
     [status, setStatus] = useState(null),
-    [mode, setMode] = useState(
-      new URLSearchParams(location.search).has("invite") ? "join" : "login",
-    ),
+    [mode, setModeState] = useState(startMode),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
+  const setMode = (next) => { setModeState(next); setError(""); };
   async function checkConnection() {
     let signedIn = false;
     setBusy(true);
@@ -28,10 +59,10 @@ export function AccountGate({ children }) {
           acceptConnection(session);
           signedIn = true;
           setReady(true);
-        } else if (!service.configured) setMode("setup");
+        } else if (!service.configured && !service.coachSignup) setMode("setup");
     } catch {
       setStatus(null);
-      setError(t('The account service is unavailable. Start the Avalen service, then retry.'));
+      setError(t('The account service is unavailable. Check your connection, then retry.'));
     } finally {
       setBusy(false);
       if (!signedIn) leaveBoot();
@@ -42,18 +73,18 @@ export function AccountGate({ children }) {
   }, []);
   async function submit(e) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError("");
     try {
       const fields = Object.fromEntries(new FormData(e.currentTarget));
-      const result = await request(`/${mode}`, {
-        method: "POST",
-        body: fields,
-      });
+      const path = { coach: "/signup/coach", client: "/signup/client" }[mode] || `/${mode}`;
+      const result = await request(path, { method: "POST", body: fields });
       acceptConnection(result);
       try {
         sessionStorage.setItem("avalen.editorial.splash", "seen");
-        if (mode === "join") sessionStorage.setItem("avalen.intake.open", "1");
+        if (mode === "join" || mode === "client") sessionStorage.setItem("avalen.intake.open", "1");
+        sessionStorage.setItem("avalen.role", result.user.role);
       } catch {}
       setReady(true);
     } catch (e) {
@@ -63,101 +94,81 @@ export function AccountGate({ children }) {
     }
   }
   if (ready) return children;
+  const copy = {
+    welcome: [t('Welcome to Avalen.'), t('Your training, nutrition and coach in one place.')],
+    login: [t('Welcome back.'), t('Sign in to your coaching workspace.')],
+    coach: [t('Coach with Avalen.'), t('Create your coaching workspace. You get a code to share with your clients.')],
+    client: [t('Join your coach.'), t('Enter the code your coach gave you to connect with them.')],
+    join: [t('Your next chapter.'), t('Accept your coach’s invitation.')],
+    setup: [t('Build your coaching workspace.'), t('Create the owner account using your service setup token.')],
+  }[mode];
+  const unavailable = !status && error;
   return (
     <main className="account-screen">
-      <div className="account-wordmark">AVALEN</div>
-      <span className="eyebrow">{t('YOUR COACHING, CONNECTED')}</span>
-      <h1>
-        {mode === "setup"
-          ? t('Build your coaching workspace.')
-          : mode === "join"
-            ? t('Your next chapter.')
-            : t('Welcome back.')}
-      </h1>
-      <p className="muted">
-        {mode === "setup"
-          ? t('Create the owner account using your service setup token.')
-          : t('Sign in to your private coaching workspace.')}
-      </p>
-      <form onSubmit={submit}>
-        {mode === "setup" && (
-          <>
-            <Field
-              label={t('Setup token')}
-              name="setupToken"
-              type="password"
-              required
-              autoComplete="off"
-            />
-            <Field label={t('Coach name')} name="name" required maxLength={100} />
-            <Field
-              label={t('First client name')}
-              name="clientName"
-              required
-              maxLength={100}
-            />
-          </>
-        )}
-        {mode === "join" && (
-          <Field
-            label={t('Invitation')}
-            name="invite"
-            required
-            defaultValue={
-              new URLSearchParams(location.search).get("invite") || ""
-            }
-          />
-        )}
-        <Field
-          label={t('Email')}
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-        />
-        <Field
-          label={t('Password')}
-          name="password"
-          type="password"
-          required
-          minLength={12}
-          maxLength={200}
-          autoComplete={mode === "login" ? "current-password" : "new-password"}
-        />
-        {error && (
-          <p role="alert" className="error">
-            {error}
-          </p>
-        )}
-        <Button type="submit" disabled={busy || !status}>
-          {busy
-            ? t('Opening workspace…')
-            : mode === "setup"
-              ? t('Create workspace')
-              : mode === "join"
-                ? t('Accept invitation')
-                : t('Sign in')}
-        </Button>
-      </form>
-      {!status && error && <Button secondary disabled={busy} onClick={checkConnection}>{busy ? t('Checking connection…') : t('Retry connection')}</Button>}
-      {status?.configured && (
-        <button
-          className="text-link"
-          onClick={() => {
-            setMode(mode === "join" ? "login" : "join");
-            setError("");
-          }}
-        >
-          {mode === "join"
-            ? t('I already have an account')
-            : t('I have a coach invitation')}
-        </button>
+      <div className="account-top">
+        <div className="account-wordmark">AVALEN</div>
+        <LanguageSwitch mode={mode} />
+      </div>
+      {mode !== "welcome" && mode !== "setup" && (
+        <button type="button" className="text-link account-back" onClick={() => setMode("welcome")}><ArrowLeft size={16}/>{t('Back')}</button>
       )}
+      <span className="eyebrow">{t('YOUR COACHING, CONNECTED')}</span>
+      <h1>{copy[0]}</h1>
+      <p className="muted">{copy[1]}</p>
+      {mode === "welcome" ? (
+        <div className="account-choices">
+          <Button disabled={busy || !status} onClick={() => setMode("login")}>{t('Sign in')}</Button>
+          {status?.coachSignup !== false && <Button secondary disabled={busy || !status} onClick={() => setMode("coach")}>{t('I’m a coach')}<small>{t('Create a coach account')}</small></Button>}
+          <Button secondary disabled={busy || !status} onClick={() => setMode("client")}>{t('I have a coach code')}<small>{t('Create a client account')}</small></Button>
+          {error && <p role="alert" className="error">{error}</p>}
+        </div>
+      ) : (
+        <form onSubmit={submit}>
+          <fieldset className="save-fields" disabled={busy}>
+          {mode === "setup" && (
+            <>
+              <Field label={t('Setup token')} name="setupToken" type="password" required autoComplete="off" />
+              <Field label={t('Coach name')} name="name" required maxLength={100} />
+              <Field label={t('First client name')} name="clientName" required maxLength={100} />
+            </>
+          )}
+          {mode === "client" && (
+            <Field label={t('Coach code')} name="code" required className="coach-code-input" placeholder="ABC-234" autoComplete="off" autoCapitalize="characters" spellCheck={false} maxLength={9} dir="ltr" defaultValue={draft.fields?.code} />
+          )}
+          {mode === "join" && (
+            <Field label={t('Invitation')} name="invite" required defaultValue={new URLSearchParams(location.search).get("invite") || ""} />
+          )}
+          {(mode === "coach" || mode === "client") && (
+            <Field label={t('Your name')} name="name" required maxLength={100} autoComplete="name" defaultValue={draft.fields?.name} />
+          )}
+          <Field label={t('Email')} name="email" type="email" required autoComplete="email" dir="ltr" defaultValue={draft.fields?.email} />
+          <Field
+            label={t('Password')}
+            name="password"
+            type="password"
+            required
+            minLength={12}
+            maxLength={200}
+            autoComplete={mode === "login" ? "current-password" : "new-password"}
+            hint={mode === "login" ? undefined : t('At least 12 characters')}
+          />
+          {error && <p role="alert" className="error">{error}</p>}
+          <Button type="submit" disabled={busy || !status}>
+            {busy
+              ? t('Opening workspace…')
+              : { setup: t('Create workspace'), join: t('Accept invitation'), coach: t('Create coach account'), client: t('Join your coach'), login: t('Sign in') }[mode]}
+          </Button>
+          </fieldset>
+          {mode === "login" && <button type="button" className="text-link" onClick={() => setMode("client")}>{t('New here? Join with a coach code')}</button>}
+          {(mode === "coach" || mode === "client") && <button type="button" className="text-link" onClick={() => setMode("login")}>{t('I already have an account')}</button>}
+        </form>
+      )}
+      {unavailable && <Button secondary disabled={busy} onClick={checkConnection}>{busy ? t('Checking connection…') : t('Retry connection')}</Button>}
       <a className="text-link muted" href="/?connected=0&preview=welcome">
-        {t('Open device preview')}
+        {t('Explore the demo first')}
       </a>
-      <small className="muted">
-        {t('Private recordings and coaching notes are available only to authorized accounts.')}
+      <small className="muted account-legal">
+        <a href="/privacy.html" target="_blank" rel="noreferrer">{t('Privacy policy')}</a> · <a href="/support.html" target="_blank" rel="noreferrer">{t('Help & support')}</a>
       </small>
     </main>
   );
@@ -341,5 +352,54 @@ function DeleteAccount({ role }) {
         </fieldset>
       </form>
     </details>
+  );
+}
+
+// Signing out from More, for coaches and clients. Only for a real account; in the
+// iPhone app's demo it returns to the sign-in screen instead.
+export function SignOutSection() {
+  const [confirming, setConfirming] = useState(false),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState("");
+  const signedIn = Boolean(connection()?.user);
+  if (!signedIn && !nativeApp()) return null;
+  if (!signedIn)
+    return (
+      <div className="card list sign-out-section">
+        <a className="simple-row" href="/?connected=1">
+          <LogOut size={19} />
+          <span><b>{t('Exit demo')}</b><small>{t('Return to the sign-in screen')}</small></span>
+        </a>
+      </div>
+    );
+  async function signOut() {
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      await request("/logout", { method: "POST" });
+      try { sessionStorage.removeItem("avalen.role"); } catch {}
+      location.replace(nativeApp() ? "/" : "/?connected=1");
+    } catch (cause) {
+      setError(t('Sign out was not confirmed. {message}', { message: cause.message }));
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="card list sign-out-section">
+      <button type="button" className="simple-row" onClick={() => setConfirming(true)}>
+        <LogOut size={19} />
+        <span><b>{t('Sign out')}</b><small>{connection().user.email}</small></span>
+      </button>
+      {confirming && (
+        <Modal title={t('Sign out of Avalen?')} onClose={() => setConfirming(false)} canClose={!busy}>
+          <p>{t('You can sign in again any time with your email and password.')}</p>
+          {(hasPendingChanges() || unsavedAction()) && <Notice>{t('A change is still being saved. Signing out now may lose it.')}</Notice>}
+          {error && <p role="alert" className="error">{error}</p>}
+          <Button disabled={busy} onClick={signOut}>{busy ? t('Signing out…') : t('Sign out')}</Button>
+          <Button secondary disabled={busy} onClick={() => setConfirming(false)}>{t('Stay signed in')}</Button>
+        </Modal>
+      )}
+    </div>
   );
 }

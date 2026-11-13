@@ -1,0 +1,65 @@
+// Arabic · signing in, creating an account and coach codes.
+export default {
+  // Way in
+  'Welcome to Avalen.': 'أهلًا بك في Avalen.',
+  'Your training, nutrition and coach in one place.': 'تمرينك وتغذيتك ومدرّبك في مكان واحد.',
+  'Sign in to your coaching workspace.': 'تسجيل الدخول إلى مساحة تدريبك.',
+  'Coach with Avalen.': 'التدريب مع Avalen.',
+  'Create your coaching workspace. You get a code to share with your clients.': 'إنشاء مساحة تدريبك مع رمز للمشاركة مع متدرّبيك.',
+  'Join your coach.': 'مدرّبك بانتظارك.',
+  'Enter the code your coach gave you to connect with them.': 'إدخال الرمز الذي أعطاك إياه مدرّبك للاتصال به.',
+  'Accept your coach’s invitation.': 'قبول دعوة مدرّبك.',
+  'I’m a coach': 'أنا مدرّب',
+  'Create a coach account': 'إنشاء حساب مدرّب',
+  'I have a coach code': 'لدي رمز مدرّب',
+  'Create a client account': 'إنشاء حساب متدرّب',
+  'At least 12 characters': '12 حرفًا على الأقل',
+  'Create coach account': 'إنشاء حساب مدرّب',
+  'Join your coach': 'الانضمام إلى مدرّبك',
+  'New here? Join with a coach code': 'جديد هنا؟ الانضمام برمز مدرّب',
+  'Explore the demo first': 'تجربة النسخة التجريبية أولًا',
+  'The account service is unavailable. Check your connection, then retry.': 'خدمة الحسابات غير متاحة. يُرجى التحقق من الاتصال ثم إعادة المحاولة.',
+
+  // Coach code
+  'Your coach code': 'رمز المدرّب الخاص بك',
+  'Clients join you by entering your coach code in the app. Your code appears here once you sign in to your coach account.': 'ينضم إليك المتدرّبون بإدخال رمزك في التطبيق. يظهر رمزك هنا بعد تسجيل الدخول إلى حساب المدرّب.',
+  'Join me on Avalen. My coach code is {code}.': 'يسعدني انضمامك إليّ على Avalen. رمز المدرّب الخاص بي هو {code}.',
+  'Copying is not available here. Select the code and copy it.': 'النسخ غير متاح هنا. يمكن تحديد الرمز ونسخه.',
+  'Share this code with new clients. They enter it when they create their account and appear in your client list.': 'يمكن مشاركة هذا الرمز مع المتدرّبين الجدد. يُدخلونه عند إنشاء حساباتهم فيظهرون في قائمة متدرّبيك.',
+  'Coach code {code}': 'رمز المدرّب {code}',
+  'Loading your coach code': 'جارٍ تحميل رمز المدرّب',
+  'Copy': 'نسخ',
+  'Share': 'مشاركة',
+  'Get a new code': 'الحصول على رمز جديد',
+  'Get a new code?': 'الحصول على رمز جديد؟',
+  'Your current code stops working for new clients. Clients who already joined stay connected.': 'سيتوقف رمزك الحالي عن العمل للمتدرّبين الجدد، ويبقى من انضمّ بالفعل متصلًا.',
+  'Creating a new code…': 'جارٍ إنشاء رمز جديد…',
+  'Keep the current code': 'الإبقاء على الرمز الحالي',
+
+  // First client
+  'Welcome, {name}.': 'أهلًا {name}.',
+  'Your first client is one code away.': 'متدرّبك الأول على بُعد رمز واحد.',
+  'Waiting for your first client': 'بانتظار متدرّبك الأول',
+  'When a client joins with your code, they appear here and your full coaching workspace opens.': 'عندما ينضم متدرّب برمزك يظهر هنا وتُفتح مساحة تدريبك كاملة.',
+  'Check for new clients': 'التحقق من وجود متدرّبين جدد',
+  'No one has joined yet. New clients also appear here automatically.': 'لم ينضم أحد بعد. يظهر المتدرّبون الجدد هنا تلقائيًا أيضًا.',
+  'Or add a client yourself': 'أو إضافة متدرّب بنفسك',
+
+  // Sign out
+  'Exit demo': 'الخروج من النسخة التجريبية',
+  'Return to the sign-in screen': 'العودة إلى شاشة تسجيل الدخول',
+  'Sign out of Avalen?': 'تسجيل الخروج من Avalen؟',
+  'You can sign in again any time with your email and password.': 'يمكن تسجيل الدخول مجددًا في أي وقت بالبريد الإلكتروني وكلمة المرور.',
+  'A change is still being saved. Signing out now may lose it.': 'لا يزال أحد التغييرات قيد الحفظ، وقد يضيع عند تسجيل الخروج الآن.',
+  'Signing out…': 'جارٍ تسجيل الخروج…',
+  'Stay signed in': 'البقاء مسجّلًا',
+
+  // Server messages
+  'The Avalen service isn’t responding. Try again in a moment.': 'خدمة Avalen لا تستجيب. يُرجى إعادة المحاولة بعد قليل.',
+  'The Avalen service sent an unexpected answer. Try again in a moment.': 'أرسلت خدمة Avalen ردًّا غير متوقّع. يُرجى إعادة المحاولة بعد قليل.',
+  'The connection was interrupted. Retry when your connection returns.': 'انقطع الاتصال. يُرجى إعادة المحاولة عند عودة الاتصال.',
+  'Enter your name.': 'يُرجى إدخال الاسم.',
+  'This coach code was not found. Check it with your coach.': 'لم يُعثر على رمز المدرّب هذا. يُرجى التأكد منه مع مدرّبك.',
+  'An account with this email already exists. Sign in instead.': 'يوجد حساب بهذا البريد الإلكتروني. يُرجى تسجيل الدخول بدلًا من ذلك.',
+  'Coach sign-up is closed on this service.': 'التسجيل كمدرّب مغلق في هذه الخدمة.',
+};

@@ -21,6 +21,9 @@ export function openDatabase(root) {
     CREATE INDEX IF NOT EXISTS jobs_ready ON jobs(state,run_at);
     CREATE INDEX IF NOT EXISTS media_client ON media(workspace_id,client_id);
     INSERT OR IGNORE INTO migrations VALUES(1,datetime('now'));
+    CREATE TABLE IF NOT EXISTS coach_codes(code TEXT PRIMARY KEY, workspace_id TEXT NOT NULL REFERENCES workspaces(id), created_at TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);
+    CREATE INDEX IF NOT EXISTS coach_codes_workspace ON coach_codes(workspace_id,active);
+    INSERT OR IGNORE INTO migrations VALUES(2,datetime('now'));
   `);
   return db;
 }

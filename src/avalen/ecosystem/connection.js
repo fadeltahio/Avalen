@@ -1,8 +1,14 @@
 import { t } from '../i18n.js';
 import { uid } from "../id.js";
+// The Avalen server. On the web it is the same origin; the iPhone app is built with
+// VITE_AVALEN_API_URL (for example https://api.example.com) and always connects to it.
+export const API_BASE = (import.meta.env?.VITE_AVALEN_API_URL || "").replace(/\/+$/, "");
+export const apiUrl = (path) => `${API_BASE}/api${path}`;
+export const nativeApp = () => Boolean(API_BASE);
+const credentials = () => (API_BASE ? "include" : "same-origin");
 export const connectedMode = () => {
   const mode = new URLSearchParams(location.search).get("connected");
-  return mode === "0" ? false : mode === "1" || location.port === "5180";
+  return mode === "0" ? false : mode === "1" || Boolean(API_BASE) || location.port === "5180";
 };
 let state = null,
   queue = Promise.resolve(),
@@ -47,7 +53,7 @@ export async function request(
 ) {
   const options = {
     method,
-    credentials: "same-origin",
+    credentials: credentials(),
     signal,
     cache: "no-store",
     headers: {
@@ -63,7 +69,7 @@ export async function request(
   let response;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      response = await fetch(`/api${path}`, options);
+      response = await fetch(apiUrl(path), options);
       break;
     } catch {
       if (
@@ -75,14 +81,17 @@ export async function request(
         continue;
       }
       throw new Error(
-        "The connection was interrupted. Retry when your connection returns.",
+        t("The connection was interrupted. Retry when your connection returns."),
       );
     }
   }
-  const result = await response.json();
+  // A server that is down or behind a failing proxy can answer without JSON.
+  let result = {};
+  try { result = await response.json(); }
+  catch { if (response.ok) throw new Error(t("The Avalen service sent an unexpected answer. Try again in a moment.")); }
   if (!response.ok)
     // Server messages are English; they are translated here for display.
-    throw Object.assign(new Error(t(result.error || "Please try again.")), {
+    throw Object.assign(new Error(t(result.error || (response.status >= 500 ? "The Avalen service isn’t responding. Try again in a moment." : "Please try again."))), {
       status: response.status,
     });
   return result;

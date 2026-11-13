@@ -20,16 +20,17 @@ import {
   Tabs,
 } from "../ui.jsx";
 import { useFile } from "../store.js";
-import { connection, request } from "./connection.js";
+import { apiUrl, connection, nativeApp, request } from "./connection.js";
 import { uploadVideo } from "./uploads.js";
 import { VoiceRecording, AudioPlayer } from "./recording.jsx";
 import { t } from '../i18n.js';
 const stamp = (n) =>
   `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, "0")}`;
+// On the web the server streams the video; the iPhone app downloads it with its sign-in first.
 function useVideoURL(file) {
-  const local = useFile(connection() ? null : file?.id);
-  return connection() && file
-    ? `/api/media/${encodeURIComponent(file.id)}`
+  const local = useFile(connection() && !nativeApp() ? null : file?.id);
+  return connection() && !nativeApp() && file
+    ? apiUrl(`/media/${encodeURIComponent(file.id)}`)
     : local;
 }
 export function FormLab({

@@ -424,7 +424,8 @@ export function Modal({ title, onClose, children, wide = false, className = "", 
     </dialog>
   );
 }
-export function Field({ label, children, ...props }) {
+export function Field({ label, hint, children, ...props }) {
+  const hintId = useId();
   const [error, setError] = useState('');
   const errorId = useId();
   const labelId = useId();
@@ -440,7 +441,7 @@ export function Field({ label, children, ...props }) {
       {children ? (React.isValidElement(children) && ['input', 'select', 'textarea'].includes(children.type) ? React.cloneElement(children, { 'aria-labelledby': children.props['aria-labelledby'] || labelId }) : children) : <input {...props}
         aria-labelledby={props['aria-labelledby'] || labelId}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : props['aria-describedby']}
+        aria-describedby={error ? errorId : hint ? hintId : props['aria-describedby']}
         onInvalid={(event) => { validate(event.currentTarget); props.onInvalid?.(event); }}
         onBlur={(event) => { validate(event.currentTarget); props.onBlur?.(event); }}
         onChange={(event) => {
@@ -450,6 +451,7 @@ export function Field({ label, children, ...props }) {
           props.onChange?.(event);
         }}
       />}
+      {hint && !error && <small id={hintId} className="field-hint muted">{hint}</small>}
       {error && <small id={errorId} className="error" role="alert">{error}</small>}
     </label>
   );

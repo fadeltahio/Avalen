@@ -1,5 +1,5 @@
 import { AISharingPreference } from "./ecosystem/updates.jsx";
-import React, { lazy, Suspense, useEffect, useState, useRef } from "react";
+import React, { lazy, Suspense, useEffect, useMemo, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowRight,
@@ -26,8 +26,8 @@ import { MotionProvider, MovingIndicator, useSectionReveal } from "./motion.jsx"
 import { watchViewport } from "./viewport.js";
 import { MotionDetails } from "./motion.jsx";
 import { useAppRoute } from "./navigation.js";
-import { AccountGate, AccountSettings } from "./ecosystem/accounts.jsx";
-import { connection, connectedCommand, unsavedAction, retryUnsent, discardUnsent } from "./ecosystem/connection.js";
+import { AccountGate, AccountSettings, SignOutSection } from "./ecosystem/accounts.jsx";
+import { connection, connectedCommand, unsavedAction, retryUnsent, discardUnsent, refreshConnection } from "./ecosystem/connection.js";
 import { command } from "./ecosystem/actions.js";
 import { CoachingMemory } from "./ecosystem/memory.jsx";
 
@@ -51,6 +51,7 @@ import {
   Empty,
   Field,
   Heading,
+  SectionHead,
   IconButton,
   Mark,
   Modal,
@@ -58,6 +59,7 @@ import {
 } from "./ui.jsx";
 import { Plan, Progress, Nutrition } from "./client.jsx";
 import { Appearance, ConnectedDevices } from "./preferences.jsx";
+import { CoachCodeCard } from "./CoachCode.jsx";
 import { openDevicesOnReturn } from "./wearables.jsx";
 import { t, lines } from "./i18n.js";
 import { startDomTranslation } from "./i18n-dom.js";
@@ -155,7 +157,11 @@ function App() {
     [share, setShare] = useState(null),
     [messageContext, setMessageContext] = useState(null),
     [notifications, setNotifications] = useState(false);
-  const client = data.clients.find(c => c.id === data.activeClientId) || data.clients[0];
+  // A new coach account has no clients until the first one joins; the screens below
+  // read an active client, so they get a stand-in and only the first-client screen shows.
+  const noClients = !data.clients.length;
+  const standIn = useMemo(() => ({ ...newClient('', ''), id: 'no-client' }), []);
+  const client = data.clients.find(c => c.id === data.activeClientId) || data.clients[0] || standIn;
   const scheduledDetail = route.date && scheduleDay(client, route.date);
   const detailDay = scheduledDetail?.id === route.sessionId ? scheduledDetail : client.program.days.find(day => day.id === route.sessionId);
   const sessionDetail = detailDay ? { day: detailDay, date: route.date } : null;
@@ -358,7 +364,7 @@ function App() {
             >
               {storageError && <Notice>{storageError}{unsavedAction()&&<div className="button-row"><Button small onClick={async()=>{try{await retryUnsent();notify(t('Action saved. Reload this view before repeating it.'));}catch(e){notify(e.message);}}}>{t('Retry unsaved action')}</Button><Button small secondary onClick={()=>download(new Blob([JSON.stringify(unsavedAction(),null,2)],{type:'application/json'}),'avalen-unsaved-action.json')}>{t('Download recovery copy')}</Button><button className="text-link muted" onClick={()=>{discardUnsent();notify(t('Unconfirmed action removed from this device. Reload to check the server before entering it again.'));}}>{t('Discard local retry')}</button></div>}</Notice>}
               <Suspense fallback={<div className="route-loader" role="status" aria-label={t('Loading workspace')} aria-busy="true"><BrandMark/></div>}>
-              {exerciseDetail ? <ExerciseDetail key={exerciseDetail.name} exercise={exerciseDetail} client={viewedClient} coachView={role === 'coach'} onBack={closeExercise}/> : sessionDetail ? <SessionDetail key={sessionDetail.day.id} session={sessionDetail} onBack={closeSession}/> : screen === "today" ? (
+              {noClients ? <FirstClient onAccount={() => setAccountSettings(true)} /> : exerciseDetail ? <ExerciseDetail key={exerciseDetail.name} exercise={exerciseDetail} client={viewedClient} coachView={role === 'coach'} onBack={closeExercise}/> : sessionDetail ? <SessionDetail key={sessionDetail.day.id} session={sessionDetail} onBack={closeSession}/> : screen === "today" ? (
                 <EditorialHome />
               ) : screen === "plan" ? (
                 <Plan />
@@ -389,7 +395,7 @@ function App() {
               </footer>
             </main>
             {role === 'client' && screen !== 'today' && !(screen === 'plan' && ['', 'Training'].includes(subtab) && (!route.viewDate || route.viewDate === dayKey())) && data.drafts[client.id] && <ResumeWorkout compact />}
-            <nav ref={bottomNav} className="bottom-nav" aria-label={t('Main navigation')} style={{'--nav-count': nav.length}}>
+            <nav ref={bottomNav} className={`bottom-nav ${noClients ? 'is-hidden' : ''}`} aria-label={t('Main navigation')} style={{'--nav-count': nav.length}}>
               
               <MovingIndicator container={bottomNav} value={screen} selector='[aria-current="page"]' className="motion-nav-indicator"/>
               {nav.map(([id, label, Icon]) => (
@@ -509,6 +515,57 @@ function Welcome({ onDismiss, onJoined }) {
   </div>;
 }
 
+// A new coach before their first client: their code, a way to check for new clients
+// or add one directly, and the settings they need.
+function FirstClient({ onAccount }) {
+  const { data } = React.useContext(AppContext);
+  const { save, saving, error: saveError } = useWorkspaceSave();
+  const [adding, setAdding] = useState(false), [checking, setChecking] = useState(false), [note, setNote] = useState('');
+  async function check() {
+    setChecking(true); setNote('');
+    try { const fresh = await refreshConnection(); if (!fresh?.data?.clients?.length) setNote(t('No one has joined yet. New clients also appear here automatically.')); }
+    catch (e) { setNote(e.message); }
+    finally { setChecking(false); }
+  }
+  return (
+    <>
+      <Heading title={t('Welcome, {name}.', { name: (data.coach.name || '').split(' ')[0] })} subtitle={t('Your first client is one code away.')} />
+      <CoachCodeCard />
+      <section className="card first-client">
+        <SectionHead title={t('Waiting for your first client')} />
+        <p className="muted">{t('When a client joins with your code, they appear here and your full coaching workspace opens.')}</p>
+        <Button secondary disabled={checking || !connection()} onClick={check}>{checking ? t('Checking…') : t('Check for new clients')}</Button>
+        {note && <p className="muted" role="status">{note}</p>}
+        <button type="button" className="text-link" onClick={() => setAdding(true)}>{t('Or add a client yourself')}</button>
+      </section>
+      <Appearance />
+      <div className="card list">
+        {connection() && <button className="simple-row" onClick={onAccount}><Shield size={19} /><span><b>{t('Account')}</b><small>{t('Sign in details, privacy and sign out')}</small></span><ChevronRight size={16} /></button>}
+        <a className="simple-row" href="/support.html" target="_blank" rel="noreferrer"><MessageCircle size={19} /><span><b>{t('Help & support')}</b><small>{t('Questions, problems and feedback')}</small></span><ChevronRight size={16} /></a>
+      </div>
+      <SignOutSection />
+      {adding && (
+        <Modal title={t('Add a client')} onClose={() => setAdding(false)} canClose={!saving}>
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            const fields = new FormData(e.currentTarget), c = newClient(String(fields.get('name')).trim(), String(fields.get('email')).trim());
+            c.created = dayKey();
+            c.schedule = c.schedule.filter((s) => s.date >= dayKey());
+            if (await save((d) => { d.clients.push(c); d.activeClientId = c.id; })) setAdding(false);
+          }}>
+            <fieldset className="save-fields" disabled={saving}>
+              <Field label={t('Full name')} name="name" required maxLength={80} />
+              <Field label={t('Email')} name="email" type="email" required />
+              {saveError && <p className="error" role="alert">{saveError}</p>}
+              <Button type="submit">{saving ? t('Creating client…') : t('Create client')}</Button>
+            </fieldset>
+          </form>
+        </Modal>
+      )}
+    </>
+  );
+}
+
 // The coach's More: the same settings a client finds under More, for the coach.
 function CoachMore({ onAccount }) {
   const { data, update, navigate } = React.useContext(AppContext);
@@ -521,6 +578,7 @@ function CoachMore({ onAccount }) {
         <p>{data.coach.brand}</p>
         <Button secondary small onClick={() => navigate("business", "Brand")}>{t('Brand & business')}</Button>
       </section>
+      <CoachCodeCard />
       <Appearance />
       <div className="card list">
         <label className="simple-row">
@@ -536,6 +594,7 @@ function CoachMore({ onAccount }) {
         <a className="simple-row" href="/privacy.html" target="_blank" rel="noreferrer"><FileText size={19} /><span><b>{t('Privacy policy')}</b><small>{t('Understand how your data is stored')}</small></span><ChevronRight size={16} /></a>
         <a className="simple-row" href="/support.html" target="_blank" rel="noreferrer"><MessageCircle size={19} /><span><b>{t('Help & support')}</b><small>{t('Questions, problems and feedback')}</small></span><ChevronRight size={16} /></a>
       </div>
+      <SignOutSection />
     </>
   );
 }
@@ -654,6 +713,7 @@ function You() {
           {t('Start a fresh test profile')}
         </Button>
       </section>}
+      <SignOutSection />
       {edit && (
         <Modal title={t('Your profile')} onClose={() => setEdit(false)} canClose={!saving}>
           <form

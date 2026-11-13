@@ -9,3 +9,14 @@
 
 /* Settings rows that open a page are links; they look like the button rows beside them. */
 a.simple-row { color: inherit; text-decoration: none; }
+
+/* Coach code card */
+.coach-code-card { display: grid; gap: 12px; }
+.coach-code { display: block; padding: 18px 12px; border: 1px solid var(--line); border-radius: 12px; text-align: center; font: 600 34px/1 ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .16em; user-select: all; -webkit-user-select: all; }
+.coach-code-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.coach-code-actions > button { display: inline-flex; align-items: center; gap: 6px; }
+
+/* A new coach before their first client sees one screen, without the tab bar. */
+.bottom-nav.is-hidden { display: none; }
+.first-client { display: grid; gap: 12px; }
+.first-client .text-link { justify-self: start; }

@@ -1,4 +1,5 @@
 // Arabic translations, one file per area of the app.
+import accounts from './accounts.js';
 import checkins from './checkins.js';
 import client from './client.js';
 import coach from './coach.js';
@@ -12,4 +13,4 @@ import screens from './screens.js';
 import server from './server.js';
 import shell from './shell.js';
 
-export default { ...exercises, ...extras, ...library, ...server, ...community, ...ecosystem, ...paymentsWearables, ...checkins, ...coach, ...client, ...shell, ...screens };
+export default { ...accounts, ...exercises, ...extras, ...library, ...server, ...community, ...ecosystem, ...paymentsWearables, ...checkins, ...coach, ...client, ...shell, ...screens };
