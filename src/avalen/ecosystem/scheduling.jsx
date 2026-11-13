@@ -3,7 +3,7 @@ import { CalendarDays, ArrowRight, Settings } from "lucide-react";
 import { useApp } from "../context.js";
 import { Button, Empty, Field, Modal, Notice, SectionHead } from "../ui.jsx";
 import { scheduleRules, proposeSchedule } from "./scheduling.js";
-import { zonedDay, utcAdd } from "./time.js";
+import { zonedDay, utcAdd, clientTimezone } from "./time.js";
 import { locale, t } from '../i18n.js';
 // Short weekday names in the app language, Sunday first.
 const dayNames = Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(locale(), { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 0, 4 + i))));
@@ -16,7 +16,7 @@ export function SmartSchedule({ client, coach = false }) {
       mode: "move",
       from:
         client.schedule.find(
-          (s) => s.date >= zonedDay(client.checkinPlan?.timezone || "UTC"),
+          (s) => s.date >= zonedDay(clientTimezone(client)),
         )?.date || "",
       to: "",
       unavailable: [],
@@ -32,7 +32,7 @@ export function SmartSchedule({ client, coach = false }) {
         p.clientId === client.id && ["preview", "pending"].includes(p.status),
     ),
     rules = scheduleRules(client),
-    today = zonedDay(client.checkinPlan?.timezone || "UTC");
+    today = zonedDay(clientTimezone(client));
   async function act(action, payload, done) {
     setBusy(true);
     setError("");
@@ -547,7 +547,7 @@ export function ScheduleComparison({ proposal, client }) {
           .filter(
             (p) =>
               p.date !== p.originalDate ||
-              p.date >= zonedDay(client.checkinPlan?.timezone || "UTC"),
+              p.date >= zonedDay(clientTimezone(client)),
           )
           .slice(0, 14)
           .sort((a, b) => a.originalDate.localeCompare(b.originalDate))

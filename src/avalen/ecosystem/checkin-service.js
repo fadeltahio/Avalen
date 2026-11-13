@@ -8,7 +8,7 @@ import {
   CHECKIN_FIELDS,
 } from "../checkin-model.js";
 import { memory, newId } from "./memory.js";
-import { zonedDay, utcAdd, validTimezone } from "./time.js";
+import { zonedDay, utcAdd, clientTimezone } from "./time.js";
 import { t } from '../i18n.js';
 export function checkinSummary(data, row) {
   const client = data.clients.find((c) => c.id === row.clientId),
@@ -60,7 +60,7 @@ export function checkinSummary(data, row) {
   };
 }
 export function submitCheckin(data, user, client, p, media) {
-  const today = zonedDay(client.checkinPlan?.timezone || "UTC"),
+  const today = zonedDay(clientTimezone(client)),
     existing = data.checkins.find((r) => r.id === p.id);
   if (existing && existing.clientId !== client.id)
     throw Object.assign(new Error(t('Check-in not found.')), { status: 404 });
@@ -216,8 +216,7 @@ export function reviewCheckin(data, user, client, p, media) {
 export function reminderDue(client, rows, now = new Date()) {
   const plan = checkinPlanFor(client);
   if (plan.reminders === false || client.paused) return null;
-  const timezone = plan.timezone || "UTC";
-  if (!validTimezone(timezone)) return null;
+  const timezone = clientTimezone(client);
   const today = zonedDay(timezone, now),
     schedule = checkinSchedule(client, rows, today);
   if (!schedule.due) return null;

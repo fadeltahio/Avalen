@@ -1,5 +1,5 @@
 import { answerFor } from "../checkin-model.js";
-import { utcAdd, zonedDay } from "./time.js";
+import { utcAdd, zonedDay, clientTimezone } from "./time.js";
 import { equal, memory, newId, followUps } from "./memory.js";
 import { t } from '../i18n.js';
 const e1rm = (sets) =>
@@ -13,7 +13,7 @@ export function analyzeClient(
   data,
   client,
   {
-    today = zonedDay(client.checkinPlan?.timezone || "UTC"),
+    today = zonedDay(clientTimezone(client)),
     includeSuppressed = false,
   } = {},
 ) {
@@ -354,7 +354,7 @@ export function decideInsight(data, user, client, p) {
     throw new Error(
       t('This observation is no longer supported by the current records. Refresh the page.'),
     );
-  const today = zonedDay(client.checkinPlan?.timezone || "UTC");
+  const today = zonedDay(clientTimezone(client));
   if (
     !["dismiss", "snooze", "reject", "review", "approve"].includes(p.decision)
   )

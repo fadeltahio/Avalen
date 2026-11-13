@@ -1,5 +1,5 @@
 import { cleanLayout } from "../src/avalen/home-layout.js";
-import { zonedDay, dateKey } from "../src/avalen/ecosystem/time.js";
+import { zonedDay, dateKey, validTimezone } from "../src/avalen/ecosystem/time.js";
 import { programError } from "../src/avalen/validation.js";
 import { checkinPlanError } from "../src/avalen/checkin-model.js";
 import { policyError } from "../src/avalen/ecosystem/scheduling.js";
@@ -43,6 +43,7 @@ const clientKeys = new Set([
   "intake",
   "phone",
   "homeLayout",
+  "timezone",
 ]);
 export function projection(source, user) {
   const data = foundations(structuredClone(source));
@@ -270,6 +271,7 @@ export function mergeEdit(source, next, user) {
           "intake",
           "phone",
           "homeLayout",
+          "timezone",
         ]);
       for (const field of new Set([
         ...Object.keys(old),
@@ -281,6 +283,8 @@ export function mergeEdit(source, next, user) {
           if (field === 'homeLayout' && changed.homeLayout != null) {
             try { cleanLayout(changed.homeLayout); } catch (e) { fail(400, e.message); }
           }
+          if (field === 'timezone' && !validTimezone(changed.timezone))
+            fail(400, 'Choose a valid time zone.');
           if (field === 'phone' && changed.phone != null && (typeof changed.phone !== 'string' || !/^\+?[0-9][0-9 ()-]{6,19}$/.test(changed.phone.trim())))
             fail(400, 'Enter a valid mobile number.');
           if (field === 'savedSessions' && (!Array.isArray(changed[field]) || changed[field].length > 500 || changed[field].some(id => typeof id !== 'string' || id.length > 200)))

@@ -1,4 +1,5 @@
 import { AISharingPreference } from "./ecosystem/updates.jsx";
+import { deviceTimezone } from "./ecosystem/time.js";
 import React, { lazy, Suspense, useEffect, useMemo, useState, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import {
@@ -165,6 +166,13 @@ function App() {
   const noClients = !data.clients.length;
   const standIn = useMemo(() => ({ ...newClient('', ''), id: 'no-client' }), []);
   const client = data.clients.find(c => c.id === data.activeClientId) || data.clients[0] || standIn;
+  // Records the client's own time zone from their phone (again if they travel), so
+  // check-in days and reminders follow their clock instead of UTC.
+  useEffect(() => {
+    if (role !== 'client' || noClients || recovery) return;
+    const zone = deviceTimezone();
+    if (client.timezone !== zone) update(d => { const own = d.clients.find(c => c.id === client.id); if (own) own.timezone = zone; });
+  }, [role, client.id, client.timezone, noClients, recovery]);
   const scheduledDetail = route.date && scheduleDay(client, route.date);
   const detailDay = scheduledDetail?.id === route.sessionId ? scheduledDetail : client.program.days.find(day => day.id === route.sessionId);
   const sessionDetail = detailDay ? { day: detailDay, date: route.date } : null;

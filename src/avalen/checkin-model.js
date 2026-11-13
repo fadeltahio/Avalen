@@ -1,4 +1,4 @@
-import { zonedDay,validTimezone,weekday,utcAdd } from './ecosystem/time.js';
+import { zonedDay,validTimezone,weekday,utcAdd,clientTimezone } from './ecosystem/time.js';
 import { uid } from './id.js';
 const metric = (id,label,unit,min,max,enabled=false,required=false) => ({ id,label,type:'number',unit,min,max,enabled,required,measurementKey:id,builtin:true });
 const rating = label => ({ id:`score-${label.toLowerCase()}`,label,type:'rating',unit:'/ 5',min:1,max:5,enabled:['Sleep','Energy'].includes(label),required:false,legacyKey:label,builtin:true });
@@ -21,9 +21,9 @@ export function localDay(date = new Date()) {
 export function addDays(date,days) { const d=new Date(`${date}T12:00:00`); d.setDate(d.getDate()+Number(days)); return localDay(d); }
 const distance = (a,b) => Math.round((new Date(`${b}T12:00:00`)-new Date(`${a}T12:00:00`))/86400000);
 export function checkinPlanFor(client,today=localDay()) {
-  return client.checkinPlan || { timezone:'UTC',reminderTime:'18:00',reminders:true,intervalDays:7,startDate:addDays(client.created || today,7),fields:structuredClone(CHECKIN_FIELDS) };
+  return client.checkinPlan || { timezone:'',reminderTime:'18:00',reminders:true,intervalDays:7,startDate:addDays(client.created || today,7),fields:structuredClone(CHECKIN_FIELDS) };
 }
-export function checkinSchedule(client,rows,today=zonedDay(client.checkinPlan?.timezone || 'UTC')) {
+export function checkinSchedule(client,rows,today=zonedDay(clientTimezone(client))) {
   const plan=checkinPlanFor(client,today);
   const last=rows.filter(r=>r.clientId===client.id && r.date<=today).sort((a,b)=>a.date.localeCompare(b.date)).at(-1);
   let first=plan.startDate;

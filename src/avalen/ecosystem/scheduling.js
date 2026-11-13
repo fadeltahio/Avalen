@@ -1,5 +1,5 @@
 import { equal, memory, newId } from "./memory.js";
-import { utcAdd, weekday, zonedDay, dateKey } from "./time.js";
+import { utcAdd, weekday, zonedDay, dateKey, clientTimezone } from "./time.js";
 import { t } from '../i18n.js';
 export const defaultScheduleRules = {
   independent: false,
@@ -152,7 +152,7 @@ export function proposeSchedule(
   client,
   sessions,
   request,
-  today = zonedDay(client.checkinPlan?.timezone || "UTC"),
+  today = zonedDay(clientTimezone(client)),
 ) {
   const rules = scheduleRules(client),
     original = structuredClone(client.schedule).sort((a, b) =>
@@ -270,7 +270,7 @@ export function applyProposal(
     throw new Error(
       t('The schedule changed after this proposal. Create a fresh preview.'),
     );
-  const today = zonedDay(client.checkinPlan?.timezone || "UTC"),
+  const today = zonedDay(clientTimezone(client)),
     issues = scheduleConflicts(
       client,
       data.sessions,
