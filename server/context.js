@@ -25,6 +25,8 @@ export function createContext({
   fetchImpl = globalThis.fetch,
   publicUrl = process.env.AVALEN_PUBLIC_URL,
   coachSignup = process.env.AVALEN_COACH_SIGNUP !== "off",
+  trustProxy = process.env.AVALEN_TRUST_PROXY === "true",
+  clientIpHeader = process.env.AVALEN_CLIENT_IP_HEADER?.toLowerCase(),
   secretsKey,
   wearableEnv = process.env,
 } = {}) {
@@ -118,9 +120,24 @@ export function createContext({
       fail(403, "Refresh the page before trying again.");
     return user;
   }
+  // Behind a hosting proxy every request arrives from the proxy's address. Only when
+  // told the proxy is trusted do we read the client address it passes along: either a
+  // single-value header the host sets, or the last X-Forwarded-For entry (the one the
+  // proxy itself appended; earlier entries can be forged by the client).
+  function clientIp(req) {
+    if (clientIpHeader) {
+      const value = req.headers[clientIpHeader];
+      if (typeof value === "string" && value.trim()) return value.trim();
+    }
+    if (trustProxy) {
+      const forwarded = String(req.headers["x-forwarded-for"] || "").split(",").map((v) => v.trim()).filter(Boolean);
+      if (forwarded.length) return forwarded.at(-1);
+    }
+    return req.socket.remoteAddress;
+  }
   // A simple per-IP, per-action rate limit: 15 attempts per 15-minute window.
   function limit(req, key) {
-    const id = `${req.socket.remoteAddress}:${key}`,
+    const id = `${clientIp(req)}:${key}`,
       now = Date.now();
     const item = attempts.get(id) || { n: 0, until: now + 900000 };
     if (item.until < now) {

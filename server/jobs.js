@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { readFileSync, existsSync, unlinkSync } from "node:fs";
+import { readFileSync, existsSync, unlinkSync, mkdirSync, readdirSync, renameSync } from "node:fs";
 import { join } from "node:path";
+import { backup, DatabaseSync } from "node:sqlite";
 import { foundations, newId } from "../src/avalen/ecosystem/memory.js";
 import { reminderDue } from "../src/avalen/ecosystem/checkin-service.js";
 export function queueTranscription(service, user, clientId, mediaId) {
@@ -170,6 +171,27 @@ export async function runJobs(service, { now = new Date() } = {}) {
   }
   db.prepare("DELETE FROM sessions WHERE expires<?").run(now.getTime());
 }
+// One consistent copy of the database per day in <data>/backups, keeping the newest
+// `keep` days. It guards against a bad write or corruption; it lives on the same disk,
+// so the host's disk snapshots (or an off-site copy) are still needed for disk loss.
+export async function snapshotDatabase(service, { now = new Date(), keep = Number(process.env.AVALEN_BACKUP_DAYS ?? 7) } = {}) {
+  if (!(keep > 0)) return null;
+  const dir = join(service.root, "backups"), file = join(dir, `avalen-${now.toISOString().slice(0, 10)}.sqlite`);
+  if (existsSync(file)) return null;
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const partial = `${file}.partial`;
+  if (existsSync(partial)) unlinkSync(partial);
+  await backup(service.db, partial);
+  // The copy inherits write-ahead mode; switch it back so the snapshot is one file.
+  const copy = new DatabaseSync(partial);
+  copy.exec("PRAGMA journal_mode=DELETE");
+  copy.close();
+  renameSync(partial, file);
+  const copies = readdirSync(dir).filter((f) => /^avalen-\d{4}-\d{2}-\d{2}\.sqlite$/.test(f)).sort();
+  for (const old of copies.slice(0, Math.max(0, copies.length - keep)))
+    for (const path of [old, `${old}-wal`, `${old}-shm`].map((f) => join(dir, f))) if (existsSync(path)) unlinkSync(path);
+  return file;
+}
 export function startWorker(service) {
   service.db
     .prepare("UPDATE jobs SET state='retry',run_at=? WHERE state='running'")
@@ -181,6 +203,7 @@ export function startWorker(service) {
     try {
       await runJobs(service);
       if (service.wearables) await service.wearables.runDue();
+      await snapshotDatabase(service);
     } catch (e) {
       console.error("Avalen background task failed:", e.message);
     } finally {

@@ -287,3 +287,19 @@ test("replaying a workspace save after a lost acknowledgement does not duplicate
     await f.close();
   }
 });
+
+test("login limits count each client separately behind a trusted proxy, and ignore forged addresses otherwise", async () => {
+  const attempt = (f, forwarded) =>
+    f.call("/api/login", { method: "POST", body: { email: "nobody@example.test", password: "wrong-password" }, headers: { "X-Forwarded-For": forwarded } });
+  const behindProxy = await fixture({ trustProxy: true });
+  try {
+    for (let i = 0; i < 15; i++) await attempt(behindProxy, `198.51.100.${i}, 203.0.113.1`);
+    assert.equal((await attempt(behindProxy, "198.51.100.99, 203.0.113.1")).status, 429, "the proxy-appended last entry identifies the client");
+    assert.notEqual((await attempt(behindProxy, "203.0.113.2")).status, 429, "a different client is not blocked");
+  } finally { await behindProxy.close(); }
+  const direct = await fixture();
+  try {
+    for (let i = 0; i < 15; i++) await attempt(direct, `198.51.100.${i}`);
+    assert.equal((await attempt(direct, "198.51.100.200")).status, 429, "without a trusted proxy the header is ignored");
+  } finally { await direct.close(); }
+});

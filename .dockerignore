@@ -1,0 +1,14 @@
+.git
+node_modules
+dist
+.avalen-data
+.env
+.env.*
+!.env.example
+ios
+android
+output
+test-results
+playwright-report
+coverage
+*.log
