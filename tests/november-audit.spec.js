@@ -13,8 +13,9 @@ test('the log button stays under the thumb when rest begins', async ({page}) => 
  const before = await first.boundingBox();
  await first.click();
  await expect(page.getByRole('region',{name:'Rest timer'})).toBeVisible();
- const after = await page.getByRole('button',{name:'Log set 2',exact:true}).boundingBox();
- expect(Math.abs(after.y - before.y)).toBeLessThan(2);
+ // The button gives a brief press-in as the set saves; measure where it settles.
+ const next = page.getByRole('button',{name:'Log set 2',exact:true});
+ await expect.poll(async () => Math.abs((await next.boundingBox()).y - before.y)).toBeLessThan(2);
 });
 
 test('Train no longer duplicates the main Nutrition destination', async ({page}) => {

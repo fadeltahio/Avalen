@@ -31,7 +31,10 @@ test('logger persists unlogged entries and supports corrections without losing s
   await page.getByRole('button', { name: 'Undo set 1', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Edit set 2', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Log set 1' })).toBeEnabled();
+  // The logger ignores a second "log" within 400 ms of the last save (double-tap guard).
+  await page.waitForTimeout(450);
   await page.getByRole('button', { name: 'Log set 1' }).click();
+  await expect(page.getByRole('button', { name: 'Edit set 1', exact: true })).toBeVisible();
   const d = await draft(page);
   expect(d.sets).toHaveLength(2);
   expect(d.sets.map(s => s.set).sort()).toEqual([1, 2]);

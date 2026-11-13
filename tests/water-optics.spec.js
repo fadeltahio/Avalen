@@ -5,7 +5,7 @@ async function demo(page){await page.goto('/');await page.getByRole('button',{na
 test('water responds to actual touch and drag without changing the logged intake', async({browser},testInfo)=>{
   const context=await browser.newContext({hasTouch:true,viewport:{width:390,height:844}}),page=await context.newPage();
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await demo(page);await nav(page,'Plan').click();await page.getByRole('tab',{name:'Habits',exact:true}).click();
+  await demo(page);await nav(page,'Train').click();await page.getByRole('tab',{name:'Habits',exact:true}).click();
   const canvas=page.locator('.liquid-canvas'),scene=page.locator('.water-scene');
   await scene.scrollIntoViewIfNeeded();
   await expect(canvas).toHaveAttribute('data-renderer',/webgl|canvas/);
@@ -23,7 +23,7 @@ test('water responds to actual touch and drag without changing the logged intake
 });
 
 test('the waterline crosses the percentage when intake rises and the renderer survives reduced motion', async({page},testInfo)=>{
-  await demo(page);await nav(page,'Plan').click();await page.getByRole('tab',{name:'Habits',exact:true}).click();
+  await demo(page);await nav(page,'Train').click();await page.getByRole('tab',{name:'Habits',exact:true}).click();
   await page.getByRole('spinbutton',{name:'Drink water',exact:true}).fill('0.5');
   const canvas=page.locator('.liquid-canvas'),scene=page.locator('.water-scene');await scene.scrollIntoViewIfNeeded();
   await expect.poll(async()=>Number(await canvas.getAttribute('data-level'))).toBe(20);
@@ -39,9 +39,10 @@ test('the waterline crosses the percentage when intake rises and the renderer su
   await page.getByRole('button',{name:'Add 250 ml water'}).click();await expect(canvas).toHaveAttribute('data-level','70');
 });
 
-test('the daily calendar previews scheduled training and meal capture opens the photo form', async({page})=>{
+test('the training calendar previews scheduled days and meal capture opens the photo form', async({page})=>{
   await demo(page);
-  await expect(page.getByRole('heading',{name:/Good (morning|afternoon|evening),/})).toBeVisible();
+  await expect(page.getByRole('heading',{name:/Make it count,/})).toBeVisible();
+  await nav(page,'Train').click();
   for (const width of [768, 320, 390]) {
     await page.setViewportSize({width,height:844});
     await expect.poll(() => page.locator('.calendar').evaluate(calendar => {
@@ -59,10 +60,9 @@ test('the daily calendar previews scheduled training and meal capture opens the 
   });
   const label = new Date(`${next.date}T12:00:00`).toLocaleDateString('en', {weekday:'long',month:'long',day:'numeric'});
   await page.locator('.calendar').getByRole('button',{name:label,exact:true}).click();
-  await expect(page.getByRole('button',{name:/Scheduled for/})).toBeDisabled();
-  await nav(page,'Plan').click();await page.getByRole('tab',{name:'Nutrition',exact:true}).click();
-  await expect.poll(()=>page.locator('.meal-camera-frame img').evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
-  await page.getByRole('button',{name:'Add meal photo',exact:true}).click();
-  await expect(page.getByRole('tab',{name:'Photo',exact:true})).toHaveAttribute('aria-selected','true');
-  await expect(page.getByText('Choose or take a meal photo')).toBeVisible();
+  await expect(page.getByRole('button',{name:/Available on/})).toBeDisabled();
+  await nav(page,'Nutrition').click();
+  await page.getByRole('button',{name:'Photo meal',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'Add meal photo',exact:true})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Upload meal photo',exact:true})).toBeVisible();
 });

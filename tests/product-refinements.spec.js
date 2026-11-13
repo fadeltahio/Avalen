@@ -68,7 +68,7 @@ for(const width of [320,390,1440]) test(`refined screens fit ${width}px in both 
   if(theme==='light'){await menu('More').click();await p.getByRole('button',{name:/Light A clean/}).click();}
   for(const name of ['Home','Train','Nutrition','Progress','More']){await menu(name).click();expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  }
- await p.getByLabel('Workspace role').selectOption('coach');for(const name of ['Dashboard','Clients','Programs','Inbox','Business']){await menu(name).click();await p.locator('main h1').waitFor();expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
+ await p.getByLabel('Workspace role').selectOption('coach');for(const name of ['Home','Clients','Programs','Inbox','Business','More']){await menu(name).click();await p.locator('main h1').waitFor();expect(await p.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);}
  expect(errors).toEqual([]);
 });
 

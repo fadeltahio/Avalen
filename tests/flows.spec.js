@@ -20,9 +20,11 @@ test("coach covers, custom habits, membership and branding flow through to clien
   await page
     .getByRole("button", { name: "Save programme", exact: true })
     .click();
+  await page.getByRole("tab", { name: "Habits", exact: true }).click();
   await page.getByRole("button", { name: "Add custom habit" }).click();
   await page.getByLabel("Habit", { exact: true }).last().fill("Evening walk");
   await page.getByRole("button", { name: "Save habit targets" }).click();
+  await page.getByRole("button", { name: "More sections" }).click();
   await page.getByRole("tab", { name: "Billing", exact: true }).click();
   await page.getByLabel("Amount", { exact: true }).fill("3100");
   await page.getByRole("button", { name: "Save membership" }).click();
@@ -30,16 +32,16 @@ test("coach covers, custom habits, membership and branding flow through to clien
   await expect(
     page.getByRole("heading", { name: "Upper Body A" }),
   ).toBeVisible();
-  await expect(page.locator(".workout-hero")).toHaveCSS(
-    "background-image",
-    /blob:/,
+  await expect(page.locator(".home-today-session img")).toHaveAttribute(
+    "src",
+    /^blob:/,
   );
-  await nav(page, "Plan").click();
+  await nav(page, "Train").click();
   await page.getByRole("tab", { name: "Habits", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Evening walk" }),
   ).toBeVisible();
-  await nav(page, "Coach").click();
+  await coachScreen(page, "Overview");
   await expect(page.getByText("EGP 3,100", { exact: true })).toBeVisible();
   await page.getByLabel("Workspace role").selectOption("coach");
   await page.getByRole("button", { name: "Coach brand settings" }).click();
@@ -54,6 +56,11 @@ const nav = (page, name) =>
 async function demo(page) {
   await page.goto("/");
   await page.getByRole("button", { name: "Explore demo" }).click();
+}
+// The client reaches their coach (overview, feed, messages, check-in) from the header.
+async function coachScreen(page, tab) {
+  await page.getByRole("button", { name: "Coach messages", exact: true }).click();
+  await page.getByRole("tab", { name: tab, exact: true }).click();
 }
 async function close(page) {
   await page.getByRole("button", { name: "Close dialog" }).click();
@@ -88,15 +95,18 @@ test("fresh onboarding, workout draft persistence, finish and real PNG export", 
   await expect(
     page.getByRole("heading", { name: "You showed up." }),
   ).toBeVisible();
-  await expect(page.getByText("687.5", { exact: true })).toBeVisible();
+  // 62.5 kg × 11 = 687.5; the result card shows volume as a whole number.
+  await expect(page.getByText("688", { exact: true })).toBeVisible();
   const promise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Save image", exact: true }).click();
   const file = await promise;
   expect(file.suggestedFilename()).toBe("avalen-progress.png");
   await file.saveAs("test-results/workout-share.png");
   await close(page);
+  const today = page.getByRole("region", { name: "Today’s plan" });
+  await expect(today).toContainText("TODAY · COMPLETE");
   await expect(
-    page.getByRole("button", { name: "Workout complete" }),
+    today.getByRole("button", { name: "View workout result" }),
   ).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -104,32 +114,40 @@ test("client check-in reaches coach review and feedback returns to messages", as
   page,
 }) => {
   await demo(page);
-  await nav(page, "Coach").click();
-  await page.getByRole("tab", { name: "Check-in", exact: true }).click();
+  await coachScreen(page, "Check-in");
   await page.getByRole("button", { name: "Start check-in" }).click();
+  await page.getByLabel("Weight (kg)", { exact: true }).fill("80.2");
   await page
-    .getByLabel("What went well?")
+    .getByLabel("Your update (optional)")
     .fill("Training felt strong this week.");
-  await page.getByLabel("What felt difficult?").fill("Sleep was inconsistent.");
   await page.getByRole("button", { name: "Send check-in" }).click();
   await page.getByLabel("Workspace role").selectOption("coach");
   await nav(page, "Inbox").click();
   await page.getByRole("tab", { name: "Check-ins", exact: true }).click();
+  // The queue opens the client's check-in history, newest first.
+  await page.getByLabel("Sort queue").selectOption("Newest first");
+  await page
+    .getByRole("button")
+    .filter({ hasText: "Pending review" })
+    .first()
+    .click();
   await page
     .getByRole("button")
     .filter({ hasText: "Waiting for review" })
     .first()
     .click();
   await expect(
-    page.getByText("Training felt strong this week.", { exact: true }),
+    page
+      .getByRole("dialog")
+      .getByText("Training felt strong this week.", { exact: true })
+      .first(),
   ).toBeVisible();
   await page
     .getByLabel("Feedback to client")
     .fill("Keep the plan. Prioritise a consistent bedtime.");
   await page.getByRole("button", { name: "Complete review" }).click();
   await page.getByLabel("Workspace role").selectOption("client");
-  await nav(page, "Coach").click();
-  await page.getByRole("tab", { name: "Messages", exact: true }).click();
+  await coachScreen(page, "Messages");
   await expect(
     page.getByText("Keep the plan. Prioritise a consistent bedtime.", {
       exact: true,
@@ -153,21 +171,21 @@ test("coach nutrition change reaches client, food details and habits persist", a
     .fill("Adjusted for the current training block.");
   await page.getByRole("button", { name: "Save nutrition plan" }).click();
   await page.getByLabel("Workspace role").selectOption("client");
-  await nav(page, "Plan").click();
-  await page.getByRole("tab", { name: "Nutrition", exact: true }).click();
+  await nav(page, "Nutrition").click();
   await expect(page.getByText("2,300", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Add food", exact: true }).click();
-  await page.getByRole("button", { name: /Greek yogurt 200/ }).click();
-  await page.getByRole("button", { name: "Add to diary" }).click();
+  await page.getByRole("button", { name: /^Greek yogurt 1 cup/ }).click();
+  await page.getByRole("button", { name: "Log meal", exact: true }).click();
   await page.getByRole("button").filter({ hasText: "Greek yogurt" }).click();
   await expect(
     page.getByRole("heading", { name: "Greek yogurt" }),
   ).toBeVisible();
   await close(page);
+  await nav(page, "Train").click();
   await page.getByRole("tab", { name: "Habits" }).click();
   await page.getByLabel("Drink water", { exact: true }).fill("2.5");
   await page.reload();
-  await nav(page, "Plan").click();
+  await nav(page, "Train").click();
   await page.getByRole("tab", { name: "Habits" }).click();
   await expect(page.getByLabel("Drink water", { exact: true })).toHaveValue(
     "2.5",
@@ -205,8 +223,7 @@ test("coach programme and member post are reflected on client side", async ({
   await expect(
     page.getByRole("heading", { name: "Upper Body · Quality First" }),
   ).toBeVisible();
-  await nav(page, "Coach").click();
-  await page.getByRole("tab", { name: "Feed", exact: true }).click();
+  await coachScreen(page, "Feed");
   await expect(
     page.getByRole("heading", { name: "A more intentional week" }),
   ).toBeVisible();
@@ -216,7 +233,8 @@ test("photos, documents, verified InBody, future locking and keyboard chart", as
 }) => {
   await demo(page);
   await nav(page, "Progress").click();
-  const chart = page.getByRole("slider", { name: /weight history/ });
+  await page.getByRole("tab", { name: "Body", exact: true }).click();
+  const chart = page.getByRole("slider", { name: /weight history/i });
   await chart.focus();
   await chart.press("ArrowLeft");
   await expect(chart).toHaveAttribute("aria-valuenow", "7");
@@ -240,6 +258,7 @@ test("photos, documents, verified InBody, future locking and keyboard chart", as
     .getByRole("button")
     .filter({ has: page.getByRole("heading", { name: "Jordan Williams" }) })
     .click();
+  await page.getByRole("button", { name: "More sections" }).click();
   await page.getByRole("tab", { name: "Documents" }).click();
   await page
     .getByLabel(/Add a PDF or image report/)
@@ -259,7 +278,7 @@ test("photos, documents, verified InBody, future locking and keyboard chart", as
   await expect(
     page.getByRole("slider", { name: /bodyFat history/ }),
   ).toBeVisible();
-  await nav(page, "Today").click();
+  await nav(page, "Train").click();
   const name = await page.evaluate(() => {
     const data = JSON.parse(localStorage.getItem('avalen.workspace.v1'));
     const client = data.clients.find(c => c.id === data.activeClientId);
@@ -270,6 +289,10 @@ test("photos, documents, verified InBody, future locking and keyboard chart", as
     return new Date(`${future.date}T12:00:00`).toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' });
   });
   await page.getByRole("button", { name, exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: /Available on/ }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "View session details" }).click();
   await expect(
     page.getByRole("button", { name: /Scheduled for/ }),
   ).toBeDisabled();
@@ -286,7 +309,7 @@ for (const width of [320, 390, 768, 1440])
       width > 760
         ? page.locator("aside nav")
         : page.getByRole("navigation", { name: "Main navigation" });
-    for (const label of ["Today", "Plan", "Progress", "Coach", "You"]) {
+    for (const label of ["Home", "Train", "Nutrition", "Progress", "More"]) {
       await menu.getByRole("button", { name: label, exact: true }).click();
       expect(
         await page.evaluate(
@@ -296,11 +319,12 @@ for (const width of [320, 390, 768, 1440])
     }
     await page.getByLabel("Workspace role").selectOption("coach");
     for (const label of [
-      "Dashboard",
+      "Home",
       "Clients",
       "Programs",
       "Inbox",
       "Business",
+      "More",
     ]) {
       await menu.getByRole("button", { name: label, exact: true }).click();
       expect(
@@ -309,7 +333,7 @@ for (const width of [320, 390, 768, 1440])
         ),
       ).toBeTruthy();
     }
-    await menu.getByRole("button", { name: "Dashboard", exact: true }).click();
+    await menu.getByRole("button", { name: "Home", exact: true }).click();
     await page.screenshot({
       path: `test-results/coach-${width}.png`,
       fullPage: true,

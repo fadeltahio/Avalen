@@ -2,8 +2,15 @@ import { test, expect } from '@playwright/test';
 const nav = (page, name) => page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name, exact: true });
 async function demo(page) { await page.goto('/'); await page.getByRole('button', { name: 'Explore demo' }).click(); }
 
-test('water additions, custom amounts and undo persist and share with nutrition and habits', async ({ page }) => {
+// The water tracker lives with the client's habits (Train → Habits).
+async function habits(page) {
+  await nav(page, 'Train').click();
+  await page.getByRole('tab', { name: 'Habits', exact: true }).click();
+}
+
+test('water additions, custom amounts and undo persist and stay in step with the water habit', async ({ page }) => {
   await demo(page);
+  await habits(page);
   const before = Number(await page.locator('.water-heading b').innerText().then(s => s.replaceAll(',', '')));
   await page.getByRole('button', { name: 'Add 250 ml water' }).click();
   await expect(page.locator('.water-heading b')).toHaveText((before + 250).toLocaleString('en-US'));
@@ -15,12 +22,7 @@ test('water additions, custom amounts and undo persist and share with nutrition 
   await expect(page.locator('.water-heading b')).toHaveText((before + 625).toLocaleString('en-US'));
   await page.getByRole('button', { name: /Remove 375 ml drink/ }).click();
   await expect(page.locator('.water-heading b')).toHaveText((before + 250).toLocaleString('en-US'));
-  await nav(page, 'Plan').click();
-  await page.getByRole('tab', { name: 'Habits', exact: true }).click();
   await expect(page.getByRole('spinbutton', { name: 'Drink water', exact: true })).toHaveValue(String((before + 250) / 1000));
-  await page.getByRole('tab', { name: 'Nutrition', exact: true }).click();
-  await page.getByRole('tab', { name: 'Water', exact: true }).click();
-  await expect(page.locator('.water-heading b')).toHaveText((before + 250).toLocaleString('en-US'));
 });
 
 test('coach exercise media plays in the logger, can pause, and falls back when video storage is missing', async ({ page }) => {
@@ -40,7 +42,10 @@ test('coach exercise media plays in the logger, can pause, and falls back when v
   await expect(page.getByText('coach-video.mp4', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Save programme', exact: true }).click();
   await page.getByLabel('Workspace role').selectOption('client');
-  await page.getByRole('button', { name: 'Resume workout', exact: true }).click();
+  await page.getByRole('button', { name: /^Resume workout:/ }).click();
+  // Exercise media is folded away in the logger until the client asks for it.
+  const showDemo = () => page.locator('.logger-demo > summary').click();
+  await showDemo();
   const video = page.locator('.logger-background video');
   await expect(video).toBeVisible();
   await expect.poll(() => video.evaluate(el => el.readyState >= 2 && !el.paused && el.muted && el.loop && el.playsInline)).toBe(true);
@@ -48,34 +53,35 @@ test('coach exercise media plays in the logger, can pause, and falls back when v
   await expect.poll(() => video.evaluate(el => el.paused)).toBe(true);
   await page.getByRole('button', { name: 'Unmute exercise video' }).click();
   await expect.poll(() => video.evaluate(el => el.muted)).toBe(false);
-  await page.getByRole('button', { name: 'Go to Incline dumbbell press' }).click();
+  await page.getByRole('button', { name: 'Exercise 2: Incline dumbbell press' }).click();
   await expect(video).toHaveCount(0);
-  await expect(page.locator('.logger-background img')).toHaveAttribute('src', /incline-dumbbell-press/);
+  await showDemo();
+  await expect(page.locator('.logger-background img').first()).toHaveAttribute('src', /incline-dumbbell-press/);
   await page.getByRole('button', { name: 'Close dialog' }).click();
   // Records can survive a media-store loss; the exercise image must still display.
   await page.evaluate(() => { const data = JSON.parse(localStorage.getItem('avalen.workspace.v1')); data.clients.find(c => c.id === data.activeClientId).program.days[0].exercises[0].videoFile.id = 'missing-video'; localStorage.setItem('avalen.workspace.v1', JSON.stringify(data)); });
   await page.reload();
-  await page.getByRole('button', { name: 'Resume workout', exact: true }).click();
-  await page.getByRole('button', { name: 'Go to Bench press' }).click();
+  await page.getByRole('button', { name: /^Resume workout:/ }).click();
+  await page.getByRole('button', { name: 'Exercise 1: Bench press' }).click();
+  await showDemo();
   await expect(page.getByText('Video unavailable · showing exercise image')).toBeVisible();
-  await expect.poll(() => page.locator('.logger-background img').evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
+  await expect.poll(() => page.locator('.logger-background img').first().evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
 });
 
-test('water, exercise imagery and the morphing dock fit a 320px phone with reduced motion', async ({ page }) => {
+test('water, exercise imagery and set logging fit a 320px phone with reduced motion', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await demo(page);
+  await habits(page);
   await page.getByRole('button', { name: 'Add 100 ml water' }).click();
   await expect(page.locator('.water-percent')).toHaveText('76%');
-  await nav(page, 'Plan').click();
-  await expect(nav(page, 'Plan')).toHaveAttribute('aria-current', 'page');
-  await expect.poll(() => nav(page, 'Plan').evaluate(el => parseFloat(getComputedStyle(el).transitionDuration))).toBe(0);
+  await expect(nav(page, 'Train')).toHaveAttribute('aria-current', 'page');
+  await expect.poll(() => nav(page, 'Train').evaluate(el => parseFloat(getComputedStyle(el).transitionDuration))).toBe(0);
   await page.getByRole('tab', { name: 'Training', exact: true }).click();
   await expect(page.locator('.exercise-thumb')).toHaveCount(5);
   await expect.poll(() => page.locator('.exercise-thumb').evaluateAll(images => images.every(i => i.complete && i.naturalWidth > 0))).toBe(true);
   await page.getByRole('button', { name: 'Start Workout', exact: true }).click();
   await page.getByRole('button', { name: 'Log set 1', exact: true }).click();
-  await expect(page.locator('.saved-motion')).toContainText('Set saved');
-  await expect(page.locator('.saved-morph path')).toHaveCSS('stroke-dashoffset', '0px');
+  await expect(page.getByRole('status').filter({ hasText: 'Set 1 saved' }).first()).toBeVisible();
   expect(await page.locator('.workout-modal').evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
 });

@@ -23,7 +23,10 @@ function Liquid({ percent, impulse, liters, hasTarget }) {
     if (!engine.current) return;
     engine.current.setValue(hasTarget ? percent : liters, hasTarget ? '%' : 'L');
     if (impulse && !reduced) engine.current.splash(.6, .68, 1);
-    if (reduced) engine.current.render(performance.now() / 1000);
+    if (reduced) {
+      const result = engine.current.render(performance.now() / 1000);
+      if (result && canvas.current) canvas.current.dataset.level = String(Math.round(result.level));
+    }
   }, [percent, impulse, liters, hasTarget]);
   useEffect(() => {
     const el = canvas.current, scene = el.parentElement;

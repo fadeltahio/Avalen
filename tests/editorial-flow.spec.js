@@ -131,6 +131,6 @@ for (const width of [320,390,768,1440]) test(`navigation, themes and layout fit 
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme','light');
   await page.getByLabel('Workspace role').selectOption('coach');
-  for(const label of ['Clients','Programs','Inbox','Business','Dashboard']) await open(label);
+  for(const label of ['Clients','Programs','Inbox','Business','More','Home']) await open(label);
   expect(errors).toEqual([]);
 });

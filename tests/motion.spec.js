@@ -217,7 +217,10 @@ test("a waveform uses the input stream, falls silent with it, and a recording ca
   await p.goto("/#/client/coach?tab=Check-in");
   await p.getByRole("button", { name: "Start check-in", exact: true }).click();
   await p.evaluate(installMicrophone);
-  await p.locator(".checkin-voice-disclosure > summary").click();
+  await p
+    .locator(".checkin-voice-disclosure > summary")
+    .filter({ hasText: "Add a voice update" })
+    .click();
   await p.getByRole("button", { name: "Record voice", exact: true }).click();
   const recording = p.locator('.record-control[data-recording="recording"]');
   await expect(recording).toBeVisible();

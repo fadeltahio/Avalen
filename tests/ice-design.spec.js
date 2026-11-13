@@ -1,11 +1,11 @@
 import { test, expect } from '@playwright/test';
 const nav = (page, name) => page.getByRole('navigation', {name:'Main navigation'}).getByRole('button', {name,exact:true});
 
-test('smoked-glass theme defaults to dark and a programme card previews its real scheduled day', async ({page}) => {
+test('the theme defaults to dark and an upcoming session previews its real scheduled day', async ({page}) => {
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-theme','dark');
   await page.getByRole('button',{name:'Explore demo',exact:true}).click();
-  await expect(page.getByRole('heading',{name:'Training plan',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{name:/Make it count,/})).toBeVisible();
   const upcoming = await page.evaluate(() => {
     const data = JSON.parse(localStorage.getItem('avalen.workspace.v1'));
     const client = data.clients.find(c => c.id === data.activeClientId);
@@ -15,11 +15,10 @@ test('smoked-glass theme defaults to dark and a programme card previews its real
     const day = client.program.days.find(d => d.id !== current && client.schedule.some(s => s.dayId === d.id && s.date > today));
     return {name:day.name,date:client.schedule.find(s => s.dayId === day.id && s.date > today).date};
   });
-  await page.getByRole('button',{name:`Preview ${upcoming.name}`,exact:true}).click();
-  await expect(page.locator('.workout-hero').getByRole('heading',{name:upcoming.name,exact:true})).toBeVisible();
-  await expect(page.locator('.workout-hero .primary')).toBeDisabled();
-  const label = new Date(`${upcoming.date}T12:00:00`).toLocaleDateString('en',{weekday:'long',month:'long',day:'numeric'});
-  await expect(page.locator('.calendar').getByRole('button',{name:label,exact:true})).toHaveAttribute('aria-pressed','true');
+  await page.getByRole('button',{name:`View ${upcoming.name}`,exact:true}).click();
+  await expect(page.getByRole('heading',{name:upcoming.name,exact:true})).toBeVisible();
+  const short = new Date(`${upcoming.date}T12:00:00`).toLocaleDateString('en',{month:'short',day:'numeric'});
+  await expect(page.getByRole('button',{name:`Scheduled for ${short}`,exact:true})).toBeDisabled();
 });
 
 test('adopting the smoked-glass reference preserves saved sets and later appearance choices', async ({page}) => {
@@ -43,9 +42,9 @@ test('adopting the smoked-glass reference preserves saved sets and later appeara
     return {drafts:data.drafts,clients:data.clients,sessions:data.sessions,habits:data.habitLogs};
   });
   expect(after).toEqual(before);
-  await page.getByRole('button',{name:'Resume workout',exact:true}).click();
+  await page.getByRole('button',{name:/^Resume workout:/}).click();
   await expect(page.getByText('62.5 × 11',{exact:true})).toBeVisible();
   await page.getByRole('button',{name:'Close dialog',exact:true}).click();
-  await nav(page,'You').click();await page.getByRole('button',{name:/Light A fresh/}).click();
+  await nav(page,'More').click();await page.getByRole('group',{name:'Colour theme'}).getByRole('button',{name:/^Light /}).click();
   await page.reload();await expect(page.locator('html')).toHaveAttribute('data-theme','light');
 });
