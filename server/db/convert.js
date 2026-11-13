@@ -11,6 +11,9 @@ import { migrate } from "./migrate.js";
 export const TABLES = [
   ["workspaces", ["id"]],
   ["users", ["id"]],
+  ["coaching_relationships", ["id"]],
+  ["workout_sessions", ["id"]],
+  ["workout_sets", ["session_id", "position"]],
   ["sessions", ["token"]],
   ["invitations", ["token"]],
   ["coach_codes", ["code"]],

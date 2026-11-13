@@ -39,6 +39,19 @@ not in the routes.
   set, otherwise `server/db/sqlite.js` with a file in the data folder. Code inside a
   transaction keeps calling the store normally; the driver routes it into the open
   transaction.
+- **Workouts and coaching relationships live in their own tables (Phase 2).**
+  `workout_sessions` holds each workout, owned by the client (`client_id`) and tied
+  to the `coaching_relationships` row it was logged under; `workout_sets` holds each
+  set as a queryable row. `store.workspaces.get()` puts the workouts back into the
+  workspace object and `save()` moves them out again (and keeps relationships in step
+  with the client list), so routes and the app see exactly the same workspace as
+  before. Each workout's original JSON is kept in `workout_sessions.data` because the
+  app compares workouts by exact JSON. Workspaces written before Phase 2 are moved at
+  startup by `moveInlineWorkouts()`, one at a time, and kept unchanged unless the
+  rebuilt workspace is byte-for-byte identical. Removing a client from a coach's list
+  ends the relationship but keeps the workouts; deleting the client's account removes
+  them. Profiles, programmes, nutrition, check-ins and messages still live in the
+  workspace document until Phase 3.
 - PostgreSQL runs requests truly in parallel, so anything that reads a workspace and
   writes it back does so in a transaction with `store.workspaces.getForUpdate()` (a
   row lock). A second save to the same workspace waits rather than overwriting.

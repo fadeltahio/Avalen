@@ -206,7 +206,7 @@ export function createAccountRoutes(ctx) {
           await store.jobs.deleteWorkspace(ws);
           await store.imports.deleteWorkspace(ws);
           await store.paymentAccounts.delete(ws);
-          await store.workspaces.delete(ws);
+          await store.workspaces.delete(ws); // with its workouts and relationships
         }
       });
       for (const id of fileIds) await files.remove(id);

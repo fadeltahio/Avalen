@@ -28,5 +28,7 @@ export function createStore(db) {
 export async function openStore(root, { databaseUrl } = {}) {
   const db = databaseUrl ? postgresDriver(databaseUrl) : sqliteDriver(join(root, "avalen.sqlite"));
   await migrate(db);
-  return createStore(db);
+  const store = createStore(db);
+  await store.workspaces.moveInlineWorkouts();
+  return store;
 }

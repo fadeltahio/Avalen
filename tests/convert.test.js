@@ -36,11 +36,18 @@ test("postgres: a SQLite workspace converts exactly, and the converted server si
     assert.equal(client.status, 200);
     const today = new Date().toISOString().slice(0, 10);
     await f.call("/api/wearables/upload", { method: "POST", account: client, body: { provider: "manual", days: [{ date: today, metrics: { sleepMinutes: 420 } }] } });
+    const current = await f.call("/api/workspace", { account: client });
+    const data = structuredClone(current.data);
+    data.sessions.push({ id: "converted-workout", clientId: client.user.clientId, date: today, dayId: data.clients[0].program.days[0].id, title: "Upper Body A", sets: [{ name: "Bench press", exerciseId: "bench", set: 1, weight: 60, reps: 8, kind: "Standard", skipped: false }], startedAt: Date.now(), finishedAt: new Date().toISOString(), duration: 1200, prs: [] });
+    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: current.revision, data } })).status, 200);
     const before = await f.store.workspaces.all();
 
     const report = await sqliteToPostgres(join(f.root, "avalen.sqlite"), target.url);
     assert.equal(report.find((r) => r.table === "users").rows, 2);
     assert.equal(report.find((r) => r.table === "wearable_days").rows, 1);
+    assert.equal(report.find((r) => r.table === "workout_sessions").rows, 1);
+    assert.equal(report.find((r) => r.table === "workout_sets").rows, 1);
+    assert.equal(report.find((r) => r.table === "coaching_relationships").rows, 2);
 
     const converted = await openStore(f.root, { databaseUrl: target.url });
     try {
