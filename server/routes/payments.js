@@ -8,22 +8,22 @@ import { NOT_HANDLED, body } from "../http-utils.js";
 // Paymob's server-to-server confirmation. Matches the attempt reference to a
 // payment, checks the coach's HMAC signature, then settles exactly once.
 async function paymobCallback(ctx, req, url) {
-  const { db, paymob, commit } = ctx;
+  const { store, paymob, commit } = ctx;
   const input = await body(req, 256 * 1024);
   const obj = input && typeof input === "object" ? input.obj : null;
   const reference = String(obj?.order?.merchant_order_id ?? obj?.merchant_order_id ?? "");
   const paymentId = reference.split(".")[0];
   let found = null;
   if (/^[\w-]{1,100}\.\d{1,3}$/.test(reference))
-    for (const row of db.prepare("SELECT id, data FROM workspaces").all()) {
-      const payment = (JSON.parse(row.data).payments || []).find((p) => p.id === paymentId && p.paymob?.attempts?.some((a) => a.ref === reference));
+    for (const row of await store.workspaces.all()) {
+      const payment = (row.data.payments || []).find((p) => p.id === paymentId && p.paymob?.attempts?.some((a) => a.ref === reference));
       if (payment) { found = { workspace: row.id, payment }; break; }
     }
   if (!found) fail(404, "Unknown payment.");
-  if (!paymob.verify(found.workspace, obj, url.searchParams.get("hmac"))) fail(401, "Invalid signature.");
+  if (!(await paymob.verify(found.workspace, obj, url.searchParams.get("hmac")))) fail(401, "Invalid signature.");
   const change = settle(found.payment, obj);
   if (!change) return { ok: true };
-  commit({ id: "paymob", role: "system", workspace_id: found.workspace }, undefined, (d) => {
+  await commit({ id: "paymob", role: "system", workspace_id: found.workspace }, undefined, (d) => {
     const record = d.payments.find((p) => p.id === paymentId);
     if (!record || record.paymob?.transactionId === change.transactionId) return d;
     if (change.kind === "paid")
@@ -78,7 +78,7 @@ export function createPaymentRoutes(ctx) {
       if (user.role !== "client") fail(403, "Only the client can pay a payment request.");
       limit(req, "checkout");
       const input = await body(req, 4096);
-      const { data } = load(user);
+      const { data } = await load(user);
       const payment = data.payments.find((p) => p.id === checkout[1]);
       if (!payment || payment.clientId !== user.client_id) fail(404, "This payment request isn’t available.");
       if (payment.status !== "due")
@@ -95,7 +95,7 @@ export function createPaymentRoutes(ctx) {
         reference,
         phone,
       });
-      commit(user, undefined, (d) => {
+      await commit(user, undefined, (d) => {
         const record = d.payments.find((p) => p.id === payment.id);
         record.paymob = {
           ...(record.paymob || {}),

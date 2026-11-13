@@ -19,12 +19,60 @@ web app for anything that isn't `/api/*`. All the actual route logic lives in
 - `wearables.js` — WHOOP/Google Health connections and synced readings
 - `coaching.js` — AI insight explanations, transcription requests, background job status
 
-`server/context.js` builds the database connection, the payment and wearable
-services, and the handful of primitives every route needs (reading the signed-in
-user, committing a workspace change, finding a media file) into one object, passed
-into each route module. `server/http-utils.js` and `server/crypto-utils.js` hold
+`server/context.js` builds the storage layer, the payment and wearable services,
+and the handful of primitives every route needs (reading the signed-in user,
+committing a workspace change, finding a media file) into one object, passed into
+each route module. `server/http-utils.js` and `server/crypto-utils.js` hold
 low-level helpers (reading a request body, serving a static file, hashing a
 password) with no route logic in them.
+
+### Storage (`server/store/`, `server/db/`, `server/migrations/`)
+
+Routes and services never write SQL. They call named, async functions such as
+`store.users.byEmail()`, `store.workspaces.save()` or `store.media.grant()`, grouped
+by area in `server/store/*.js`. This is the seam for the PostgreSQL migration: the
+database (Phase 1) and the shape of the data (Phase 2) change inside this folder,
+not in the routes.
+
+- Two drivers with one interface (`all`, `get`, `run`, `exec`, `transaction`, all
+  async, `$1, $2 …` placeholders): `server/db/postgres.js` when `DATABASE_URL` is
+  set, otherwise `server/db/sqlite.js` with a file in the data folder. Code inside a
+  transaction keeps calling the store normally; the driver routes it into the open
+  transaction.
+- PostgreSQL runs requests truly in parallel, so anything that reads a workspace and
+  writes it back does so in a transaction with `store.workspaces.getForUpdate()` (a
+  row lock). A second save to the same workspace waits rather than overwriting.
+  `tests/storage.test.js` proves this fails without the lock.
+- `server/migrations/<dialect>/NNN_name.sql` holds the schema. Each file runs once,
+  in order, and is recorded in `schema_migrations`. Never edit a released file; add
+  a new one. `001_base.sql` is the schema as it was, so older databases pass through
+  unchanged.
+- Code shared with the app (`command()` in `actions.js`, `validateMediaChanges`)
+  can't wait on the database, so `commit()` loads the workspace's file records first
+  and hands it a lookup that answers immediately, with the same permission rule as
+  `permittedMedia`.
+- `pnpm test` runs the unit tests on SQLite; `pnpm test:postgres` runs the same tests
+  on a throwaway PostgreSQL 17 server, one empty database per test, deleted
+  afterwards (`node tools/with-postgres.mjs <command>` does the same for any command).
+  Install PostgreSQL with `brew install postgresql@17`. Run both before merging a
+  storage change.
+- `node tools/sqlite-to-postgres.mjs <avalen.sqlite>` copies a SQLite data file into
+  an empty PostgreSQL database (`DATABASE_URL`) and compares every table afterwards;
+  if anything differs, nothing is kept.
+
+### Files (`server/files/`)
+
+The bytes of uploads live behind `files.put / read / stream / remove`: the data
+folder's `media` directory by default, or a private Cloudflare R2 bucket when
+`AVALEN_R2_*` is set. Uploads are validated in a private temporary folder (ffprobe
+and ffmpeg need a real file) before being stored. Files are only ever read through
+the server after its permission check; R2 requests are signed, including a hash of
+the uploaded bytes.
+
+**Adding a query:** add a named function to the right file in `server/store/`, using
+`$n` placeholders and SQL that both SQLite and PostgreSQL accept (for example
+`INSERT … ON CONFLICT DO NOTHING`, not `INSERT OR IGNORE`). **Changing the schema:**
+add a new numbered migration file.
 
 **Adding an endpoint:** add it to the route module for its topic (or create a new
 one for a genuinely new topic), and register its handler in the matching array in

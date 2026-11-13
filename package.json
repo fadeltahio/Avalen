@@ -7,6 +7,7 @@
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "test": "node --test tests/*.test.js",
+    "test:postgres": "AVALEN_TEST_DB=postgres node tools/with-postgres.mjs node --test tests/*.test.js",
     "test:e2e": "playwright test",
     "preview": "vite preview --host 0.0.0.0",
     "server": "node --env-file-if-exists=.env server/index.js",
@@ -17,7 +18,9 @@
     "@capacitor/core": "8.5.3",
     "@capacitor/ios": "8.5.3",
     "@fontsource-variable/readex-pro": "5.3.0",
+    "aws4fetch": "1.0.20",
     "lucide-react": "1.31.0",
+    "pg": "8.23.1",
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },

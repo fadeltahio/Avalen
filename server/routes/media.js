@@ -4,7 +4,8 @@
 import { promisify } from "node:util";
 import { execFile } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { writeFileSync, statSync, existsSync, unlinkSync, createReadStream } from "node:fs";
+import { writeFileSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { coachOnly, fail, requireClient } from "../permissions.js";
 import { NOT_HANDLED, body } from "../http-utils.js";
@@ -12,25 +13,25 @@ import { NOT_HANDLED, body } from "../http-utils.js";
 const exec = promisify(execFile);
 
 export function createMediaRoutes(ctx) {
-  const { db, mediaRoot, load, permittedMedia } = ctx;
+  const { store, files, load, permittedMedia } = ctx;
 
   return async function handleMediaRoutes(req, res, url, user) {
     if (url.pathname === "/api/media" && req.method === "POST") {
       const clientId = String(req.headers["x-client-id"] || ""),
-        current = load(user).data;
+        current = (await load(user)).data;
       requireClient(user, current, clientId);
       const shared = req.headers["x-media-scope"] === "workspace",
         importId = req.headers["x-import-id"];
       if (shared || importId) coachOnly(user);
       if (importId) {
-        if (!/^[a-f0-9-]{20,80}$/.test(importId) || !db.prepare("SELECT id FROM imports WHERE workspace_id=? LIMIT 1").get(user.workspace_id))
+        if (!/^[a-f0-9-]{20,80}$/.test(importId) || !(await store.imports.exists(user.workspace_id)))
           fail(403, "Media import requires an imported workspace.");
         const find = (value) =>
           value &&
           typeof value === "object" &&
           ((value.id === importId && /^(image|audio|video)\//.test(value.type || "")) || Object.values(value).some(find));
         if (!find(current)) fail(400, "This file is not referenced by the imported workspace.");
-        const previous = db.prepare("SELECT * FROM media WHERE id=?").get(importId);
+        const previous = await store.media.get(importId);
         if (previous) {
           if (previous.workspace_id !== user.workspace_id)
             fail(409, "This file ID already belongs to another workspace.");
@@ -74,8 +75,12 @@ export function createMediaRoutes(ctx) {
         true,
       );
       if (!bytes.length) fail(400, "The file is empty.");
+      // Checked in a private temporary folder first (ffprobe and ffmpeg need a real
+      // file); only a file that passes is copied to storage.
       const id = importId || randomUUID(),
-        path = join(mediaRoot, id);
+        work = mkdtempSync(join(tmpdir(), "avalen-upload-")),
+        path = join(work, "upload"),
+        stored = [];
       writeFileSync(path, bytes, { mode: 0o600 });
       let duration = null;
       try {
@@ -125,18 +130,20 @@ export function createMediaRoutes(ctx) {
           fail(422, "The image file is not valid.");
         const now = new Date().toISOString(),
           expires = new Date(Date.now() + Number(process.env.AVALEN_MEDIA_RETENTION_DAYS || 365) * 86400000).toISOString();
-        db.prepare("INSERT INTO media VALUES(?,?,?,?,?,?,?,?,?,?,0)").run(
+        await files.put(id, bytes);
+        stored.push(id);
+        await store.media.insert({
           id,
-          user.workspace_id,
-          shared ? "workspace" : clientId,
-          user.id,
-          decodeURIComponent(String(req.headers["x-file-name"] || "Recording")).slice(0, 200),
+          workspace_id: user.workspace_id,
+          client_id: shared ? "workspace" : clientId,
+          owner_id: user.id,
+          name: decodeURIComponent(String(req.headers["x-file-name"] || "Recording")).slice(0, 200),
           type,
-          bytes.length,
+          size: bytes.length,
           duration,
-          now,
-          expires,
-        );
+          created_at: now,
+          expires_at: expires,
+        });
         let permitted = [];
         if (importId) {
           try {
@@ -146,36 +153,40 @@ export function createMediaRoutes(ctx) {
           }
           if (Array.isArray(permitted))
             for (const idOfClient of permitted)
-              if (current.clients.some((c) => c.id === idOfClient)) db.prepare("INSERT OR IGNORE INTO media_access VALUES(?,?)").run(id, idOfClient);
+              if (current.clients.some((c) => c.id === idOfClient)) await store.media.grant(id, idOfClient);
         }
         let thumbnail = null;
         if (type.startsWith("video/")) {
           const thumbId = randomUUID(),
-            thumbPath = join(mediaRoot, thumbId);
+            thumbPath = join(work, "thumbnail.jpg");
           try {
             await exec(
               process.env.FFMPEG_PATH || "ffmpeg",
               ["-y", "-v", "error", "-i", path, "-frames:v", "1", "-vf", "scale=480:-2", "-f", "image2", "-vcodec", "mjpeg", thumbPath],
               { timeout: 20000, maxBuffer: 100000 },
             );
-            const size = statSync(thumbPath).size;
-            db.prepare("INSERT INTO media VALUES(?,?,?,?,?,?,?,?,?,?,0)").run(
-              thumbId,
-              user.workspace_id,
-              shared ? "workspace" : clientId,
-              user.id,
-              "Video thumbnail",
-              "image/jpeg",
+            const thumbBytes = readFileSync(thumbPath),
+              size = thumbBytes.length;
+            await files.put(thumbId, thumbBytes);
+            stored.push(thumbId);
+            await store.media.insert({
+              id: thumbId,
+              workspace_id: user.workspace_id,
+              client_id: shared ? "workspace" : clientId,
+              owner_id: user.id,
+              name: "Video thumbnail",
+              type: "image/jpeg",
               size,
-              null,
-              now,
-              expires,
-            );
-            db.prepare("INSERT INTO media_links VALUES(?,?)").run(id, thumbId);
-            for (const idOfClient of permitted) db.prepare("INSERT OR IGNORE INTO media_access VALUES(?,?)").run(thumbId, idOfClient);
+              duration: null,
+              created_at: now,
+              expires_at: expires,
+            });
+            await store.media.link(id, thumbId);
+            for (const idOfClient of permitted) await store.media.grant(thumbId, idOfClient);
             thumbnail = { id: thumbId, type: "image/jpeg", size };
           } catch {
-            if (existsSync(thumbPath)) unlinkSync(thumbPath);
+            // A thumbnail is optional; the video is kept without one.
+            if (stored.includes(thumbId)) await files.remove(thumbId).catch(() => {});
           }
         }
         return {
@@ -188,29 +199,27 @@ export function createMediaRoutes(ctx) {
           expiresAt: expires,
         };
       } catch (e) {
-        unlinkSync(path);
+        for (const storedId of stored) await files.remove(storedId).catch(() => {});
         throw e;
+      } finally {
+        rmSync(work, { recursive: true, force: true });
       }
     }
 
     const mediaMatch = /^\/api\/media\/([a-f0-9-]+)$/.exec(url.pathname);
     if (mediaMatch) {
-      const row = permittedMedia(user, mediaMatch[1]),
-        path = join(mediaRoot, row.id);
+      const row = await permittedMedia(user, mediaMatch[1]);
       if (req.method === "DELETE") {
         if (user.role !== "coach" && row.owner_id !== user.id)
           fail(403, "Only the owner or coach can delete this recording.");
-        db.prepare("UPDATE media SET deleted=1 WHERE id=?").run(row.id);
-        for (const child of db.prepare("SELECT child_id FROM media_links WHERE parent_id=?").all(row.id)) {
-          db.prepare("UPDATE media SET deleted=1 WHERE id=?").run(child.child_id);
-          const childPath = join(mediaRoot, child.child_id);
-          if (existsSync(childPath)) unlinkSync(childPath);
+        for (const id of [...(await store.media.children(row.id)), row.id]) {
+          await store.media.markDeleted(id);
+          await files.remove(id);
+          await store.media.markFilesRemoved(id);
         }
-        if (existsSync(path)) unlinkSync(path);
         return { ok: true };
       }
       if (req.method !== "GET" && req.method !== "HEAD") fail(405, "Method not allowed.");
-      if (!existsSync(path)) fail(404, "Recording unavailable.");
       const range = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range || ""),
         start = range ? Number(range[1]) : 0,
         end = range && range[2] ? Math.min(Number(range[2]), row.size - 1) : row.size - 1;
@@ -219,6 +228,8 @@ export function createMediaRoutes(ctx) {
         res.end();
         return;
       }
+      const content = await files.stream(row.id, start, end);
+      if (!content) fail(404, "Recording unavailable.");
       res.setHeader("Content-Type", row.type);
       res.setHeader("Accept-Ranges", "bytes");
       res.setHeader("Content-Length", end - start + 1);
@@ -227,8 +238,10 @@ export function createMediaRoutes(ctx) {
         `inline; filename="recording${row.type.startsWith("video") ? ".mp4" : row.type.startsWith("audio") ? ".webm" : ".jpg"}"`,
       );
       if (range) res.writeHead(206, { "Content-Range": `bytes ${start}-${end}/${row.size}` });
-      if (req.method === "HEAD") res.end();
-      else createReadStream(path, { start, end }).pipe(res);
+      if (req.method === "HEAD") {
+        content.destroy();
+        res.end();
+      } else content.pipe(res);
       return;
     }
 

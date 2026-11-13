@@ -16,32 +16,36 @@ function randomCode() {
   return code;
 }
 
-export function coachCodes(db) {
-  const create = (workspaceId) => {
+export function coachCodes(store) {
+  const create = async (workspaceId) => {
     for (let attempt = 0; attempt < 20; attempt++) {
       const code = randomCode();
-      if (db.prepare("SELECT code FROM coach_codes WHERE code=?").get(code)) continue;
-      db.prepare("INSERT INTO coach_codes(code,workspace_id,created_at,active) VALUES(?,?,?,1)").run(code, workspaceId, new Date().toISOString());
+      if (await store.coachCodes.exists(code)) continue;
+      await store.coachCodes.insert(code, workspaceId);
       return code;
     }
     throw new Error("Could not create a unique coach code.");
   };
   return {
-    // The coach's active code, created the first time it is asked for.
-    active(workspaceId) {
-      const row = db.prepare("SELECT code FROM coach_codes WHERE workspace_id=? AND active=1").get(workspaceId);
-      return row ? row.code : create(workspaceId);
-    },
+    // The coach's active code, created the first time it is asked for. The workspace
+    // is locked first so two requests at once can't each create one.
+    active: (workspaceId) =>
+      store.transaction(async () => {
+        await store.workspaces.lock(workspaceId);
+        return (await store.coachCodes.activeFor(workspaceId)) || create(workspaceId);
+      }),
     // Retire the current code and issue a new one.
-    replace(workspaceId) {
-      db.prepare("UPDATE coach_codes SET active=0 WHERE workspace_id=? AND active=1").run(workspaceId);
-      return create(workspaceId);
-    },
+    replace: (workspaceId) =>
+      store.transaction(async () => {
+        await store.workspaces.lock(workspaceId);
+        await store.coachCodes.retire(workspaceId);
+        return create(workspaceId);
+      }),
     // The workspace an entered code belongs to, or null.
     find(value) {
       const code = normalizeCode(value);
       if (code.length !== CODE_LENGTH) return null;
-      return db.prepare("SELECT workspace_id FROM coach_codes WHERE code=? AND active=1").get(code)?.workspace_id || null;
+      return store.coachCodes.workspaceFor(code);
     },
   };
 }

@@ -138,7 +138,7 @@ test("server: client connects WHOOP and Apple Health; the coach sees only what i
     const replay = await fetch(`${f.base}/api/wearables/whoop/callback?code=CODE-1&state=${state}`, { redirect: "manual" });
     assert.equal(replay.headers.get("location"), "/#/client/you?devices=expired&provider=whoop", "a state works once");
 
-    const stored = JSON.stringify(f.db.prepare("SELECT * FROM wearable_links").all());
+    const stored = JSON.stringify(await f.db.all("SELECT * FROM wearable_links"));
     assert.ok(!stored.includes("ACCESS-") && !stored.includes("REFRESH-"), "tokens are sealed at rest");
     // The first access token expired at once, so the sync refreshed and used the new one.
     assert.ok(calls.some((c) => c.url.includes("/developer/v2/recovery") && c.options.headers.Authorization === "Bearer ACCESS-2"));
@@ -178,9 +178,9 @@ test("server: client connects WHOOP and Apple Health; the coach sees only what i
     const sig = createHmac("sha256", "whoop-secret").update(ts).update(raw).digest("base64");
     assert.equal((await fetch(`${f.base}/api/wearables/whoop/webhook`, { method: "POST", body: raw, headers: { "X-WHOOP-Signature": "bad", "X-WHOOP-Signature-Timestamp": ts } })).status, 401);
     assert.equal((await fetch(`${f.base}/api/wearables/whoop/webhook`, { method: "POST", body: raw, headers: { "X-WHOOP-Signature": sig, "X-WHOOP-Signature-Timestamp": ts } })).status, 204);
-    assert.equal(f.db.prepare("SELECT last_sync_at FROM wearable_links").get().last_sync_at, null);
+    assert.equal((await f.db.get("SELECT last_sync_at FROM wearable_links")).last_sync_at, null);
     assert.equal(await f.wearables.runDue(), 1);
-    assert.ok(f.db.prepare("SELECT last_sync_at FROM wearable_links").get().last_sync_at);
+    assert.ok((await f.db.get("SELECT last_sync_at FROM wearable_links")).last_sync_at);
 
     // Nothing the browser receives contains a token.
     for (const path of ["/api/wearables/status", `/api/wearables/days?clientId=${clientId}`, "/api/workspace"])
@@ -190,7 +190,7 @@ test("server: client connects WHOOP and Apple Health; the coach sees only what i
     // Disconnecting revokes access at WHOOP and, when asked, deletes the history.
     assert.equal((await f.call("/api/wearables/whoop?history=delete", { method: "DELETE", account: client })).status, 200);
     assert.ok(calls.some((c) => c.url.endsWith("/developer/v2/user/access") && c.options.method === "DELETE"));
-    assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM wearable_links").get().n, 0);
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM wearable_links")).n, 0);
     const after = await f.call(`/api/wearables/days?clientId=${clientId}`, { account: f.coach });
     assert.deepEqual([...new Set(after.days.map((d) => d.provider))], ["apple"]);
   } finally {
@@ -236,7 +236,7 @@ test("server: Google Health connects with offline access, handles an unlinked ac
     assert.match(auth.searchParams.get("scope"), /googlehealth\.activity_and_fitness\.readonly/);
     const unlinked = await fetch(`${f.base}/api/wearables/google/callback?code=C&state=${auth.searchParams.get("state")}`, { redirect: "manual" });
     assert.equal(unlinked.headers.get("location"), "/#/client/you?devices=not-linked&provider=google");
-    assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM wearable_links").get().n, 0);
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM wearable_links")).n, 0);
 
     linked = true;
     const again = await begin();

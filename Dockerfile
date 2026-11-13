@@ -1,5 +1,7 @@
 # Avalen server: serves the API and the built web app from one process.
-# Needs one persistent volume mounted at /data (database, media, daily snapshots).
+# With DATABASE_URL (PostgreSQL) and AVALEN_R2_* (file storage) set, it keeps nothing
+# on disk. Without them, mount a persistent volume at /data for the SQLite file,
+# uploaded files and daily snapshots.
 FROM node:24-slim AS build
 WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@10.34.9 --activate

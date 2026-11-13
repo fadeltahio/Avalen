@@ -91,7 +91,7 @@ test("server: coach connects Paymob, client pays, only a signed callback marks i
     assert.equal(connected.status, 200);
     assert.deepEqual([connected.connected, connected.region, connected.currency, connected.integrations], [true, "egypt", "EGP", [4567, 8910]]);
     assert.ok(!JSON.stringify(connected).includes("SECRET999") && !JSON.stringify(connected).includes("HMACSECRET777"));
-    const stored = f.db.prepare("SELECT * FROM payment_accounts").get();
+    const stored = await f.db.get("SELECT * FROM payment_accounts");
     assert.ok(!JSON.stringify(stored).includes("SECRET999") && !JSON.stringify(stored).includes("HMACSECRET777"), "secrets are sealed at rest");
 
     const clientId = f.coach.data.clients[0].id;

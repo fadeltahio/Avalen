@@ -18,8 +18,8 @@ import { createCoachingRoutes } from "./routes/coaching.js";
 
 export { body };
 
-export function createService(options = {}) {
-  const ctx = createContext(options);
+export async function createService(options = {}) {
+  const ctx = await createContext(options);
 
   // Reached directly by an outside service (Paymob, a wearable provider), before any
   // Avalen session cookie or CSRF check applies to the request.
@@ -68,7 +68,7 @@ export function createService(options = {}) {
     const fromOpen = await tryRoutes(openRoutes, req, res, url);
     if (fromOpen !== NOT_HANDLED) return fromOpen;
 
-    const user = ctx.authenticate(req);
+    const user = await ctx.authenticate(req);
     const fromProtected = await tryRoutes(protectedRoutes, req, res, url, user);
     if (fromProtected !== NOT_HANDLED) return fromProtected;
 
@@ -98,6 +98,8 @@ export function createService(options = {}) {
 
   return {
     server,
+    store: ctx.store,
+    files: ctx.files,
     db: ctx.db,
     root: ctx.root,
     bootstrap: ctx.bootstrap,

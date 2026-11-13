@@ -299,16 +299,12 @@ test("intelligence approved change preserves programme versions and private deci
       scores: { Energy: 2 },
     },
   ];
-  service.db
-    .prepare("UPDATE workspaces SET data=? WHERE id=?")
-    .run(
-      JSON.stringify(state.data),
-      service.coach.user
-        ? service.db
-            .prepare("SELECT workspace_id FROM users WHERE role='coach'")
-            .get().workspace_id
-        : "",
-    );
+  await service.store.workspaces.save(
+    service.coach.user
+      ? (await service.db.get("SELECT workspace_id FROM users WHERE role='coach'")).workspace_id
+      : "",
+    state.data,
+  );
   await login(
     page,
     undefined,
@@ -374,9 +370,12 @@ test("voice check-in survives a failed save and can be retried without duplicate
       .getByRole("button", { name: "Start check-in", exact: false })
       .click();
     await page.getByLabel("Weight (kg)", { exact: true }).fill("80.5");
-    await page.locator(".checkin-voice-disclosure > summary").click();
     await page
-      .getByLabel("Upload voice update", { exact: true })
+      .locator(".checkin-voice-disclosure > summary")
+      .filter({ hasText: "Add a voice update" })
+      .click();
+    await page
+      .getByLabel("Upload Voice update", { exact: true })
       .setInputFiles(file);
     await expect(
       page.getByText("No transcription provider is connected.", {

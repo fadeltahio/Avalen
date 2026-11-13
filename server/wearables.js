@@ -127,18 +127,8 @@ export function validWhoopSignature(raw, timestamp, signature, secret) {
 
 // ---- Service ----
 
-export function wearableService({ db, root, fetchImpl = globalThis.fetch, publicUrl = process.env.AVALEN_PUBLIC_URL, secretsKey, env = process.env, loadWorkspace }) {
-  db.exec(`CREATE TABLE IF NOT EXISTS wearable_links(
-      workspace_id TEXT NOT NULL, client_id TEXT NOT NULL, provider TEXT NOT NULL, external_user TEXT,
-      access_token TEXT NOT NULL, refresh_token TEXT, expires_at INTEGER NOT NULL, connected_at TEXT NOT NULL,
-      last_sync_at TEXT, last_error TEXT, retry_at INTEGER, PRIMARY KEY(workspace_id, client_id, provider));
-    CREATE TABLE IF NOT EXISTS wearable_states(state TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, client_id TEXT NOT NULL, provider TEXT NOT NULL, expires INTEGER NOT NULL);
-    CREATE TABLE IF NOT EXISTS wearable_days(
-      workspace_id TEXT NOT NULL, client_id TEXT NOT NULL, provider TEXT NOT NULL, date TEXT NOT NULL,
-      metrics TEXT NOT NULL, synced_at TEXT NOT NULL, PRIMARY KEY(workspace_id, client_id, provider, date));
-    CREATE TABLE IF NOT EXISTS wearable_events(id TEXT PRIMARY KEY, at INTEGER NOT NULL);
-    CREATE INDEX IF NOT EXISTS wearable_days_client ON wearable_days(workspace_id, client_id, date);
-    CREATE INDEX IF NOT EXISTS wearable_links_user ON wearable_links(provider, external_user);`);
+export function wearableService({ store, root, fetchImpl = globalThis.fetch, publicUrl = process.env.AVALEN_PUBLIC_URL, secretsKey, env = process.env, loadWorkspace }) {
+  const links = store.wearables;
   const box = secretBox(root, secretsKey ?? env.AVALEN_SECRETS_KEY);
   const base = publicUrl ? String(publicUrl).replace(/\/+$/, '') : '';
   const apps = {
@@ -147,7 +137,7 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
   };
   const configured = (provider) => Boolean(apps[provider]?.id && apps[provider]?.secret);
   const redirect = (provider) => `${base}/api/wearables/${provider}/callback`;
-  const link = (ws, client, provider) => db.prepare('SELECT * FROM wearable_links WHERE workspace_id=? AND client_id=? AND provider=?').get(ws, client, provider);
+  const link = (ws, client, provider) => links.link(ws, client, provider);
   const refreshing = new Map();
   const account = (provider) => {
     if (!ACCOUNT_PROVIDERS.includes(provider)) fail(404, 'This connection isn’t available.');
@@ -167,10 +157,10 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
   }
   const form = (values) => ({ method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' }, body: new URLSearchParams(values).toString() });
 
-  function status(user, data) {
+  async function status(user, data) {
     const client = user.role === 'client' ? user.client_id : null;
-    const rows = client ? db.prepare('SELECT provider, connected_at, last_sync_at, last_error FROM wearable_links WHERE workspace_id=? AND client_id=?').all(user.workspace_id, client) : [];
-    const uploads = client ? db.prepare('SELECT provider, MAX(synced_at) AS at FROM wearable_days WHERE workspace_id=? AND client_id=? GROUP BY provider').all(user.workspace_id, client) : [];
+    const rows = client ? await links.linksFor(user.workspace_id, client) : [];
+    const uploads = client ? await links.lastUploads(user.workspace_id, client) : [];
     const out = {};
     for (const provider of ACCOUNT_PROVIDERS) {
       const row = rows.find((r) => r.provider === provider);
@@ -181,15 +171,15 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
     return out;
   }
 
-  function start(user, provider) {
+  async function start(user, provider) {
     account(provider);
     if (user.role !== 'client') fail(403, 'Only the client can connect their own wearable.');
     if (!configured(provider)) fail(503, `${provider === 'whoop' ? 'WHOOP' : 'Google Health'} isn’t set up on this Avalen server yet.`);
     if (!base) fail(503, 'Wearable connections need the server’s public address (AVALEN_PUBLIC_URL).');
-    db.prepare('DELETE FROM wearable_states WHERE expires<?').run(Date.now());
+    await links.deleteExpiredStates(Date.now());
     // WHOOP's OAuth guide says a self-generated state "must be eight characters long".
     const state = randomBytes(provider === 'whoop' ? 6 : 24).toString('base64url');
-    db.prepare('INSERT INTO wearable_states VALUES(?,?,?,?,?)').run(hash(state), user.workspace_id, user.client_id, provider, Date.now() + 600000);
+    await links.saveState(hash(state), user.workspace_id, user.client_id, provider, Date.now() + 600000);
     const params = provider === 'whoop'
       ? { response_type: 'code', client_id: apps.whoop.id, redirect_uri: redirect('whoop'), scope: WHOOP.scope, state }
       : { response_type: 'code', client_id: apps.google.id, redirect_uri: redirect('google'), scope: GOOGLE.scope, state, access_type: 'offline', prompt: 'consent', include_granted_scopes: 'true' };
@@ -201,8 +191,7 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
     account(provider);
     const back = (result) => `/#/client/you?devices=${encodeURIComponent(result)}&provider=${provider}`;
     const state = query.get('state') || '';
-    const row = state && db.prepare('SELECT * FROM wearable_states WHERE state=?').get(hash(state));
-    if (row) db.prepare('DELETE FROM wearable_states WHERE state=?').run(row.state);
+    const row = state ? await links.takeState(hash(state)) : null;
     if (!row || row.provider !== provider || row.expires < Date.now()) return back('expired');
     if (query.get('error') || !query.get('code')) return back('cancelled');
     const app = apps[provider];
@@ -217,10 +206,12 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
       if (!identity.ok) return back(JSON.stringify(identity.json).includes('ACCOUNT_NOT_LINKED') ? 'not-linked' : 'failed');
       external = identity.json.healthUserId || identity.json.name || null;
     }
-    db.prepare('INSERT OR REPLACE INTO wearable_links VALUES(?,?,?,?,?,?,?,?,?,?,?)').run(
-      row.workspace_id, row.client_id, provider, external, box.seal(token.json.access_token),
-      token.json.refresh_token ? box.seal(token.json.refresh_token) : null,
-      Date.now() + Number(token.json.expires_in || 3600) * 1000, new Date().toISOString(), null, null, null);
+    await links.saveLink({
+      workspace_id: row.workspace_id, client_id: row.client_id, provider, external_user: external,
+      access_token: box.seal(token.json.access_token),
+      refresh_token: token.json.refresh_token ? box.seal(token.json.refresh_token) : null,
+      expires_at: Date.now() + Number(token.json.expires_in || 3600) * 1000, connected_at: new Date().toISOString(),
+    });
     try { await sync(row.workspace_id, row.client_id, provider, 30); } catch {}
     return back('connected');
   }
@@ -236,9 +227,8 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
       if (row.provider === 'whoop') values.scope = 'offline';
       const result = await call(row.provider === 'whoop' ? WHOOP.token : GOOGLE.token, form(values), row.provider === 'whoop' ? 'WHOOP' : 'Google');
       if (!result.ok || !result.json.access_token) throw Object.assign(new Error('reconnect'), { reconnect: result.status === 400 || result.status === 401 });
-      db.prepare('UPDATE wearable_links SET access_token=?, refresh_token=COALESCE(?, refresh_token), expires_at=? WHERE workspace_id=? AND client_id=? AND provider=?').run(
-        box.seal(result.json.access_token), result.json.refresh_token ? box.seal(result.json.refresh_token) : null,
-        Date.now() + Number(result.json.expires_in || 3600) * 1000, row.workspace_id, row.client_id, row.provider);
+      await links.updateTokens(row, box.seal(result.json.access_token), result.json.refresh_token ? box.seal(result.json.refresh_token) : null,
+        Date.now() + Number(result.json.expires_in || 3600) * 1000);
       return result.json.access_token;
     })().finally(() => refreshing.delete(key)));
     return refreshing.get(key);
@@ -259,20 +249,20 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
     return out;
   }
 
-  function store(ws, client, provider, days) {
+  async function saveDays(ws, client, provider, days) {
     const at = new Date().toISOString();
-    const put = db.prepare('INSERT OR REPLACE INTO wearable_days VALUES(?,?,?,?,?,?)');
-    for (const day of days) put.run(ws, client, provider, day.date, JSON.stringify(day.metrics), at);
+    await store.transaction(async () => {
+      for (const day of days) await links.saveDay(ws, client, provider, day.date, day.metrics, at);
+    });
     return days.length;
   }
 
   async function sync(ws, client, provider, days = 14) {
-    const row = link(ws, client, provider);
+    const row = await link(ws, client, provider);
     if (!row) fail(404, 'This wearable isn’t connected.');
     const now = new Date(), from = new Date(now.getTime() - days * 86400e3);
     // After a failed sync the worker waits an hour before trying again.
-    const mark = (error) => db.prepare('UPDATE wearable_links SET last_sync_at=?, last_error=?, retry_at=? WHERE workspace_id=? AND client_id=? AND provider=?')
-      .run(error ? row.last_sync_at : now.toISOString(), error, error ? now.getTime() + 3600e3 : null, ws, client, provider);
+    const mark = (error) => links.markSync(ws, client, provider, error ? row.last_sync_at : now.toISOString(), error, error ? now.getTime() + 3600e3 : null);
     try {
       const auth = { Authorization: `Bearer ${await accessToken(row)}`, Accept: 'application/json' };
       let result;
@@ -295,11 +285,11 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
           active: await list('active-energy-burned', `activeEnergyBurned.interval.civil_start_time >= "${fromDay}" AND activeEnergyBurned.interval.civil_start_time < "${toDay}"`, 10000),
         });
       }
-      store(ws, client, provider, result);
-      mark(null);
+      await saveDays(ws, client, provider, result);
+      await mark(null);
       return { synced: result.length };
     } catch (error) {
-      mark(error.reconnect ? 'reconnect' : 'sync');
+      await mark(error.reconnect ? 'reconnect' : 'sync');
       if (error.status) throw error;
       fail(502, error.reconnect ? 'The connection has expired. Connect again to resume syncing.' : 'Syncing didn’t finish. Avalen will try again automatically.');
     }
@@ -308,22 +298,22 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
   async function disconnect(user, provider, { keepHistory = true } = {}) {
     if (user.role !== 'client') fail(403, 'Only the client can disconnect their wearable.');
     if (ACCOUNT_PROVIDERS.includes(provider)) {
-      const row = link(user.workspace_id, user.client_id, provider);
+      const row = await link(user.workspace_id, user.client_id, provider);
       if (row) {
         try {
           if (provider === 'whoop') await call(`${WHOOP.api}/user/access`, { method: 'DELETE', headers: { Authorization: `Bearer ${await accessToken(row)}` } }, 'WHOOP');
           else if (row.refresh_token) await call(GOOGLE.revoke, form({ token: box.open(row.refresh_token) }), 'Google');
         } catch {} // Access is removed on Avalen's side either way.
-        db.prepare('DELETE FROM wearable_links WHERE workspace_id=? AND client_id=? AND provider=?').run(user.workspace_id, user.client_id, provider);
+        await links.deleteLink(user.workspace_id, user.client_id, provider);
       }
     } else if (!UPLOAD_PROVIDERS.includes(provider)) fail(404, 'This connection isn’t available.');
-    if (!keepHistory) db.prepare('DELETE FROM wearable_days WHERE workspace_id=? AND client_id=? AND provider=?').run(user.workspace_id, user.client_id, provider);
+    if (!keepHistory) await links.deleteDays(user.workspace_id, user.client_id, provider);
     return { ok: true };
   }
 
   // Readings sent by the client: the iPhone/Android apps (Apple Health, Health
   // Connect) or a manual entry.
-  function upload(user, input = {}) {
+  async function upload(user, input = {}) {
     if (user.role !== 'client') fail(403, 'Only the client can add their own readings.');
     if (!UPLOAD_PROVIDERS.includes(input.provider)) fail(400, 'Choose where these readings come from.');
     const rows = Array.isArray(input.days) ? input.days : [];
@@ -337,15 +327,15 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
     if (input.provider === 'manual') {
       // Manual entries are added to, not replaced by, a later entry on the same day.
       for (const day of days) {
-        const old = db.prepare('SELECT metrics FROM wearable_days WHERE workspace_id=? AND client_id=? AND provider=? AND date=?').get(user.workspace_id, user.client_id, 'manual', day.date);
-        if (old) day.metrics = { ...JSON.parse(old.metrics), ...day.metrics };
+        const old = await links.day(user.workspace_id, user.client_id, 'manual', day.date);
+        if (old) day.metrics = { ...old, ...day.metrics };
       }
     }
-    return { saved: store(user.workspace_id, user.client_id, input.provider, days) };
+    return { saved: await saveDays(user.workspace_id, user.client_id, input.provider, days) };
   }
 
-  function rowsFor(ws, client, from) {
-    return db.prepare('SELECT provider, date, metrics, synced_at FROM wearable_days WHERE workspace_id=? AND client_id=? AND date>=? ORDER BY date DESC').all(ws, client, from)
+  async function rowsFor(ws, client, from) {
+    return (await links.daysSince(ws, client, from))
       .map((r) => ({ clientId: client, provider: r.provider, date: r.date, metrics: JSON.parse(r.metrics), syncedAt: r.synced_at }));
   }
   const viewFor = (user, data, client, rows) => {
@@ -354,49 +344,47 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
     return rows.map((r) => ({ ...r, metrics: visibleMetrics(r.metrics, share) })).filter((r) => Object.keys(r.metrics).length);
   };
 
-  function days(user, data, client, count = 14) {
+  async function days(user, data, client, count = 14) {
     if (!data.clients.some((c) => c.id === client) || (user.role === 'client' && user.client_id !== client)) fail(404, 'Client not found.');
     const n = Math.min(Math.max(Number(count) || 14, 1), 90);
-    const links = db.prepare('SELECT provider, last_sync_at, last_error FROM wearable_links WHERE workspace_id=? AND client_id=?').all(user.workspace_id, client);
+    const connections = await links.linksFor(user.workspace_id, client);
     return {
-      days: viewFor(user, data, client, rowsFor(user.workspace_id, client, shiftDay(new Date().toISOString().slice(0, 10), -n))),
+      days: viewFor(user, data, client, await rowsFor(user.workspace_id, client, shiftDay(new Date().toISOString().slice(0, 10), -n))),
       share: shareFor(data.clients.find((c) => c.id === client)),
-      connected: links.map((l) => ({ provider: l.provider, lastSyncAt: l.last_sync_at, error: l.last_error })),
+      connected: connections.map((l) => ({ provider: l.provider, lastSyncAt: l.last_sync_at, error: l.last_error })),
     };
   }
 
-  function summary(user, data) {
+  async function summary(user, data) {
     if (user.role !== 'coach') fail(403, 'This action requires your coach.');
     const from = shiftDay(new Date().toISOString().slice(0, 10), -14);
-    const links = db.prepare('SELECT client_id, provider, last_sync_at, last_error FROM wearable_links WHERE workspace_id=?').all(user.workspace_id);
+    const connections = await links.linksInWorkspace(user.workspace_id);
     const clients = {};
     for (const c of data.clients) {
-      const rows = viewFor(user, data, c.id, rowsFor(user.workspace_id, c.id, from));
-      const connected = links.filter((l) => l.client_id === c.id).map((l) => ({ provider: l.provider, lastSyncAt: l.last_sync_at, error: l.last_error }));
+      const rows = viewFor(user, data, c.id, await rowsFor(user.workspace_id, c.id, from));
+      const connected = connections.filter((l) => l.client_id === c.id).map((l) => ({ provider: l.provider, lastSyncAt: l.last_sync_at, error: l.last_error }));
       if (rows.length || connected.length) clients[c.id] = { latest: latestDay(rows), connected };
     }
     return { clients };
   }
 
-  function webhook(raw, headers) {
+  async function webhook(raw, headers) {
     if (!configured('whoop')) fail(404, 'Not found.');
     if (!validWhoopSignature(raw, headers['x-whoop-signature-timestamp'], headers['x-whoop-signature'], apps.whoop.secret)) fail(401, 'Invalid signature.');
     let event;
     try { event = JSON.parse(raw.toString('utf8')); } catch { fail(400, 'Invalid JSON.'); }
     const id = String(event.trace_id || `${event.type}:${event.id}`);
-    db.prepare('DELETE FROM wearable_events WHERE at<?').run(Date.now() - 7 * 86400e3);
-    if (db.prepare('SELECT id FROM wearable_events WHERE id=?').get(id)) return { queued: 0 };
-    db.prepare('INSERT INTO wearable_events VALUES(?,?)').run(id, Date.now());
+    if (!(await links.firstDelivery(id, Date.now()))) return { queued: 0 };
     // Events only say that something changed; the data is fetched by the worker.
-    const rows = db.prepare('SELECT workspace_id, client_id FROM wearable_links WHERE provider=? AND external_user=?').all('whoop', String(event.user_id));
-    for (const row of rows) db.prepare('UPDATE wearable_links SET last_sync_at=NULL WHERE workspace_id=? AND client_id=? AND provider=?').run(row.workspace_id, row.client_id, 'whoop');
+    const rows = await links.linksForExternalUser('whoop', String(event.user_id));
+    for (const row of rows) await links.flagForSync(row.workspace_id, row.client_id, 'whoop');
     return { queued: rows.length };
   }
 
   // Called by the background worker: sync links that are due or flagged by a webhook.
   async function runDue(now = Date.now()) {
     let done = 0;
-    for (const row of db.prepare("SELECT * FROM wearable_links WHERE last_error IS NOT 'reconnect'").all()) {
+    for (const row of await links.linksToSync()) {
       if (!configured(row.provider) || (row.retry_at && row.retry_at > now)) continue;
       const last = row.last_sync_at ? Date.parse(row.last_sync_at) : 0;
       if (now - last < (SYNC_EVERY[row.provider] || 6 * 3600e3)) continue;
@@ -408,15 +396,13 @@ export function wearableService({ db, root, fetchImpl = globalThis.fetch, public
   // Account deletion: revoke access at each provider (best effort), then remove
   // links, readings and pending sign-ins. clientId null means the whole workspace.
   async function forget(ws, clientId = null) {
-    const where = clientId ? 'workspace_id=? AND client_id=?' : 'workspace_id=?';
-    const args = clientId ? [ws, clientId] : [ws];
-    for (const row of db.prepare(`SELECT * FROM wearable_links WHERE ${where}`).all(...args)) {
+    for (const row of await links.linksMatching(ws, clientId)) {
       try {
         if (row.provider === 'whoop') await call(`${WHOOP.api}/user/access`, { method: 'DELETE', headers: { Authorization: `Bearer ${await accessToken(row)}` } }, 'WHOOP');
         else if (row.refresh_token) await call(GOOGLE.revoke, form({ token: box.open(row.refresh_token) }), 'Google');
       } catch {}
     }
-    for (const table of ['wearable_links', 'wearable_days', 'wearable_states']) db.prepare(`DELETE FROM ${table} WHERE ${where}`).run(...args);
+    await links.deleteAll(ws, clientId);
   }
 
   return { status, start, callback, sync, disconnect, upload, days, summary, webhook, runDue, configured, forget };

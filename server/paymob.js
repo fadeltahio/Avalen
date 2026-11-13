@@ -70,35 +70,34 @@ function integrationIds(value) {
 }
 export const validPhone = (value) => typeof value === 'string' && /^\+?[0-9][0-9 ()-]{6,19}$/.test(value.trim());
 
-export function paymobService({ db, root, fetchImpl = globalThis.fetch, publicUrl = process.env.AVALEN_PUBLIC_URL, secretsKey } = {}) {
-  db.exec(`CREATE TABLE IF NOT EXISTS payment_accounts(
-    workspace_id TEXT PRIMARY KEY, region TEXT NOT NULL, public_key TEXT NOT NULL,
-    secret_key TEXT NOT NULL, hmac_secret TEXT NOT NULL, integration_ids TEXT NOT NULL, connected_at TEXT NOT NULL)`);
+export function paymobService({ store, root, fetchImpl = globalThis.fetch, publicUrl = process.env.AVALEN_PUBLIC_URL, secretsKey } = {}) {
   const box = secretBox(root, secretsKey ?? process.env.AVALEN_SECRETS_KEY);
   const base = publicUrl ? String(publicUrl).replace(/\/+$/, '') : '';
-  const account = (workspace) => db.prepare('SELECT * FROM payment_accounts WHERE workspace_id=?').get(workspace);
+  const account = (workspace) => store.paymentAccounts.get(workspace);
 
-  function status(workspace) {
-    const row = account(workspace);
+  async function status(workspace) {
+    const row = await account(workspace);
     const ready = Boolean(base);
     if (!row) return { connected: false, publicAddress: ready };
     return { connected: true, publicAddress: ready, region: row.region, currency: REGIONS[row.region].currency, publicKey: row.public_key, integrations: JSON.parse(row.integration_ids), connectedAt: row.connected_at };
   }
-  function connect(workspace, input = {}) {
+  async function connect(workspace, input = {}) {
     if (!REGIONS[input.region]) fail(400, 'Choose the country your Paymob account is in.');
     const publicKey = keyText(input.publicKey, 'public key'), secretKey = keyText(input.secretKey, 'secret key'), hmacSecret = keyText(input.hmacSecret, 'HMAC secret');
     if (publicKey === secretKey) fail(400, 'The public key and the secret key are different values. Check both.');
     const ids = integrationIds(input.integrationIds);
-    db.prepare('INSERT OR REPLACE INTO payment_accounts VALUES(?,?,?,?,?,?,?)')
-      .run(workspace, input.region, publicKey, box.seal(secretKey), box.seal(hmacSecret), JSON.stringify(ids), new Date().toISOString());
+    await store.paymentAccounts.save({
+      workspace_id: workspace, region: input.region, public_key: publicKey, secret_key: box.seal(secretKey),
+      hmac_secret: box.seal(hmacSecret), integration_ids: JSON.stringify(ids), connected_at: new Date().toISOString(),
+    });
     return status(workspace);
   }
-  function disconnect(workspace) {
-    db.prepare('DELETE FROM payment_accounts WHERE workspace_id=?').run(workspace);
+  async function disconnect(workspace) {
+    await store.paymentAccounts.delete(workspace);
     return status(workspace);
   }
   async function createIntention(workspace, { payment, client, reference, phone }) {
-    const row = account(workspace);
+    const row = await account(workspace);
     if (!row) fail(409, 'Your coach hasn’t connected Paymob yet.');
     if (!base) fail(503, 'Online payment isn’t available yet: the server’s public address isn’t set (AVALEN_PUBLIC_URL).');
     const region = REGIONS[row.region];
@@ -139,8 +138,8 @@ export function paymobService({ db, root, fetchImpl = globalThis.fetch, publicUr
       orderId: json.intention_order_id ?? null,
     };
   }
-  function verify(workspace, obj, hmac) {
-    const row = account(workspace);
+  async function verify(workspace, obj, hmac) {
+    const row = await account(workspace);
     return Boolean(row) && validCallback(obj, hmac, box.open(row.hmac_secret));
   }
   return { status, connect, disconnect, createIntention, verify };

@@ -20,7 +20,7 @@ export function createPublicWearableRoutes(ctx) {
     }
 
     if (url.pathname === "/api/wearables/whoop/webhook" && req.method === "POST") {
-      wearables.webhook(await body(req, 65536, true), req.headers);
+      await wearables.webhook(await body(req, 65536, true), req.headers);
       res.writeHead(204);
       res.end();
       return;
@@ -37,10 +37,10 @@ export function createWearableRoutes(ctx) {
     if (!url.pathname.startsWith("/api/wearables/")) return NOT_HANDLED;
     const part = url.pathname.slice("/api/wearables/".length).split("/");
 
-    if (part[0] === "status" && req.method === "GET") return wearables.status(user, load(user).data);
+    if (part[0] === "status" && req.method === "GET") return wearables.status(user, (await load(user)).data);
     if (part[0] === "days" && req.method === "GET")
-      return wearables.days(user, load(user).data, url.searchParams.get("clientId") || user.client_id, url.searchParams.get("count"));
-    if (part[0] === "summary" && req.method === "GET") return wearables.summary(user, load(user).data);
+      return wearables.days(user, (await load(user)).data, url.searchParams.get("clientId") || user.client_id, url.searchParams.get("count"));
+    if (part[0] === "summary" && req.method === "GET") return wearables.summary(user, (await load(user)).data);
     if (part[0] === "upload" && req.method === "POST") {
       limit(req, "wearable-upload");
       return wearables.upload(user, await body(req, 65536));
@@ -49,7 +49,7 @@ export function createWearableRoutes(ctx) {
       limit(req, "wearable-sync");
       const input = await body(req, 4096);
       const clientId = user.role === "client" ? user.client_id : input.clientId;
-      requireClient(user, load(user).data, clientId);
+      requireClient(user, (await load(user)).data, clientId);
       return wearables.sync(user.workspace_id, clientId, input.provider, 14);
     }
     if (part[1] === "connect" && req.method === "POST") {

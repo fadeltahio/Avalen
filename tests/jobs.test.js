@@ -10,8 +10,8 @@ import { runJobs, queueTranscription, jobFor } from "../server/jobs.js";
 test("reminders deduplicate by due period and stop after submission, respecting client local time", async () => {
   const f = await fixture();
   try {
-    const workspace = f.db.prepare("SELECT * FROM workspaces").get(),
-      data = JSON.parse(workspace.data),
+    const [workspace] = await f.store.workspaces.all(),
+      data = workspace.data,
       client = data.clients[0];
     client.checkinPlan = {
       intervalDays: 7,
@@ -20,17 +20,15 @@ test("reminders deduplicate by due period and stop after submission, respecting 
       reminderTime: "08:00",
       fields: [],
     };
-    f.db
-      .prepare("UPDATE workspaces SET data=? WHERE id=?")
-      .run(JSON.stringify(data), workspace.id);
+    await f.store.workspaces.save(workspace.id, data);
     await runJobs(f, { now: new Date("2026-10-16T18:59:00Z") });
     assert.equal(
-      f.load({ workspace_id: workspace.id }).data.notifications.length,
+      (await f.load({ workspace_id: workspace.id })).data.notifications.length,
       0,
     );
     await runJobs(f, { now: new Date("2026-10-16T19:00:00Z") });
     await runJobs(f, { now: new Date("2026-10-16T19:01:00Z") });
-    let saved = f.load({ workspace_id: workspace.id }).data;
+    let saved = (await f.load({ workspace_id: workspace.id })).data;
     assert.equal(saved.notifications.length, 1);
     saved.checkins.push({
       id: "late",
@@ -38,12 +36,10 @@ test("reminders deduplicate by due period and stop after submission, respecting 
       date: "2026-10-17",
       periodDate: "2026-10-17",
     });
-    f.db
-      .prepare("UPDATE workspaces SET data=? WHERE id=?")
-      .run(JSON.stringify(saved), workspace.id);
+    await f.store.workspaces.save(workspace.id, saved);
     await runJobs(f, { now: new Date("2026-10-17T22:00:00Z") });
     assert.equal(
-      f.load({ workspace_id: workspace.id }).data.notifications.length,
+      (await f.load({ workspace_id: workspace.id })).data.notifications.length,
       1,
     );
   } finally {
@@ -99,11 +95,11 @@ test("configured transcription returns real provider text; deleted audio cannot 
       }),
       media = await res.json();
     assert.equal(res.status, 200);
-    const user = f.db.prepare("SELECT * FROM users WHERE role='coach'").get();
-    const job = queueTranscription(f, user, clientId, media.id);
-    queueTranscription(f, user, clientId, media.id);
+    const user = await f.db.get("SELECT * FROM users WHERE role='coach'");
+    const job = await queueTranscription(f, user, clientId, media.id);
+    await queueTranscription(f, user, clientId, media.id);
     await runJobs(f);
-    const result = jobFor(f, user, job.id);
+    const result = await jobFor(f, user, job.id);
     assert.equal(result.state, "done");
     assert.equal(received, 1);
     assert.equal(
@@ -111,21 +107,11 @@ test("configured transcription returns real provider text; deleted audio cannot 
       "A test provider transcript based on the submitted audio.",
     );
     const secondId = "deleted-test";
-    f.db
-      .prepare(
-        "INSERT INTO jobs(id,workspace_id,kind,record_id,run_at,payload) VALUES(?,?,'transcription',?,?,?)",
-      )
-      .run(
-        secondId,
-        user.workspace_id,
-        media.id,
-        Date.now(),
-        JSON.stringify({ clientId, mediaId: media.id }),
-      );
-    f.db.prepare("UPDATE media SET deleted=1 WHERE id=?").run(media.id);
+    await f.store.jobs.enqueue({ id: secondId, workspace_id: user.workspace_id, kind: "transcription", record_id: media.id, run_at: Date.now(), payload: { clientId, mediaId: media.id } });
+    await f.store.media.markDeleted(media.id);
     await runJobs(f);
-    assert.notEqual(jobFor(f, user, secondId).state, "done");
-    assert.equal(jobFor(f, user, secondId).result, null);
+    assert.notEqual((await jobFor(f, user, secondId)).state, "done");
+    assert.equal((await jobFor(f, user, secondId)).result, null);
     assert.equal(received, 1);
   } finally {
     if (previous === undefined) delete process.env.AVALEN_TRANSCRIPTION_URL;

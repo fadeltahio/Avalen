@@ -45,8 +45,8 @@ test("server: a client deletes their account and everything about them; the coac
     assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: ws.revision, data: next } })).status, 200);
     const media = join(f.root, "media", "photo-1");
     writeFileSync(media, "x");
-    const workspaceId = f.db.prepare("SELECT workspace_id FROM users WHERE email='client@test.app'").get().workspace_id;
-    f.db.prepare("INSERT INTO media VALUES(?,?,?,?,?,?,?,?,?,?,0)").run("photo-1", workspaceId, clientId, "u", "p.jpg", "image/jpeg", 1, null, new Date().toISOString(), new Date().toISOString());
+    const workspaceId = (await f.db.get("SELECT workspace_id FROM users WHERE email='client@test.app'")).workspace_id;
+    await f.store.media.insert({ id: "photo-1", workspace_id: workspaceId, client_id: clientId, owner_id: "u", name: "p.jpg", type: "image/jpeg", size: 1, duration: null, created_at: new Date().toISOString(), expires_at: new Date().toISOString() });
 
     assert.equal((await f.call("/api/account/delete", { method: "POST", account: client, body: { password: "client-password-123" } })).status, 400, "needs DELETE");
     assert.equal((await f.call("/api/account/delete", { method: "POST", account: client, body: { password: "wrong", confirm: "DELETE" } })).status, 401);
@@ -55,9 +55,9 @@ test("server: a client deletes their account and everything about them; the coac
 
     assert.equal((await f.call("/api/workspace", { account: client })).status, 401, "the old session no longer works");
     assert.equal((await f.call("/api/login", { method: "POST", body: { email: "client@test.app", password: "client-password-123" } })).status, 401);
-    assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM users WHERE client_id=?").get(clientId).n, 0);
-    assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM wearable_days WHERE client_id=?").get(clientId).n, 0);
-    assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM media WHERE client_id=?").get(clientId).n, 0);
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM users WHERE client_id=$1", [clientId])).n, 0);
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM wearable_days WHERE client_id=$1", [clientId])).n, 0);
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM media WHERE client_id=$1", [clientId])).n, 0);
     assert.equal(existsSync(media), false, "files are removed from disk");
 
     const coachView = await f.call("/api/workspace", { account: f.coach });
@@ -77,9 +77,9 @@ test("server: the coach deletes the whole workspace, including every client logi
   try {
     const { client } = await withClient(f);
     assert.equal((await f.call("/api/account/delete", { method: "POST", account: f.coach, body: { password: "strong-password-123", confirm: "DELETE" } })).status, 200);
-    assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM workspaces").get().n, 0);
-    assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM users").get().n, 0);
-    assert.equal(f.db.prepare("SELECT COUNT(*) AS n FROM sessions").get().n, 0);
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM workspaces")).n, 0);
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM users")).n, 0);
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM sessions")).n, 0);
     assert.equal((await f.call("/api/workspace", { account: client })).status, 401);
     assert.equal((await f.call("/api/status")).configured, false);
   } finally {
