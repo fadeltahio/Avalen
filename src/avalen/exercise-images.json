@@ -2,56 +2,111 @@
   "Bench press": {
     "src": "/exercises/barbell-bench-press---medium-grip.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/1.jpg",
-    "exercise": "Barbell Bench Press - Medium Grip"
+    "exercise": "Barbell Bench Press - Medium Grip",
+    "frames": [
+      "/exercises/barbell-bench-press---medium-grip-0.jpg",
+      "/exercises/barbell-bench-press---medium-grip.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Bench_Press_-_Medium_Grip/0.jpg"
   },
   "Incline dumbbell press": {
     "src": "/exercises/incline-dumbbell-press.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/1.jpg",
-    "exercise": "Incline Dumbbell Press"
+    "exercise": "Incline Dumbbell Press",
+    "frames": [
+      "/exercises/incline-dumbbell-press-0.jpg",
+      "/exercises/incline-dumbbell-press.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Incline_Dumbbell_Press/0.jpg"
   },
   "Seated cable row": {
     "src": "/exercises/seated-cable-rows.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/1.jpg",
-    "exercise": "Seated Cable Rows"
+    "exercise": "Seated Cable Rows",
+    "frames": [
+      "/exercises/seated-cable-rows-0.jpg",
+      "/exercises/seated-cable-rows.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Seated_Cable_Rows/0.jpg"
   },
   "Lateral raise": {
     "src": "/exercises/side-lateral-raise.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/1.jpg",
-    "exercise": "Side Lateral Raise"
+    "exercise": "Side Lateral Raise",
+    "frames": [
+      "/exercises/side-lateral-raise-0.jpg",
+      "/exercises/side-lateral-raise.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Side_Lateral_Raise/0.jpg"
   },
   "Triceps pushdown": {
     "src": "/exercises/triceps-pushdown.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/1.jpg",
-    "exercise": "Triceps Pushdown"
+    "exercise": "Triceps Pushdown",
+    "frames": [
+      "/exercises/triceps-pushdown-0.jpg",
+      "/exercises/triceps-pushdown.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Triceps_Pushdown/0.jpg"
   },
   "Back squat": {
     "src": "/exercises/barbell-squat.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/1.jpg",
-    "exercise": "Barbell Squat"
+    "exercise": "Barbell Squat",
+    "frames": [
+      "/exercises/barbell-squat-0.jpg",
+      "/exercises/barbell-squat.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Barbell_Squat/0.jpg"
   },
   "Romanian deadlift": {
     "src": "/exercises/romanian-deadlift.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/1.jpg",
-    "exercise": "Romanian Deadlift"
+    "exercise": "Romanian Deadlift",
+    "frames": [
+      "/exercises/romanian-deadlift-0.jpg",
+      "/exercises/romanian-deadlift.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Romanian_Deadlift/0.jpg"
   },
   "Walking lunge": {
     "src": "/exercises/dumbbell-lunges.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/1.jpg",
-    "exercise": "Dumbbell Lunges"
+    "exercise": "Dumbbell Lunges",
+    "frames": [
+      "/exercises/dumbbell-lunges-0.jpg",
+      "/exercises/dumbbell-lunges.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Dumbbell_Lunges/0.jpg"
   },
   "Calf raise": {
     "src": "/exercises/standing-calf-raises.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/1.jpg",
-    "exercise": "Standing Calf Raises"
+    "exercise": "Standing Calf Raises",
+    "frames": [
+      "/exercises/standing-calf-raises-0.jpg",
+      "/exercises/standing-calf-raises.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Standing_Calf_Raises/0.jpg"
   },
   "Push-up": {
     "src": "/exercises/pushups.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/1.jpg",
-    "exercise": "Pushups"
+    "exercise": "Pushups",
+    "frames": [
+      "/exercises/pushups-0.jpg",
+      "/exercises/pushups.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Pushups/0.jpg"
   },
   "Bodyweight squat": {
     "src": "/exercises/bodyweight-squat.jpg",
     "source": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/1.jpg",
-    "exercise": "Bodyweight Squat"
+    "exercise": "Bodyweight Squat",
+    "frames": [
+      "/exercises/bodyweight-squat-0.jpg",
+      "/exercises/bodyweight-squat.jpg"
+    ],
+    "frameSource": "https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/Bodyweight_Squat/0.jpg"
   }
 }

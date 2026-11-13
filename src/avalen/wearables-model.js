@@ -1,3 +1,5 @@
+import { t } from './i18n.js';
+
 // Wearable readings: one record per client, provider and calendar day.
 // Values are what each provider reports. Avalen never converts one provider's
 // score into another's, and never calculates a recovery or strain score itself.
@@ -16,25 +18,25 @@ export const UPLOAD_PROVIDERS = ['apple', 'healthconnect', 'manual'];
 const minutes = (value) => {
   const total = Math.round(value);
   const h = Math.floor(total / 60), m = total % 60;
-  return h ? `${h}h ${String(m).padStart(2, '0')}m` : `${m}m`;
+  return h ? t('{h}h {m}m', { h, m: String(m).padStart(2, '0') }) : t('{m}m', { m });
 };
 const whole = (value) => Math.round(value).toLocaleString();
 
 // group decides which client sharing switch covers the value.
 export const METRICS = {
-  sleepMinutes: { label: 'Sleep', group: 'sleep', min: 0, max: 1440, format: minutes },
-  sleepScore: { label: 'Sleep performance', group: 'sleep', min: 0, max: 100, format: (v) => `${Math.round(v)}%` },
-  sleepEfficiency: { label: 'Sleep efficiency', group: 'sleep', min: 0, max: 100, format: (v) => `${Math.round(v)}%` },
-  respiratoryRate: { label: 'Respiratory rate', group: 'sleep', min: 4, max: 60, format: (v) => `${v.toFixed(1)} /min` },
-  recoveryScore: { label: 'Recovery', group: 'recovery', min: 0, max: 100, format: (v) => `${Math.round(v)}%` },
-  hrvMs: { label: 'HRV', group: 'recovery', min: 1, max: 300, format: (v) => `${Math.round(v)} ms` },
-  restingHr: { label: 'Resting heart rate', group: 'recovery', min: 20, max: 200, format: (v) => `${Math.round(v)} bpm` },
-  spo2: { label: 'Blood oxygen', group: 'recovery', min: 50, max: 100, format: (v) => `${Math.round(v)}%` },
-  skinTempC: { label: 'Skin temperature', group: 'recovery', min: 25, max: 45, format: (v) => `${v.toFixed(1)} °C` },
-  strain: { label: 'Strain', group: 'activity', min: 0, max: 21, format: (v) => v.toFixed(1) },
-  steps: { label: 'Steps', group: 'activity', min: 0, max: 200000, format: whole },
-  activeKcal: { label: 'Active calories', group: 'activity', min: 0, max: 20000, format: (v) => `${whole(v)} kcal` },
-  totalKcal: { label: 'Total calories', group: 'activity', min: 0, max: 30000, format: (v) => `${whole(v)} kcal` },
+  sleepMinutes: { label: t('Sleep'), group: 'sleep', min: 0, max: 1440, format: minutes },
+  sleepScore: { label: t('Sleep performance'), group: 'sleep', min: 0, max: 100, format: (v) => `${Math.round(v)}%` },
+  sleepEfficiency: { label: t('Sleep efficiency'), group: 'sleep', min: 0, max: 100, format: (v) => `${Math.round(v)}%` },
+  respiratoryRate: { label: t('Respiratory rate'), group: 'sleep', min: 4, max: 60, format: (v) => `${v.toFixed(1)} ${t('/min')}` },
+  recoveryScore: { label: t('Recovery'), group: 'recovery', min: 0, max: 100, format: (v) => `${Math.round(v)}%` },
+  hrvMs: { label: 'HRV', group: 'recovery', min: 1, max: 300, format: (v) => `${Math.round(v)} ${t('ms')}` },
+  restingHr: { label: t('Resting heart rate'), group: 'recovery', min: 20, max: 200, format: (v) => `${Math.round(v)} ${t('bpm')}` },
+  spo2: { label: t('Blood oxygen'), group: 'recovery', min: 50, max: 100, format: (v) => `${Math.round(v)}%` },
+  skinTempC: { label: t('Skin temperature'), group: 'recovery', min: 25, max: 45, format: (v) => `${v.toFixed(1)} °C` },
+  strain: { label: t('Strain'), group: 'activity', min: 0, max: 21, format: (v) => v.toFixed(1) },
+  steps: { label: t('Steps'), group: 'activity', min: 0, max: 200000, format: whole },
+  activeKcal: { label: t('Active calories'), group: 'activity', min: 0, max: 20000, format: (v) => `${whole(v)} ${t('kcal')}` },
+  totalKcal: { label: t('Total calories'), group: 'activity', min: 0, max: 30000, format: (v) => `${whole(v)} ${t('kcal')}` },
 };
 export const SHARE_GROUPS = [
   ['sleep', 'Sleep', 'Duration, sleep score and efficiency'],
@@ -59,17 +61,17 @@ export function visibleMetrics(metrics, share) {
 
 // Returns clean metrics, or throws with a readable message. Unknown keys are dropped.
 export function cleanMetrics(input) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Readings are missing.');
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error(t('Readings are missing.'));
   const out = {};
   for (const [key, spec] of Object.entries(METRICS)) {
     const raw = input[key];
     if (raw === undefined || raw === null || raw === '') continue;
     const value = Number(raw);
     if (!Number.isFinite(value) || value < spec.min || value > spec.max)
-      throw new Error(`${spec.label} must be between ${spec.min} and ${spec.max}.`);
+      throw new Error(t('{label} must be between {min} and {max}.', { label: spec.label, min: spec.min, max: spec.max }));
     out[key] = Math.round(value * 100) / 100;
   }
-  if (!Object.keys(out).length) throw new Error('Add at least one reading.');
+  if (!Object.keys(out).length) throw new Error(t('Add at least one reading.'));
   return out;
 }
 
@@ -106,9 +108,9 @@ export function wearableFlag(day, today) {
   const m = day.metrics || {};
   const when = day.date === today ? 'today' : 'yesterday';
   if (m.recoveryScore != null && m.recoveryScore < LOW_RECOVERY)
-    return { key: 'recovery', tone: 'red', title: `Low recovery ${when}`, detail: `Recovery ${Math.round(m.recoveryScore)}%${m.hrvMs ? ` · HRV ${Math.round(m.hrvMs)} ms` : ''}`, tab: 'Overview', at: day.date };
+    return { key: 'recovery', tone: 'red', title: when === 'today' ? t('Low recovery today') : t('Low recovery yesterday'), detail: m.hrvMs ? t('Recovery {value}% · HRV {hrv} ms', { value: Math.round(m.recoveryScore), hrv: Math.round(m.hrvMs) }) : t('Recovery {value}%', { value: Math.round(m.recoveryScore) }), tab: 'Overview', at: day.date };
   if (m.sleepMinutes != null && m.sleepMinutes < SHORT_SLEEP)
-    return { key: 'recovery', tone: 'amber', title: `Short sleep ${when === 'today' ? 'last night' : 'the night before'}`, detail: `Slept ${minutes(m.sleepMinutes)}`, tab: 'Overview', at: day.date };
+    return { key: 'recovery', tone: 'amber', title: when === 'today' ? t('Short sleep last night') : t('Short sleep the night before'), detail: t('Slept {minutes}', { minutes: minutes(m.sleepMinutes) }), tab: 'Overview', at: day.date };
   return null;
 }
 

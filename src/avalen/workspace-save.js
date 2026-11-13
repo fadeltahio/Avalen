@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 import {useRef, useState} from 'react';
 import {useApp} from './context.js';
 
@@ -17,7 +18,7 @@ export function useWorkspaceSave() {
       if (result?.error) throw new Error(result.error);
       return true;
     } catch (cause) {
-      setError(cause.message || 'This change could not be saved. Please try again.');
+      setError(t(cause.message || 'This change could not be saved. Please try again.'));
       return false;
     } finally {
       lock.current = false;

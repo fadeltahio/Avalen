@@ -4,6 +4,7 @@ import { Mic, Square, Trash2, Pause, Play } from "lucide-react";
 import { Button, Field } from "../ui.jsx";
 import { saveFile, useFile } from "../store.js";
 import { connection, request } from "./connection.js";
+import { t } from '../i18n.js';
 export function VoiceRecording({
   value,
   onChange,
@@ -60,7 +61,7 @@ export function VoiceRecording({
             const audio = document.createElement("audio");
             const timer = setTimeout(
               () =>
-                reject(new Error("Choose a playable recording or use text.")),
+                reject(new Error(t('Choose a playable recording or use text.'))),
               10000,
             );
             audio.onloadedmetadata = () => {
@@ -69,7 +70,7 @@ export function VoiceRecording({
             };
             audio.onerror = () => {
               clearTimeout(timer);
-              reject(new Error("Choose a playable voice recording."));
+              reject(new Error(t('Choose a playable voice recording.')));
             };
             audio.src = objectURL;
           });
@@ -77,7 +78,7 @@ export function VoiceRecording({
           URL.revokeObjectURL(objectURL);
         }
         if (Number.isFinite(duration) && duration > maxSeconds + 1)
-          throw new Error(`Choose a recording up to ${maxSeconds} seconds.`);
+          throw new Error(t('Choose a recording up to {maxSeconds} seconds.', { maxSeconds }));
       }
       const saved = await saveFile(file, {
         types: ["audio/"],
@@ -97,7 +98,7 @@ export function VoiceRecording({
     setError("");
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
       setError(
-        "Recording is unavailable in this browser. Upload a voice recording or use text.",
+        t('Recording is unavailable in this browser. Upload a voice recording or use text.'),
       );
       return;
     }
@@ -166,7 +167,7 @@ export function VoiceRecording({
       stream.current?.getTracks().forEach((t) => t.stop());
       meterContext.current?.close().catch(() => {});
       setError(
-        "Microphone access was unavailable. You can upload a recording or write your update.",
+        t('Microphone access was unavailable. You can upload a recording or write your update.'),
       );
     } finally {
       if (alive.current) setStarting(false);
@@ -206,12 +207,12 @@ export function VoiceRecording({
         if (result.state === "failed")
           throw new Error(
             result.error ||
-              "Transcription failed. Your recording is still available.",
+              t('Transcription failed. Your recording is still available.'),
           );
         await new Promise((resolve) => setTimeout(resolve, 1000));
       }
       setError(
-        "Transcription is still processing. You can submit the original audio and your coach can listen.",
+        t('Transcription is still processing. You can submit the original audio and your coach can listen.'),
       );
     } catch (e) {
       setError(e.message);
@@ -239,37 +240,35 @@ export function VoiceRecording({
     >
       <div className="ecosystem-card-header">
         <b>{label}</b>
-        <span className="fine-print muted">Up to {maxSeconds} seconds</span>
+        <span className="fine-print muted">{t('Up to {maxSeconds} seconds', { maxSeconds })}</span>
       </div>
       <p className="record-status" role="status">
         {starting
-          ? "Waiting for microphone permission…"
+          ? t('Waiting for microphone permission…')
           : recording
             ? paused
-              ? "Recording paused"
-              : "Recording · microphone connected"
+              ? t('Recording paused')
+              : t('Recording · microphone connected')
             : busy
-              ? "Saving your recording…"
+              ? t('Saving your recording…')
               : transcribing
-                ? "Preparing your transcript…"
+                ? t('Preparing your transcript…')
                 : value
-                  ? "Recording ready · listen before sending"
-                  : "Voice or text. Your choice."}
+                  ? t('Recording ready · listen before sending')
+                  : t('Voice or text. Your choice.')}
       </p>
       {recording ? (
         <>
           <MicrophoneMeter stream={stream.current} context={meterContext.current} paused={paused} />
           <div className="ecosystem-toolbar">
-            <span role="timer" className="record-time">
-              {seconds}s / {maxSeconds}s
-            </span>
+            <span role="timer" className="record-time">{t('{seconds}s / {maxSeconds}s', { seconds, maxSeconds })}</span>
             <Button secondary small onClick={togglePause}>
               {paused ? <Play size={15} /> : <Pause size={15} />}{" "}
-              {paused ? "Resume recording" : "Pause recording"}
+              {paused ? t('Resume recording') : t('Pause recording')}
             </Button>
             <Button small onClick={() => recorder.current?.stop()}>
               <Square size={15} />
-              Stop recording
+              {t('Stop recording')}
             </Button>
           </div>
         </>
@@ -284,7 +283,7 @@ export function VoiceRecording({
               onClick={() => onChange(null)}
             >
               <Trash2 size={14} />
-              Remove recording
+              {t('Remove recording')}
             </Button>
             {available && (
               <Button
@@ -293,7 +292,7 @@ export function VoiceRecording({
                 disabled={!consent || transcribing}
                 onClick={transcribe}
               >
-                {transcribing ? "Transcribing…" : "Prepare transcript"}
+                {transcribing ? t('Transcribing…') : t('Prepare transcript')}
               </Button>
             )}
           </div>
@@ -304,17 +303,15 @@ export function VoiceRecording({
                 checked={consent}
                 onChange={(e) => setConsent(e.target.checked)}
               />
-              Allow this recording to be sent to the configured transcription
-              provider.
+              {t('Allow this recording to be sent to the configured transcription provider.')}
             </label>
           ) : (
             <small className="muted">
-              No transcription provider is connected. Your coach can listen to
-              the original recording.
+              {t('No transcription provider is connected. Your coach can listen to the original recording.')}
             </small>
           )}
           {value.transcript !== undefined && (
-            <Field label="Transcript · review and correct before sending">
+            <Field label={t('Transcript · review and correct before sending')}>
               <textarea
                 maxLength={6000}
                 value={value.transcript}
@@ -330,18 +327,18 @@ export function VoiceRecording({
           <Button secondary small disabled={busy || starting} onClick={start}>
             <Mic size={16} />
             {starting
-              ? "Connecting microphone…"
+              ? t('Connecting microphone…')
               : busy
-                ? "Saving recording…"
-                : "Record voice"}
+                ? t('Saving recording…')
+                : t('Record voice')}
           </Button>
           <label className="text-link">
-            Upload audio
+            {t('Upload audio')}
             <input
               className="sr-only"
               type="file"
               accept="audio/*"
-              aria-label={`Upload ${label.toLowerCase()}`}
+              aria-label={t('Upload {value}', { value: t(label) })}
               disabled={busy || starting}
               onChange={(e) => {
                 const file = e.target.files?.[0];
@@ -385,7 +382,7 @@ function MicrophoneMeter({ stream, context, paused }) {
       last = 0;
     const bars = [...ref.current.children];
     try {
-      if (!context || context.state === 'closed') throw new Error('No audio analyser');
+      if (!context || context.state === 'closed') throw new Error(t('No audio analyser'));
       source = context.createMediaStreamSource(stream);
       const analyser = context.createAnalyser();
       analyser.fftSize = 128;
@@ -442,10 +439,10 @@ function MicrophoneMeter({ stream, context, paused }) {
       </div>
       <small ref={output} className="fine-print muted">
         {paused
-          ? "Microphone visualization paused"
+          ? t('Microphone visualization paused')
           : unavailable
-            ? "Level visualization unavailable. You can still record."
-            : "Listening for microphone input…"}
+            ? t('Level visualization unavailable. You can still record.')
+            : t('Listening for microphone input…')}
       </small>
     </div>
   );

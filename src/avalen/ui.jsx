@@ -18,6 +18,7 @@ import track from "../assets/share-track-dawn-v2.jpg";
 import recovery from "../assets/share-recovery-v2.jpg";
 import night from "../assets/share-night-gym-v2.jpg";
 import mountain from "../assets/avalen-mountains.jpg";
+import { t, locale } from './i18n.js';
 export const IMAGES = [rack, weights, track, recovery, night];
 export { mountain };
 export const BACKGROUNDS = [
@@ -34,7 +35,7 @@ export function BrandLogo({ brand, large = false, className = "" }) {
     <img
       className={`brand-logo ${large ? "large" : ""} ${className}`}
       src={url}
-      alt={`${brand.brand} logo`}
+      alt={t('{brand} logo', { brand: brand.brand })}
     />
   ) : (
     <Mark large={large} />
@@ -88,12 +89,13 @@ export function Tabs({ items, value, onChange, label = "Sections" }) {
   useLayoutEffect(() => {
     const host = container.current, active = host?.querySelector('[aria-selected="true"]');
     if (!active || host.scrollWidth <= host.clientWidth) return;
-    const left = active.offsetLeft, right = left + active.offsetWidth;
-    if (left < host.scrollLeft || right > host.scrollLeft + host.clientWidth)
-      host.scrollTo({left: Math.max(0, left < host.scrollLeft ? left - 8 : right - host.clientWidth + 8), behavior: reduced ? 'instant' : 'smooth'});
+    // Screen positions rather than offsets, so this works left-to-right and right-to-left.
+    const tab = active.getBoundingClientRect(), box = host.getBoundingClientRect();
+    const shift = tab.left < box.left ? tab.left - box.left - 8 : tab.right > box.right ? tab.right - box.right + 8 : 0;
+    if (shift) host.scrollBy({left: shift, behavior: reduced ? 'instant' : 'smooth'});
   }, [value, reduced]);
   return (
-    <div ref={container} className="tabs" role="tablist" aria-label={label}>
+    <div ref={container} className="tabs" role="tablist" aria-label={t(label)}>
       <MovingIndicator container={container} value={value}/>
       {items.map((item, index) => {
         const [id, text] = Array.isArray(item) ? item : [item, item];
@@ -129,7 +131,7 @@ export function Tabs({ items, value, onChange, label = "Sections" }) {
                 [next].focus();
             }}
           >
-            {text}
+            {t(text)}
           </button>
         );
       })}
@@ -176,9 +178,9 @@ export function Quote() {
     >
       <span>“</span>
       <p>
-        Discipline today
+        {t('Discipline today')}
         <br />
-        builds the freedom you want tomorrow.
+        {t('builds the freedom you want tomorrow.')}
       </p>
     </aside>
   );
@@ -196,7 +198,7 @@ export function Stat({ label, value, note, tone, children }) {
 export function Ring({ value, target, label, unit = "", tone = "green", motionKey = "" }) {
   const shown = useAnimatedNumber(value, `${motionKey}:macro:${label}`, 0);
   return (
-    <div className={`ring-item ${tone}`} aria-label={`${label}: ${value}${unit} of ${target}${unit}`}>
+    <div className={`ring-item ${tone}`} aria-label={t('{label}: {value}{unit} of {target}{unit2}', { label, value, unit, target, unit2: unit })}>
       <div className="ring" aria-hidden="true">
         <svg viewBox="0 0 80 80" aria-hidden="true">
           <circle cx="40" cy="40" r="35" className="ring-track" />
@@ -238,7 +240,7 @@ export function Bars({ values = [4, 6, 5, 7, 8, 6, 9], tone = "green" }) {
     </div>
   );
 }
-export function Meter({ value, target, tone = "green", label = 'Progress toward target' }) {
+export function Meter({ value, target, tone = "green", label = t('Progress toward target') }) {
   return (
     <div
       className={`meter ${tone}`}
@@ -280,7 +282,7 @@ export function Calendar({ selected, onChange, client, sessions = [] }) {
   }, [selected, reduced]);
   return (
     <>
-    <p className="calendar-month" aria-live="polite">{dateOf(selected).toLocaleDateString("en", { month: "long", year: "numeric" })}</p>
+    <p className="calendar-month" aria-live="polite">{dateOf(selected).toLocaleDateString(locale(), { month: "long", year: "numeric" })}</p>
     <div
       className="calendar"
       ref={ref}
@@ -316,7 +318,7 @@ export function Calendar({ selected, onChange, client, sessions = [] }) {
         return (
           <button
             key={d}
-            aria-label={dateOf(d).toLocaleDateString("en", {
+            aria-label={dateOf(d).toLocaleDateString(locale(), {
               weekday: "long",
               month: "long",
               day: "numeric",
@@ -329,7 +331,7 @@ export function Calendar({ selected, onChange, client, sessions = [] }) {
             }}
           >
             <small>
-              {dateOf(d).toLocaleDateString("en", { weekday: "short" })}
+              {dateOf(d).toLocaleDateString(locale(), { weekday: "short" })}
             </small>
             <b>{dateOf(d).getDate()}</b>
             {(complete || scheduled) && <i className={complete ? 'calendar-complete' : 'calendar-scheduled'} aria-hidden="true"/>}
@@ -414,7 +416,7 @@ export function Modal({ title, onClose, children, wide = false, className = "", 
     >
       <header className="modal-drag-handle" onPointerDown={beginDrag} onPointerMove={moveDrag} onPointerUp={() => endDrag()} onPointerCancel={() => endDrag(true)}>
         <h2 id={titleId}>{title}</h2>
-        <IconButton label="Close dialog" disabled={!canClose} onClick={requestClose}>
+        <IconButton label={t('Close dialog')} disabled={!canClose} onClick={requestClose}>
           <X size={20} />
         </IconButton>
       </header>
@@ -458,20 +460,20 @@ export function Media({ fileId, alt = "", className = "", type }) {
   if (url === null || (url && failed === url))
     return (
       <div className={`media-placeholder ${className}`} role="status">
-        This file is unavailable in this browser.
+        {t('This file is unavailable in this browser.')}
       </div>
     );
   if (!url)
     return (
       <div className={`media-placeholder skeleton ${className}`} role="status" aria-busy="true">
         <ImageIcon size={18} />
-        <span>Loading file…</span>
+        <span>{t('Loading file…')}</span>
       </div>
     );
   return type?.startsWith("video/") ? (
-    <video className={className} src={url} controls preload="metadata" aria-label={alt || 'Attached video'} onError={() => setFailed(url)} />
+    <video className={className} src={url} controls preload="metadata" aria-label={alt || t('Attached video')} onError={() => setFailed(url)} />
   ) : type?.startsWith("audio/") ? (
-    <audio src={url} controls preload="metadata" aria-label={alt || 'Attached audio'} onError={() => setFailed(url)} />
+    <audio src={url} controls preload="metadata" aria-label={alt || t('Attached audio')} onError={() => setFailed(url)} />
   ) : (
     <img className={className} src={url} alt={alt} loading="lazy" decoding="async" onError={() => setFailed(url)} />
   );
@@ -492,8 +494,8 @@ export function LineChart({
   if (!data.length)
     return (
       <Empty
-        title="Your trend starts here"
-        detail="Log a measurement to see your progress."
+        title={t('Your trend starts here')}
+        detail={t('Log a measurement to see your progress.')}
       />
     );
   const vals = data.map((x) => Number(x[field]));
@@ -522,7 +524,7 @@ export function LineChart({
     <div className={`chart ${color}`}>
       <div className="chart-readout">
         <span>
-          {new Date(data[i].date + "T12:00:00").toLocaleDateString("en", {
+          {new Date(data[i].date + "T12:00:00").toLocaleDateString(locale(), {
             month: "short",
             day: "numeric",
           })}
@@ -535,7 +537,7 @@ export function LineChart({
         viewBox="0 0 350 180"
         role="slider"
         tabIndex={0}
-        aria-label={`${label} history, use arrow keys to explore`}
+        aria-label={t('{label} history, use arrow keys to explore', { label: t(label) })}
         aria-valuemin={0}
         aria-valuemax={data.length - 1}
         aria-valuenow={i}
@@ -588,13 +590,13 @@ export function LineChart({
         />
         <circle cx={pts[i][0]} cy={pts[i][1]} r="4.5" />
         <text x="35" y="174">
-          {dateOf(data[0].date).toLocaleDateString("en", {
+          {dateOf(data[0].date).toLocaleDateString(locale(), {
             month: "short",
             day: "numeric",
           })}
         </text>
         <text x="325" y="174" textAnchor="end">
-          {dateOf(data.at(-1).date).toLocaleDateString("en", {
+          {dateOf(data.at(-1).date).toLocaleDateString(locale(), {
             month: "short",
             day: "numeric",
           })}

@@ -10,6 +10,7 @@ import {
   shiftPeriod, voidPayment,
 } from './payments-model.js';
 
+import { t } from './i18n.js';
 const initials = (name) => name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 const STATE_TEXT = { paid: 'Paid', due: 'Due', overdue: 'Overdue', none: 'No request yet' };
 const defaultDue = (period) => { const today = dayKey(); return period < periodOf(today) ? today : offsetDay(7, today > `${period}-01` ? today : `${period}-01`); };
@@ -50,25 +51,25 @@ export function CoachPayments() {
     const label = `${periodLabel(period)} coaching`, dueDate = defaultDue(period);
     const error = await apply(update, (d) => missing.forEach(({ client }) => requestPayment(d, { clientId: client.id, amount: client.subscription.amount, currency: client.subscription.currency, label, period, dueDate })));
     setBusy(false);
-    if (error) notify?.(error); else notify?.(`${missing.length} payment ${missing.length === 1 ? 'request' : 'requests'} sent`);
+    if (error) notify?.(error); else notify?.(t('{count} payment requests sent', { count: missing.length }));
   }
 
   return <div className="payments">
     <section className="pay-hero">
       <div className="pay-month">
-        <button type="button" aria-label="Previous month" onClick={() => setPeriod(shiftPeriod(period, -1))}><ChevronLeft size={20}/></button>
+        <button type="button" aria-label={t('Previous month')} onClick={() => setPeriod(shiftPeriod(period, -1))}><ChevronLeft size={20}/></button>
         <span aria-live="polite">{periodLabel(period)}</span>
-        <button type="button" aria-label="Next month" disabled={period >= periodOf(today)} onClick={() => setPeriod(shiftPeriod(period, 1))}><ChevronRight size={20}/></button>
+        <button type="button" aria-label={t('Next month')} disabled={period >= periodOf(today)} onClick={() => setPeriod(shiftPeriod(period, 1))}><ChevronRight size={20}/></button>
       </div>
-      <small className="eyebrow">EARNED</small>
+      <small className="eyebrow">{t('EARNED')}</small>
       <b className="pay-total">{formatMoney(month.earned[currency] || 0, currency)}</b>
       {others.length > 0 && <small className="pay-others">+ {others.map(([code, value]) => formatMoney(value, code)).join(' · ')}</small>}
       <div className="pay-facts">
-        <span><b>{month.paid}</b> paid</span>
-        <span className={month.overdue ? 'is-alert' : ''}><b>{month.unpaid}</b> unpaid{month.overdue ? ` · ${month.overdue} overdue` : ''}</span>
-        <span><b>{formatMoney(month.outstanding[currency] || 0, currency)}</b> outstanding</span>
+        <span><b>{month.paid}</b> {t('paid')}</span>
+        <span className={month.overdue ? 'is-alert' : ''}><b>{month.unpaid}</b> {t('unpaid')}{month.overdue ? t(' · {overdue} overdue', { overdue: month.overdue }) : ''}</span>
+        <span><b>{formatMoney(month.outstanding[currency] || 0, currency)}</b> {t('outstanding')}</span>
       </div>
-      <div className="pay-bars" role="group" aria-label="Earnings, last six months">
+      <div className="pay-bars" role="group" aria-label={t('Earnings, last six months')}>
         {bars.map((bar) => <button type="button" key={bar.period} className={bar.period === period ? 'is-current' : ''} aria-pressed={bar.period === period} aria-label={`${periodLabel(bar.period)}: ${formatMoney(bar.totals[currency] || 0, currency)}`} onClick={() => setPeriod(bar.period)}>
           <i style={{ '--h': `${Math.max(4, ((bar.totals[currency] || 0) / top) * 100)}%` }}/>
           <small>{periodLabel(bar.period, 'short').split(' ')[0]}</small>
@@ -77,10 +78,10 @@ export function CoachPayments() {
     </section>
 
     {missing.length > 0 && <button type="button" className="pay-request-all" disabled={busy} onClick={requestAll}>
-      <Plus size={18}/><span><b>Request {periodLabel(period, 'long').split(' ')[0]} from {missing.length} {missing.length === 1 ? 'client' : 'clients'}</b><small>Each uses the amount on their plan</small></span><ArrowRight size={18}/>
+      <Plus size={18}/><span><b>{t('Request')} {periodLabel(period, 'long').split(' ')[0]} {t('from')} {missing.length} {missing.length === 1 ? 'client' : 'clients'}</b><small>{t('Each uses the amount on their plan')}</small></span><ArrowRight size={18}/>
     </button>}
 
-    <SectionHead title="Clients this month"/>
+    <SectionHead title={t('Clients this month')}/>
     <div className="pay-list">
       {month.rows.map(({ client, state, payments }) => {
         const shown = payments.find((p) => paymentState(p, today) === state) || payments[0];
@@ -88,13 +89,13 @@ export function CoachPayments() {
         const code = shown?.currency || client.subscription?.currency || currency;
         return <button type="button" key={client.id} className={`pay-row is-${state}`} onClick={() => setSheet({ client, state, payments })}>
           <span className="avatar">{initials(client.name)}</span>
-          <span className="pay-row-copy"><b>{client.name}</b><small>
-            {state === 'paid' ? `${shown.verified ? 'Paymob' : METHODS[shown.method]} · ${shortDate(shown.paidAt.slice(0, 10))}` : state === 'none' ? 'No request yet' : `${STATE_TEXT[state]} · ${shortDate(shown.dueDate)}`}
+          <span className="pay-row-copy"><b>{t(client.name)}</b><small>
+            {state === 'paid' ? `${shown.verified ? 'Paymob' : t(METHODS[shown.method])} · ${shortDate(shown.paidAt.slice(0, 10))}` : state === 'none' ? t('No request yet') : `${t(STATE_TEXT[state])} · ${shortDate(shown.dueDate)}`}
           </small></span>
-          <span className="pay-row-end"><b>{amount ? formatMoney(amount, code) : '—'}</b><i className={`pay-pill is-${state}`}>{state === 'paid' && shown.verified ? <><ShieldCheck size={12}/>Paid</> : STATE_TEXT[state]}</i></span>
+          <span className="pay-row-end"><b>{amount ? formatMoney(amount, code) : '—'}</b><i className={`pay-pill is-${state}`}>{state === 'paid' && shown.verified ? <><ShieldCheck size={12}/>{t('Paid')}</> : STATE_TEXT[state]}</i></span>
         </button>;
       })}
-      {!month.rows.length && <p className="muted">Add a client to start tracking payments.</p>}
+      {!month.rows.length && <p className="muted">{t('Add a client to start tracking payments.')}</p>}
     </div>
 
     <PaymobCard connected={connected} account={account} onChange={setAccount}/>
@@ -124,22 +125,22 @@ function ClientSheet({ client, payments, period, account, onClose, onOpenClient 
     {payments.length ? <div className="pay-records">{payments.map((p) => {
       const state = paymentState(p, today);
       return <article key={p.id} className={`pay-record is-${state}`}>
-        <header><b>{formatMoney(p.amount, p.currency)}</b><i className={`pay-pill is-${state}`}>{state === 'paid' && p.verified ? <><ShieldCheck size={12}/>Paid</> : STATE_TEXT[state]}</i></header>
-        <p>{p.label}</p>
-        <small>{state === 'paid' ? `${methodText(p)} · ${shortDate(p.paidAt.slice(0, 10))}${p.paymob?.cardLast4 ? ` · card •••• ${p.paymob.cardLast4}` : ''}` : `Due ${shortDate(p.dueDate)}${p.paymob?.attempts?.length ? ' · client opened Paymob checkout' : ''}`}</small>
+        <header><b>{formatMoney(p.amount, p.currency)}</b><i className={`pay-pill is-${state}`}>{state === 'paid' && p.verified ? <><ShieldCheck size={12}/>{t('Paid')}</> : STATE_TEXT[state]}</i></header>
+        <p>{t(p.label)}</p>
+        <small>{state === 'paid' ? `${methodText(p)} · ${shortDate(p.paidAt.slice(0, 10))}${p.paymob?.cardLast4 ? ` · ${t('card')} •••• ${p.paymob.cardLast4}` : ''}` : t('Due {shortDate}{value}', { shortDate: shortDate(p.dueDate), value: p.paymob?.attempts?.length ? ' · client opened Paymob checkout' : '' })}</small>
         {p.note && <small>{p.note}</small>}
         {state !== 'paid' && <div className="pay-record-actions">
-          <Button small onClick={() => setForm({ mode: 'settle', payment: p })}>Mark as paid</Button>
-          <Button small secondary disabled={busy} onClick={() => run((d) => voidPayment(d, p.id), 'Request cancelled')}>Cancel request</Button>
+          <Button small onClick={() => setForm({ mode: 'settle', payment: p })}>{t('Mark as paid')}</Button>
+          <Button small secondary disabled={busy} onClick={() => run((d) => voidPayment(d, p.id), 'Request cancelled')}>{t('Cancel request')}</Button>
         </div>}
-        {state === 'paid' && !p.verified && <button type="button" className="text-link" disabled={busy} onClick={() => run((d) => voidPayment(d, p.id), 'Record removed from totals')}>Remove this record</button>}
+        {state === 'paid' && !p.verified && <button type="button" className="text-link" disabled={busy} onClick={() => run((d) => voidPayment(d, p.id), 'Record removed from totals')}>{t('Remove this record')}</button>}
       </article>;
-    })}</div> : <p className="muted">Nothing requested or recorded for this month yet.</p>}
+    })}</div> : <p className="muted">{t('Nothing requested or recorded for this month yet.')}</p>}
     {error && <p className="error" role="alert">{error}</p>}
     <div className="pay-sheet-actions">
-      <Button onClick={() => setForm({ mode: 'request' })}><CreditCard size={17}/>Request payment</Button>
-      <Button secondary onClick={() => setForm({ mode: 'record' })}><Wallet size={17}/>Record a payment</Button>
-      <button type="button" className="text-link" onClick={onOpenClient}>Open {client.name.split(' ')[0]}’s profile<ArrowRight size={14}/></button>
+      <Button onClick={() => setForm({ mode: 'request' })}><CreditCard size={17}/>{t('Request payment')}</Button>
+      <Button secondary onClick={() => setForm({ mode: 'record' })}><Wallet size={17}/>{t('Record a payment')}</Button>
+      <button type="button" className="text-link" onClick={onOpenClient}>{t('Open')} {client.name.split(' ')[0]}{t('’s profile')}<ArrowRight size={14}/></button>
     </div>
   </Modal>;
 }
@@ -175,29 +176,29 @@ function PaymentForm({ client, period, account, payment, mode, onClose, onBack }
     if (!issue) issue = (await update((d) => { d.payments ||= []; change(d); }))?.error || null;
     setBusy(false);
     if (issue) { setError(issue); return; }
-    notify?.(mode === 'request' ? `Request sent to ${client.name.split(' ')[0]}` : 'Payment recorded');
+    notify?.(mode === 'request' ? t('Request sent to {value}', { value: client.name.split(' ')[0] }) : t('Payment recorded'));
     onClose();
   }
   const paymobReady = account?.connected && account.publicAddress && account.currency === values.currency;
   return <Modal title={title} onClose={onClose} canClose={!busy}>
-    <button type="button" className="text-link pay-back" onClick={onBack}><ChevronLeft size={15}/>{client.name}</button>
+    <button type="button" className="text-link pay-back" onClick={onBack}><ChevronLeft size={15}/>{t(client.name)}</button>
     <form className="pay-form" onSubmit={submit}>
       {mode !== 'settle' && <div className="pay-amount">
-        <Field label="Amount"><input type="number" inputMode="decimal" min="0" step="any" required value={values.amount} onChange={set('amount')}/></Field>
-        <Field label="Currency"><select value={values.currency} onChange={set('currency')}>{Object.keys(CURRENCIES).map((code) => <option key={code}>{code}</option>)}</select></Field>
+        <Field label={t('Amount')}><input type="number" inputMode="decimal" min="0" step="any" required value={values.amount} onChange={set('amount')}/></Field>
+        <Field label={t('Currency')}><select value={values.currency} onChange={set('currency')}>{Object.keys(CURRENCIES).map((code) => <option key={code}>{code}</option>)}</select></Field>
       </div>}
-      {mode === 'settle' && <p className="pay-settle">{formatMoney(payment.amount, payment.currency)} · {payment.label}</p>}
-      {mode !== 'settle' && <Field label="Description"><input required maxLength={120} value={values.label} onChange={set('label')}/></Field>}
-      {mode === 'request' && <Field label="Due date"><input type="date" required value={values.dueDate} onChange={set('dueDate')}/></Field>}
+      {mode === 'settle' && <p className="pay-settle">{formatMoney(payment.amount, payment.currency)} · {t(payment.label)}</p>}
+      {mode !== 'settle' && <Field label={t('Description')}><input required maxLength={120} value={values.label} onChange={set('label')}/></Field>}
+      {mode === 'request' && <Field label={t('Due date')}><input type="date" required value={values.dueDate} onChange={set('dueDate')}/></Field>}
       {mode !== 'request' && <>
-        <Field label="Paid by"><select value={values.method} onChange={set('method')}>{MANUAL_METHODS.map((m) => <option key={m} value={m}>{METHODS[m]}</option>)}</select></Field>
-        <Field label="Date paid"><input type="date" required max={dayKey()} value={values.paidOn} onChange={set('paidOn')}/></Field>
+        <Field label={t('Paid by')}><select value={values.method} onChange={set('method')}>{MANUAL_METHODS.map((m) => <option key={m} value={m}>{METHODS[m]}</option>)}</select></Field>
+        <Field label={t('Date paid')}><input type="date" required max={dayKey()} value={values.paidOn} onChange={set('paidOn')}/></Field>
       </>}
-      {mode === 'record' && <Field label="Note (optional)"><input maxLength={500} value={values.note} onChange={set('note')} placeholder="e.g. Transfer reference"/></Field>}
-      {mode === 'request' && <p className="pay-hint">{paymobReady ? `${client.name.split(' ')[0]} sees this in their app and can pay with Paymob.` : `${client.name.split(' ')[0]} sees this in their app. Online payment needs Paymob connected for ${values.currency}; until then, record what they pay you.`}</p>}
-      {mode !== 'request' && <p className="pay-hint">Counted in your earnings as “recorded by you”. Only Paymob can mark a payment as confirmed.</p>}
+      {mode === 'record' && <Field label={t('Note (optional)')}><input maxLength={500} value={values.note} onChange={set('note')} placeholder={t('e.g. Transfer reference')}/></Field>}
+      {mode === 'request' && <p className="pay-hint">{paymobReady ? t('{value} sees this in their app and can pay with Paymob.', { value: client.name.split(' ')[0] }) : t('{value} sees this in their app. Online payment needs Paymob connected for {currency}; until then, record what they pay you.', { value: client.name.split(' ')[0], currency: values.currency })}</p>}
+      {mode !== 'request' && <p className="pay-hint">{t('Counted in your earnings as “recorded by you”. Only Paymob can mark a payment as confirmed.')}</p>}
       {error && <p className="error" role="alert">{error}</p>}
-      <Button type="submit" disabled={busy}>{busy ? 'Saving…' : mode === 'request' ? 'Send request' : 'Save payment'}</Button>
+      <Button type="submit" disabled={busy}>{busy ? t('Saving…') : mode === 'request' ? t('Send request') : t('Save payment')}</Button>
     </form>
   </Modal>;
 }
@@ -205,13 +206,13 @@ function PaymentForm({ client, period, account, payment, mode, onClose, onBack }
 function PaymobCard({ connected, account, onChange }) {
   const [open, setOpen] = useState(false);
   if (!connected) return <section className="card pay-connect">
-    <div className="pay-connect-head"><Link2 size={20}/><div><b>Paymob</b><small>Get paid by card and mobile wallet, straight to your own Paymob account.</small></div></div>
-    <p className="muted">Online payment works in your connected Avalen workspace. In this preview you can request and record payments to try the tracking.</p>
+    <div className="pay-connect-head"><Link2 size={20}/><div><b>Paymob</b><small>{t('Get paid by card and mobile wallet, straight to your own Paymob account.')}</small></div></div>
+    <p className="muted">{t('Online payment works in your connected Avalen workspace. In this preview you can request and record payments to try the tracking.')}</p>
   </section>;
   return <section className="card pay-connect">
-    <div className="pay-connect-head"><Link2 size={20}/><div><b>Paymob</b><small>{account?.connected ? `Connected · ${REGIONS[account.region].label} · ${account.currency}` : 'Get paid by card and mobile wallet, straight to your own Paymob account. Avalen takes no cut.'}</small></div>{account?.connected && <i className="pay-pill is-paid"><Check size={12}/>On</i>}</div>
-    {account?.connected && !account.publicAddress && <Notice>Clients can’t pay online yet: the server’s public address (AVALEN_PUBLIC_URL) isn’t set.</Notice>}
-    <Button small secondary={account?.connected} onClick={() => setOpen(true)}>{account?.connected ? 'Manage Paymob' : 'Connect Paymob'}</Button>
+    <div className="pay-connect-head"><Link2 size={20}/><div><b>Paymob</b><small>{account?.connected ? t('Connected · {label} · {currency}', { label: REGIONS[account.region].label, currency: account.currency }) : t('Get paid by card and mobile wallet, straight to your own Paymob account. Avalen takes no cut.')}</small></div>{account?.connected && <i className="pay-pill is-paid"><Check size={12}/>{t('On')}</i>}</div>
+    {account?.connected && !account.publicAddress && <Notice>{t('Clients can’t pay online yet: the server’s public address (AVALEN_PUBLIC_URL) isn’t set.')}</Notice>}
+    <Button small secondary={account?.connected} onClick={() => setOpen(true)}>{account?.connected ? t('Manage Paymob') : t('Connect Paymob')}</Button>
     {open && <PaymobForm account={account} onClose={() => setOpen(false)} onChange={onChange}/>}
   </section>;
 }
@@ -228,18 +229,18 @@ function PaymobForm({ account, onClose, onChange }) {
     catch (e) { setError(e.message); }
     finally { setBusy(false); }
   }
-  return <Modal title={account?.connected ? 'Manage Paymob' : 'Connect Paymob'} onClose={onClose} canClose={!busy}>
-    <p className="pay-hint">Money goes straight from your clients to your Paymob account. Your keys are encrypted on your Avalen server and never shown to clients.</p>
+  return <Modal title={account?.connected ? t('Manage Paymob') : t('Connect Paymob')} onClose={onClose} canClose={!busy}>
+    <p className="pay-hint">{t('Money goes straight from your clients to your Paymob account. Your keys are encrypted on your Avalen server and never shown to clients.')}</p>
     <form className="pay-form" onSubmit={(event) => { event.preventDefault(); send('PUT', values); }}>
-      <Field label="Paymob country"><select value={values.region} onChange={set('region')}>{Object.entries(REGIONS).map(([key, r]) => <option key={key} value={key}>{r.label} ({r.currency})</option>)}</select></Field>
-      <Field label="Public key"><input required autoComplete="off" spellCheck={false} value={values.publicKey} onChange={set('publicKey')} placeholder="egy_pk_…"/></Field>
-      <Field label="Secret key"><input required type="password" autoComplete="off" value={values.secretKey} onChange={set('secretKey')} placeholder={account?.connected ? 'Enter again to save changes' : 'egy_sk_…'}/></Field>
-      <Field label="HMAC secret"><input required type="password" autoComplete="off" value={values.hmacSecret} onChange={set('hmacSecret')}/></Field>
-      <Field label="Integration IDs"><input required inputMode="numeric" value={values.integrationIds} onChange={set('integrationIds')} placeholder="e.g. 4567890, 4567891"/></Field>
-      <p className="pay-hint">All of these are in your Paymob dashboard: the three keys under your API key settings, and one integration ID for each payment method you turned on (card, wallet). Use test keys first to try a payment.</p>
+      <Field label={t('Paymob country')}><select value={values.region} onChange={set('region')}>{Object.entries(REGIONS).map(([key, r]) => <option key={key} value={key}>{t(r.label)} ({r.currency})</option>)}</select></Field>
+      <Field label={t('Public key')}><input required autoComplete="off" spellCheck={false} value={values.publicKey} onChange={set('publicKey')} placeholder={t('egy_pk_…')}/></Field>
+      <Field label={t('Secret key')}><input required type="password" autoComplete="off" value={values.secretKey} onChange={set('secretKey')} placeholder={account?.connected ? t('Enter again to save changes') : t('egy_sk_…')}/></Field>
+      <Field label={t('HMAC secret')}><input required type="password" autoComplete="off" value={values.hmacSecret} onChange={set('hmacSecret')}/></Field>
+      <Field label={t('Integration IDs')}><input required inputMode="numeric" value={values.integrationIds} onChange={set('integrationIds')} placeholder={t('e.g. 4567890, 4567891')}/></Field>
+      <p className="pay-hint">{t('All of these are in your Paymob dashboard: the three keys under your API key settings, and one integration ID for each payment method you turned on (card, wallet). Use test keys first to try a payment.')}</p>
       {error && <p className="error" role="alert">{error}</p>}
-      <Button type="submit" disabled={busy}>{busy ? 'Saving…' : account?.connected ? 'Save changes' : 'Connect Paymob'}</Button>
-      {account?.connected && <button type="button" className="text-link pay-disconnect" disabled={busy} onClick={() => send('DELETE')}>Disconnect Paymob</button>}
+      <Button type="submit" disabled={busy}>{busy ? t('Saving…') : account?.connected ? t('Save changes') : t('Connect Paymob')}</Button>
+      {account?.connected && <button type="button" className="text-link pay-disconnect" disabled={busy} onClick={() => send('DELETE')}>{t('Disconnect Paymob')}</button>}
     </form>
   </Modal>;
 }
@@ -258,13 +259,13 @@ export function ClientPayments() {
   useEffect(() => { if (subtab === 'Payments' || confirming) section.current?.scrollIntoView({ block: 'start', behavior: 'instant' }); }, []);
   if (!mine.length && !confirming) return null;
   return <section className="card client-payments" id="payments" ref={section}>
-    <SectionHead title="Payments"/>
+    <SectionHead title={t('Payments')}/>
     {confirming && <Confirming id={confirming} onDone={() => setConfirming(null)}/>}
     {due.map((p) => <DuePayment key={p.id} payment={p} state={paymentState(p, today)}/>)}
     {paid.length > 0 && <div className="client-pay-history">
-      <small className="eyebrow">PAID</small>
+      <small className="eyebrow">{t('PAID')}</small>
       {paid.slice(0, 12).map((p) => <div key={p.id} className="client-pay-paid">
-        <span><b>{p.label}</b><small>{shortDate(p.paidAt.slice(0, 10))} · {p.verified ? 'Paid with Paymob' : `${METHODS[p.method]} · recorded by your coach`}</small></span>
+        <span><b>{t(p.label)}</b><small>{shortDate(p.paidAt.slice(0, 10))} · {p.verified ? t('Paid with Paymob') : t('{value} · recorded by your coach', { value: METHODS[p.method] })}</small></span>
         <b>{formatMoney(p.amount, p.currency)}</b>
       </div>)}
     </div>}
@@ -291,12 +292,12 @@ function DuePayment({ payment, state }) {
     }
   }
   return <article className={`client-pay-due is-${state}`}>
-    <header><span><b>{payment.label}</b><small>{state === 'overdue' ? `Overdue · was due ${shortDate(payment.dueDate)}` : `Due ${shortDate(payment.dueDate)}`}</small></span><b>{formatMoney(payment.amount, payment.currency)}</b></header>
+    <header><span><b>{t(payment.label)}</b><small>{state === 'overdue' ? t('Overdue · was due {shortDate}', { shortDate: shortDate(payment.dueDate) }) : t('Due {shortDate}', { shortDate: shortDate(payment.dueDate) })}</small></span><b>{formatMoney(payment.amount, payment.currency)}</b></header>
     {live ? <form onSubmit={pay}>
-      {askPhone && <Field label="Mobile number"><input type="tel" required autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+20 100 123 4567"/></Field>}
-      <Button type="submit" disabled={busy}><CreditCard size={17}/>{busy ? 'Opening Paymob…' : 'Pay with Paymob'}</Button>
-      <small className="muted">Secure checkout by Paymob. Card or mobile wallet.</small>
-    </form> : <p className="muted">Pay your coach directly for now. Online payment with Paymob works once your coaching account is connected.</p>}
+      {askPhone && <Field label={t('Mobile number')}><input type="tel" required autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+20 100 123 4567"/></Field>}
+      <Button type="submit" disabled={busy}><CreditCard size={17}/>{busy ? t('Opening Paymob…') : t('Pay with Paymob')}</Button>
+      <small className="muted">{t('Secure checkout by Paymob. Card or mobile wallet.')}</small>
+    </form> : <p className="muted">{t('Pay your coach directly for now. Online payment with Paymob works once your coaching account is connected.')}</p>}
     {error && <p className="error" role="alert">{error}</p>}
   </article>;
 }
@@ -317,9 +318,9 @@ function Confirming({ id, onDone }) {
   if (!payment) return null;
   return <div className={`pay-confirm ${done ? 'is-done' : ''}`} role="status">
     {done ? <svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" pathLength="1"/><path pathLength="1" d="M21 33.5l7.5 7.5L44 25"/></svg> : <i className="pay-spinner" aria-hidden="true"/>}
-    <span><b>{done ? 'Paid. Thank you.' : timedOut ? 'Paymob is still confirming' : 'Confirming your payment…'}</b>
-      <small>{done ? `${formatMoney(payment.amount, payment.currency)} · confirmed by Paymob` : timedOut ? 'Your coach will see it as soon as Paymob confirms. You don’t need to pay again.' : 'This usually takes a few seconds.'}</small></span>
-    {(done || timedOut) && <button type="button" className="text-link" onClick={onDone}>Close</button>}
+    <span><b>{done ? t('Paid. Thank you.') : timedOut ? t('Paymob is still confirming') : t('Confirming your payment…')}</b>
+      <small>{done ? t('{money} · confirmed by Paymob', { money: formatMoney(payment.amount, payment.currency) }) : timedOut ? t('Your coach will see it as soon as Paymob confirms. You don’t need to pay again.') : t('This usually takes a few seconds.')}</small></span>
+    {(done || timedOut) && <button type="button" className="text-link" onClick={onDone}>{t('Close')}</button>}
   </div>;
 }
 
@@ -332,6 +333,6 @@ export function PaymentDueNotice() {
   const overdue = due.some((p) => paymentState(p, today) === 'overdue');
   const first = due.sort((a, b) => (a.dueDate || '').localeCompare(b.dueDate || ''))[0];
   return <button type="button" className={`pay-home-notice ${overdue ? 'is-overdue' : ''}`} onClick={() => navigate('you', 'Payments')}>
-    <CreditCard size={19}/><span><b>{overdue ? 'Payment overdue' : 'Payment due'} · {formatMoney(first.amount, first.currency)}</b><small>{first.label} · {overdue ? 'was due' : 'due'} {shortDate(first.dueDate)}</small></span><ChevronRight size={18}/>
+    <CreditCard size={19}/><span><b>{overdue ? t('Payment overdue') : t('Payment due')} · {formatMoney(first.amount, first.currency)}</b><small>{t(first.label)} · {overdue ? t('was due') : 'due'} {shortDate(first.dueDate)}</small></span><ChevronRight size={18}/>
   </button>;
 }

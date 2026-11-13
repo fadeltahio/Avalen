@@ -8,6 +8,7 @@ import {
   connectedMode,
   request,
 } from "./connection.js";
+import { t } from '../i18n.js';
 export function AccountGate({ children }) {
   const [ready, setReady] = useState(!connectedMode()),
     [status, setStatus] = useState(null),
@@ -30,7 +31,7 @@ export function AccountGate({ children }) {
         } else if (!service.configured) setMode("setup");
     } catch {
       setStatus(null);
-      setError("The account service is unavailable. Start the Avalen service, then retry.");
+      setError(t('The account service is unavailable. Start the Avalen service, then retry.'));
     } finally {
       setBusy(false);
       if (!signedIn) leaveBoot();
@@ -65,32 +66,32 @@ export function AccountGate({ children }) {
   return (
     <main className="account-screen">
       <div className="account-wordmark">AVALEN</div>
-      <span className="eyebrow">YOUR COACHING, CONNECTED</span>
+      <span className="eyebrow">{t('YOUR COACHING, CONNECTED')}</span>
       <h1>
         {mode === "setup"
-          ? "Build your coaching workspace."
+          ? t('Build your coaching workspace.')
           : mode === "join"
-            ? "Your next chapter."
-            : "Welcome back."}
+            ? t('Your next chapter.')
+            : t('Welcome back.')}
       </h1>
       <p className="muted">
         {mode === "setup"
-          ? "Create the owner account using your service setup token."
-          : "Sign in to your private coaching workspace."}
+          ? t('Create the owner account using your service setup token.')
+          : t('Sign in to your private coaching workspace.')}
       </p>
       <form onSubmit={submit}>
         {mode === "setup" && (
           <>
             <Field
-              label="Setup token"
+              label={t('Setup token')}
               name="setupToken"
               type="password"
               required
               autoComplete="off"
             />
-            <Field label="Coach name" name="name" required maxLength={100} />
+            <Field label={t('Coach name')} name="name" required maxLength={100} />
             <Field
-              label="First client name"
+              label={t('First client name')}
               name="clientName"
               required
               maxLength={100}
@@ -99,7 +100,7 @@ export function AccountGate({ children }) {
         )}
         {mode === "join" && (
           <Field
-            label="Invitation"
+            label={t('Invitation')}
             name="invite"
             required
             defaultValue={
@@ -108,14 +109,14 @@ export function AccountGate({ children }) {
           />
         )}
         <Field
-          label="Email"
+          label={t('Email')}
           name="email"
           type="email"
           required
           autoComplete="email"
         />
         <Field
-          label="Password"
+          label={t('Password')}
           name="password"
           type="password"
           required
@@ -130,15 +131,15 @@ export function AccountGate({ children }) {
         )}
         <Button type="submit" disabled={busy || !status}>
           {busy
-            ? "Opening workspace…"
+            ? t('Opening workspace…')
             : mode === "setup"
-              ? "Create workspace"
+              ? t('Create workspace')
               : mode === "join"
-                ? "Accept invitation"
-                : "Sign in"}
+                ? t('Accept invitation')
+                : t('Sign in')}
         </Button>
       </form>
-      {!status && error && <Button secondary disabled={busy} onClick={checkConnection}>{busy ? 'Checking connection…' : 'Retry connection'}</Button>}
+      {!status && error && <Button secondary disabled={busy} onClick={checkConnection}>{busy ? t('Checking connection…') : t('Retry connection')}</Button>}
       {status?.configured && (
         <button
           className="text-link"
@@ -148,16 +149,15 @@ export function AccountGate({ children }) {
           }}
         >
           {mode === "join"
-            ? "I already have an account"
-            : "I have a coach invitation"}
+            ? t('I already have an account')
+            : t('I have a coach invitation')}
         </button>
       )}
       <a className="text-link muted" href="/?connected=0&preview=welcome">
-        Open device preview
+        {t('Open device preview')}
       </a>
       <small className="muted">
-        Private recordings and coaching notes are available only to authorized
-        accounts.
+        {t('Private recordings and coaching notes are available only to authorized accounts.')}
       </small>
     </main>
   );
@@ -191,16 +191,16 @@ export function AccountSettings({ onClose }) {
     setError("");
     try {
       const raw = localStorage.getItem("avalen.workspace.v1");
-      if (!raw) throw new Error("No device workspace was found.");
+      if (!raw) throw new Error(t('No device workspace was found.'));
       const data = JSON.parse(raw);
       const result = await migrateDeviceMedia(data, setMigrationProgress);
       setError(
         result.failed.length
-          ? `Records remain imported. ${result.total - result.failed.length}/${result.total} files transferred. Retry to transfer the remaining files: ${result.failed
+          ? t('Records remain imported. {value}/{total} files transferred. Retry to transfer the remaining files: {value2}', { value: result.total - result.failed.length, total: result.total, value2: result.failed
               .map((x) => `${x.name}: ${x.error}`)
               .slice(0, 3)
-              .join("; ")}`
-          : `Records and ${result.total} files are now available in your private workspace. Device originals remain untouched.`,
+              .join("; ") })
+          : t('Records and {total} files are now available in your private workspace. Device originals remain untouched.', { total: result.total }),
       );
     } catch (e) {
       setError(e.message);
@@ -214,7 +214,7 @@ export function AccountSettings({ onClose }) {
     setError("");
     try {
       const raw = localStorage.getItem("avalen.workspace.v1");
-      if (!raw) throw new Error("No device workspace was found.");
+      if (!raw) throw new Error(t('No device workspace was found.'));
       const data = JSON.parse(raw);
       const result = await request("/import", {
         method: "POST",
@@ -230,29 +230,29 @@ export function AccountSettings({ onClose }) {
   }
 
   return (
-    <Modal title="Your connected workspace" onClose={onClose} canClose={!busy}>
+    <Modal title={t('Your connected workspace')} onClose={onClose} canClose={!busy}>
       <p>
         {account.user.email} · {account.user.role}
       </p>
       {account.user.role === "coach" && (
         <>
-          <SectionHead title="Invite a client" />
+          <SectionHead title={t('Invite a client')} />
           <form onSubmit={createInvite}>
-            <Field label="Client">
+            <Field label={t('Client')}>
               <select name="clientId">
                 {account.data.clients.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.name}
+                    {t(c.name)}
                   </option>
                 ))}
               </select>
             </Field>
             <Button disabled={busy} type="submit">
-              Create private invitation
+              {t('Create private invitation')}
             </Button>
           </form>
           {invite && (
-            <Field label="Invitation link · valid for 48 hours">
+            <Field label={t('Invitation link · valid for 48 hours')}>
               <textarea
                 readOnly
                 value={invite}
@@ -261,25 +261,23 @@ export function AccountSettings({ onClose }) {
             </Field>
           )}
           <details>
-            <summary>Bring your device workspace</summary>
+            <summary>{t('Bring your device workspace')}</summary>
             <p className="muted">
-              Available before live activity. Review the device preview first.
-              An archive of this new server workspace is kept, and your browser
-              originals remain untouched.
+              {t('Available before live activity. Review the device preview first. An archive of this new server workspace is kept, and your browser originals remain untouched.')}
             </p>
             <Button secondary disabled={busy} onClick={migrate}>
-              Import device records and files
+              {t('Import device records and files')}
             </Button>
             <Button secondary disabled={busy} onClick={transfer}>
-              Retry file transfer
+              {t('Retry file transfer')}
             </Button>
             {migrationProgress && (
-              <p role="status">Transferring {migrationProgress}</p>
+              <p role="status">{t('Transferring {migrationProgress}', { migrationProgress })}</p>
             )}
           </details>
         </>
       )}
-      <p className="account-legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">Privacy policy</a> · <a href="/support.html" target="_blank" rel="noreferrer">Help & support</a></p>
+      <p className="account-legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">{t('Privacy policy')}</a> · <a href="/support.html" target="_blank" rel="noreferrer">{t('Help & support')}</a></p>
       <DeleteAccount role={account.user.role} />
       {error && <Notice>{error}</Notice>}
       <Button
@@ -292,13 +290,13 @@ export function AccountSettings({ onClose }) {
             await request("/logout", { method: "POST" });
             location.reload();
           } catch (cause) {
-            setError(`Sign out was not confirmed. ${cause.message}`);
+            setError(t('Sign out was not confirmed. {message}', { message: cause.message }));
           } finally {
             setBusy(false);
           }
         }}
       >
-        Sign out
+        {t('Sign out')}
       </Button>
     </Modal>
   );
@@ -327,19 +325,19 @@ function DeleteAccount({ role }) {
   }
   return (
     <details className="account-delete" open={open || undefined} onToggle={(e) => setOpen(e.currentTarget.open)}>
-      <summary>Delete account</summary>
+      <summary>{t('Delete account')}</summary>
       <p>
         {coach
-          ? "This permanently deletes your coaching workspace: every client’s records, logins, photos, videos, voice notes, wearable readings and your Paymob connection. Your clients will no longer be able to sign in."
-          : "This permanently deletes your account and everything about you: workouts, check-ins, messages, photos, voice notes, measurements and wearable readings. Connected wearables are disconnected. Your coach keeps payment records without your personal details."}
+          ? t('This permanently deletes your coaching workspace: every client’s records, logins, photos, videos, voice notes, wearable readings and your Paymob connection. Your clients will no longer be able to sign in.')
+          : t('This permanently deletes your account and everything about you: workouts, check-ins, messages, photos, voice notes, measurements and wearable readings. Connected wearables are disconnected. Your coach keeps payment records without your personal details.')}
       </p>
-      <p className="muted">This can’t be undone.</p>
+      <p className="muted">{t('This can’t be undone.')}</p>
       <form onSubmit={remove}>
         <fieldset disabled={busy} className="save-fields">
-          <Field label="Your password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-          <Field label="Type DELETE to confirm" autoComplete="off" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+          <Field label={t('Your password')} type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Field label={t('Type DELETE to confirm')} autoComplete="off" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           {error && <p className="error" role="alert">{error}</p>}
-          <Button type="submit" disabled={confirm !== "DELETE" || !password}>{busy ? "Deleting…" : coach ? "Delete workspace and account" : "Delete my account"}</Button>
+          <Button type="submit" disabled={confirm !== "DELETE" || !password}>{busy ? t('Deleting…') : coach ? t('Delete workspace and account') : t('Delete my account')}</Button>
         </fieldset>
       </form>
     </details>

@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { useApp } from "../context.js";
 import { SectionHead } from "../ui.jsx";
+import { t } from '../i18n.js';
 export function CoachingUpdates() {
   const { data, client, navigate, runAction } = useApp();
   const [error, setError] = useState("");
@@ -12,20 +13,20 @@ export function CoachingUpdates() {
   if (!rows.length) return null;
   return (
     <section className="ecosystem-updates">
-      <SectionHead title="From your coaching team" />
+      <SectionHead title={t('From your coaching team')} />
       {rows.map((n) => (
         <div className="simple-row" key={n.id}>
           <span>
             <b>
               {n.kind === "checkin-reminder"
-                ? "A moment to check in"
-                : "A coaching update"}
+                ? t('A moment to check in')
+                : t('A coaching update')}
             </b>
             <small>{n.text}</small>
           </span>
           <button
             className="icon-btn"
-            aria-label={`Open ${n.kind === "checkin-reminder" ? "check-in" : "coaching update"}`}
+            aria-label={t('Open {value}', { value: n.kind === "checkin-reminder" ? "check-in" : "coaching update" })}
             onClick={async () => {
               try {
                 await runAction("notification.read", client.id, { id: n.id });
@@ -65,7 +66,7 @@ export function AISharingPreference() {
     [busy, setBusy] = useState(false);
   return (
     <section className="card ecosystem-stack">
-      <SectionHead title="Your AI sharing choice" />
+      <SectionHead title={t('Your AI sharing choice')} />
       <label className="checkbox-row">
         <input
           type="checkbox"
@@ -84,13 +85,10 @@ export function AISharingPreference() {
             }
           }}
         />
-        Allow my coach to request optional external AI explanations of my
-        recorded progress
+        {t('Allow my coach to request optional external AI explanations of my recorded progress')}
       </label>
       <p className="fine-print muted">
-        Off by default. If enabled, your coach must also approve each request.
-        Record-based observations and human coaching work without this.
-        Meal-photo calorie recognition is still a separate future feature.
+        {t('Off by default. If enabled, your coach must also approve each request. Record-based observations and human coaching work without this. Meal-photo calorie recognition is still a separate future feature.')}
       </p>
       {error && (
         <p role="alert" className="error">

@@ -4,7 +4,9 @@ import { useApp } from "../context.js";
 import { Button, Empty, Field, Modal, Notice, SectionHead } from "../ui.jsx";
 import { scheduleRules, proposeSchedule } from "./scheduling.js";
 import { zonedDay, utcAdd } from "./time.js";
-const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+import { locale, t } from '../i18n.js';
+// Short weekday names in the app language, Sunday first.
+const dayNames = Array.from({ length: 7 }, (_, i) => new Intl.DateTimeFormat(locale(), { weekday: 'short', timeZone: 'UTC' }).format(new Date(Date.UTC(2026, 0, 4 + i))));
 export function SmartSchedule({ client, coach = false }) {
   const { data, runAction, notify } = useApp();
   const [open, setOpen] = useState(false),
@@ -55,7 +57,7 @@ export function SmartSchedule({ client, coach = false }) {
   return (
     <section className="card ecosystem-stack">
       <SectionHead
-        title="Make your schedule fit"
+        title={t('Make your schedule fit')}
         action={
           coach ? (
             <Button
@@ -67,14 +69,13 @@ export function SmartSchedule({ client, coach = false }) {
               }}
             >
               <Settings size={15} />
-              Flexibility rules
+              {t('Flexibility rules')}
             </Button>
           ) : null
         }
       />
       <p className="muted">
-        Move training around life. Your coach’s exercises and prescriptions stay
-        intact.
+        {t('Move training around life. Your coach’s exercises and prescriptions stay intact.')}
       </p>
       <Button
         secondary
@@ -86,14 +87,14 @@ export function SmartSchedule({ client, coach = false }) {
         }}
       >
         <CalendarDays size={16} />
-        Adjust training dates
+        {t('Adjust training dates')}
       </Button>
       {proposals.map((p) => (
         <div className="ecosystem-updates" key={p.id}>
           <b>
             {p.status === "pending"
-              ? "Awaiting coach approval"
-              : "Schedule preview"}
+              ? t('Awaiting coach approval')
+              : t('Schedule preview')}
           </b>
           <p className="muted">{p.explanation}</p>
           <button
@@ -106,41 +107,41 @@ export function SmartSchedule({ client, coach = false }) {
               setError("");
             }}
           >
-            Review proposal <ArrowRight size={14} />
+            {t('Review proposal')} <ArrowRight size={14} />
           </button>
         </div>
       ))}
       {open && (
         <Modal
-          title="A week that works for you"
+          title={t('A week that works for you')}
           wide
           onClose={() => !busy && setOpen(false)}
         >
           {!current ? (
             <>
-              <Field label="Adjustment">
+              <Field label={t('Adjustment')}>
                 <select
                   value={request.mode}
                   onChange={(e) =>
                     setRequest((r) => ({ ...r, mode: e.target.value }))
                   }
                 >
-                  <option value="move">Move one session</option>
+                  <option value="move">{t('Move one session')}</option>
                   <option value="week">
-                    Reorganize this week / unavailable days
+                    {t('Reorganize this week / unavailable days')}
                   </option>
                 </select>
               </Field>
               {request.mode === "move" ? (
                 <div className="form-grid">
-                  <Field label="Scheduled session">
+                  <Field label={t('Scheduled session')}>
                     <select
                       value={request.from}
                       onChange={(e) =>
                         setRequest((r) => ({ ...r, from: e.target.value }))
                       }
                     >
-                      <option value="">Choose a session</option>
+                      <option value="">{t('Choose a session')}</option>
                       {client.schedule
                         .filter(
                           (s) =>
@@ -159,7 +160,7 @@ export function SmartSchedule({ client, coach = false }) {
                     </select>
                   </Field>
                   <Field
-                    label="New date"
+                    label={t('New date')}
                     type="date"
                     min={today}
                     required
@@ -169,7 +170,7 @@ export function SmartSchedule({ client, coach = false }) {
                     }
                   />
                   <Field
-                    label="Training time (optional)"
+                    label={t('Training time (optional)')}
                     type="time"
                     value={request.time || ""}
                     onChange={(e) =>
@@ -180,7 +181,7 @@ export function SmartSchedule({ client, coach = false }) {
               ) : (
                 <>
                   <Field
-                    label="Unavailable dates · comma separated"
+                    label={t('Unavailable dates · comma separated')}
                     placeholder={`${today}, ${utcAdd(today, 1)}`}
                     value={request.unavailable.join(", ")}
                     onChange={(e) =>
@@ -204,23 +205,21 @@ export function SmartSchedule({ client, coach = false }) {
                         }))
                       }
                     />
-                    Include earlier missed sessions from this week
+                    {t('Include earlier missed sessions from this week')}
                   </label>
                   <p className="fine-print muted">
-                    Missed sessions stay missed unless you explicitly include
-                    them. If the week cannot fit safely, discuss priorities with
-                    your coach.
+                    {t('Missed sessions stay missed unless you explicitly include them. If the week cannot fit safely, discuss priorities with your coach.')}
                   </p>
                 </>
               )}
               <Notice>
-                At least {rules.minSpacingDays} days between sessions · up to{" "}
-                {rules.maxWeekly} each week ·{" "}
+                {t('At least')} {rules.minSpacingDays} {t('days between sessions · up to')}{" "}
+                {rules.maxWeekly} {t('each week ·')}{" "}
                 {rules.allowedDays.map((d) => dayNames[d]).join(", ")} ·{" "}
                 {rules.windowStart}–{rules.windowEnd}
               </Notice>
               <Button onClick={compare}>
-                Preview changes <ArrowRight size={16} />
+                {t('Preview changes')} <ArrowRight size={16} />
               </Button>
             </>
           ) : (
@@ -231,13 +230,13 @@ export function SmartSchedule({ client, coach = false }) {
                 <Notice key={n}>
                   {i.text}
                   {i.hard
-                    ? " This proposal cannot be applied."
-                    : " Coach approval is needed."}
+                    ? t(' This proposal cannot be applied.')
+                    : t(' Coach approval is needed.')}
                 </Notice>
               ))}
               {coach && (
                 <>
-                  <Field label="Reason (optional unless overriding a rule)">
+                  <Field label={t('Reason (optional unless overriding a rule)')}>
                     <textarea
                       maxLength={2000}
                       value={reason}
@@ -251,7 +250,7 @@ export function SmartSchedule({ client, coach = false }) {
                         checked={override}
                         onChange={(e) => setOverride(e.target.checked)}
                       />
-                      Approve the listed scheduling exceptions
+                      {t('Approve the listed scheduling exceptions')}
                     </label>
                   )}
                 </>
@@ -271,7 +270,7 @@ export function SmartSchedule({ client, coach = false }) {
                   setPreview(null);
                 }}
               >
-                Adjust this proposal
+                {t('Adjust this proposal')}
               </button>
               <div className="button-row">
                 <Button
@@ -298,8 +297,8 @@ export function SmartSchedule({ client, coach = false }) {
                               (rules.independent &&
                                 !rules.requireApproval &&
                                 !current.issues.length)
-                              ? "Training dates updated"
-                              : "Sent to your coach for approval",
+                              ? t('Training dates updated')
+                              : t('Sent to your coach for approval'),
                           );
                         },
                       );
@@ -315,30 +314,30 @@ export function SmartSchedule({ client, coach = false }) {
                               (rules.independent &&
                                 !rules.requireApproval &&
                                 !current.issues.length)
-                              ? "Training dates updated"
-                              : "Sent to your coach for approval",
+                              ? t('Training dates updated')
+                              : t('Sent to your coach for approval'),
                           );
                         },
                       );
                   }}
                 >
                   {busy
-                    ? "Saving…"
+                    ? t('Saving…')
                     : !data.scheduleProposals?.some((p) => p.id === current.id)
                       ? coach
-                        ? "Approve changes"
+                        ? t('Approve changes')
                         : rules.independent &&
                             !rules.requireApproval &&
                             !current.issues.length
-                          ? "Confirm changes"
-                          : "Request coach approval"
+                          ? t('Confirm changes')
+                          : t('Request coach approval')
                       : coach
-                        ? "Approve schedule"
+                        ? t('Approve schedule')
                         : rules.independent &&
                             !rules.requireApproval &&
                             !current.issues.length
-                          ? "Confirm changes"
-                          : "Request coach approval"}
+                          ? t('Confirm changes')
+                          : t('Request coach approval')}
                 </Button>
                 <Button
                   secondary
@@ -356,8 +355,8 @@ export function SmartSchedule({ client, coach = false }) {
                 >
                   {" "}
                   {data.scheduleProposals?.some((p) => p.id === current.id)
-                    ? "Decline proposal"
-                    : "Adjust preview"}
+                    ? t('Decline proposal')
+                    : t('Adjust preview')}
                 </Button>
               </div>
             </>
@@ -371,7 +370,7 @@ export function SmartSchedule({ client, coach = false }) {
       )}
       {settings && (
         <Modal
-          title="Scheduling flexibility"
+          title={t('Scheduling flexibility')}
           onClose={() => !busy && setSettings(false)}
         >
           <form
@@ -379,7 +378,7 @@ export function SmartSchedule({ client, coach = false }) {
               e.preventDefault();
               act("schedule.rules", draftRules, () => {
                 setSettings(false);
-                notify?.("Scheduling rules saved");
+                notify?.(t('Scheduling rules saved'));
               });
             }}
           >
@@ -394,7 +393,7 @@ export function SmartSchedule({ client, coach = false }) {
                   }))
                 }
               />
-              Client can reschedule independently
+              {t('Client can reschedule independently')}
             </label>
             <label className="checkbox-row">
               <input
@@ -407,7 +406,7 @@ export function SmartSchedule({ client, coach = false }) {
                   }))
                 }
               />
-              All changes require coach approval
+              {t('All changes require coach approval')}
             </label>
             <label className="checkbox-row">
               <input
@@ -420,9 +419,9 @@ export function SmartSchedule({ client, coach = false }) {
                   }))
                 }
               />
-              Preserve prescribed workout order
+              {t('Preserve prescribed workout order')}
             </label>
-            <Field label="Allowed training days">
+            <Field label={t('Allowed training days')}>
               <div className="ecosystem-toolbar">
                 {dayNames.map((name, i) => (
                   <label key={name}>
@@ -445,7 +444,7 @@ export function SmartSchedule({ client, coach = false }) {
             </Field>
             <div className="form-grid">
               <Field
-                label="Minimum days between sessions"
+                label={t('Minimum days between sessions')}
                 type="number"
                 min="1"
                 max="7"
@@ -458,7 +457,7 @@ export function SmartSchedule({ client, coach = false }) {
                 }
               />
               <Field
-                label="Maximum sessions per week"
+                label={t('Maximum sessions per week')}
                 type="number"
                 min="1"
                 max="7"
@@ -471,7 +470,7 @@ export function SmartSchedule({ client, coach = false }) {
                 }
               />
               <Field
-                label="Earliest training time"
+                label={t('Earliest training time')}
                 type="time"
                 value={draftRules.windowStart}
                 onChange={(e) =>
@@ -479,7 +478,7 @@ export function SmartSchedule({ client, coach = false }) {
                 }
               />
               <Field
-                label="Latest training time"
+                label={t('Latest training time')}
                 type="time"
                 value={draftRules.windowEnd}
                 onChange={(e) =>
@@ -487,13 +486,12 @@ export function SmartSchedule({ client, coach = false }) {
                 }
               />
             </div>
-            <SectionHead title="Session priorities" />
+            <SectionHead title={t('Session priorities')} />
             <p className="fine-print muted">
-              Higher-priority sessions are placed first when workout order is
-              flexible. Preserving order takes precedence.
+              {t('Higher-priority sessions are placed first when workout order is flexible. Preserving order takes precedence.')}
             </p>
             {client.program.days.map((day) => (
-              <Field key={day.id} label={`Priority · ${day.name}`}>
+              <Field key={day.id} label={t('Priority · {name}', { name: day.name })}>
                 <select
                   value={draftRules.priorities?.[day.id] || 2}
                   onChange={(e) =>
@@ -506,9 +504,9 @@ export function SmartSchedule({ client, coach = false }) {
                     }))
                   }
                 >
-                  <option value="1">Lower priority</option>
-                  <option value="2">Normal</option>
-                  <option value="3">Higher priority</option>
+                  <option value="1">{t('Lower priority')}</option>
+                  <option value="2">{t('Normal')}</option>
+                  <option value="3">{t('Higher priority')}</option>
                 </select>
               </Field>
             ))}
@@ -518,7 +516,7 @@ export function SmartSchedule({ client, coach = false }) {
               </p>
             )}
             <Button type="submit" disabled={busy}>
-              {busy ? "Saving…" : "Save flexibility rules"}
+              {busy ? t('Saving…') : t('Save flexibility rules')}
             </Button>
           </form>
         </Modal>
@@ -536,12 +534,12 @@ export function ScheduleComparison({ proposal, client }) {
   return (
     <>
     <table className="schedule-comparison" data-state={proposal.status}>
-      <caption>Proposed schedule · {changed.length} moved sessions · {proposal.status === 'pending' ? 'Awaiting approval' : proposal.status === 'confirmed' ? 'Confirmed' : 'Preview · not applied'}</caption>
+      <caption>{t('Proposed schedule ·')} {changed.length} {t('moved sessions ·')} {proposal.status === 'pending' ? t('Awaiting approval') : proposal.status === 'confirmed' ? t('Confirmed') : t('Preview · not applied')}</caption>
       <thead>
         <tr>
-          <th>Session</th>
-          <th>Original</th>
-          <th>Proposed</th>
+          <th>{t('Session')}</th>
+          <th>{t('Original')}</th>
+          <th>{t('Proposed')}</th>
         </tr>
       </thead>
       <tbody>
@@ -566,7 +564,7 @@ export function ScheduleComparison({ proposal, client }) {
               <td><span className="schedule-date-destination">
                 {p.date !== p.originalDate && <ArrowRight size={14} aria-hidden="true"/>}{p.date}
                 {p.time ? ` · ${p.time}` : ""}
-                {p.date !== p.originalDate ? " · moved" : ""}
+                {p.date !== p.originalDate ? t(' · moved') : ""}
               </span></td>
             </tr>
           ))}

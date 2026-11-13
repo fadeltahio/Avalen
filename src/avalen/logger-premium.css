@@ -11,7 +11,7 @@
 /* Set editor */
 .workout-modal.focused-workout .set-editor-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; }
 .workout-modal.focused-workout .set-editor-heading > b { font-size: 17px; letter-spacing: -.01em; }
-.workout-modal.focused-workout .set-editor-heading > span:last-child { margin-left: auto; }
+.workout-modal.focused-workout .set-editor-heading > span:last-child { margin-inline-start: auto; }
 .set-pips { display: flex; gap: 5px; }
 .set-pips i { width: 18px; height: 4px; border-radius: 4px; background: var(--line); transition: background 300ms ease; }
 .set-pips .is-done { background: var(--green); }
@@ -78,7 +78,7 @@
 @keyframes lg-draw { to { stroke-dashoffset: 0; } }
 .workout-modal.focused-workout .rest-just-done .rest-orbit { animation: lg-pop 640ms var(--lg-pop) both; }
 @keyframes lg-pop { 0% { transform: scale(.82); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
-.rest-ripple { position: absolute; left: 16px; top: 16px; width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--green); pointer-events: none; opacity: 0; animation: lg-ripple 1.2s ease-out 120ms 2 both; }
+.rest-ripple { position: absolute; inset-inline-start: 16px; top: 16px; width: 64px; height: 64px; border-radius: 50%; border: 2px solid var(--green); pointer-events: none; opacity: 0; animation: lg-ripple 1.2s ease-out 120ms 2 both; }
 @keyframes lg-ripple { 0% { transform: scale(1); opacity: .7; } 100% { transform: scale(2.8); opacity: 0; } }
 
 /* Exercise complete */

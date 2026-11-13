@@ -1,4 +1,5 @@
 import { uid as id } from "./id.js";
+import { itemsTotals, mealItem } from "./portions.js";
 // Demonstration records are date-relative and clearly separated from new clients.
 const key = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -152,32 +153,27 @@ export const LIBRARY = [
     kind: "Standard",
   },
 ];
+// Starter foods. Each portion is a household unit and its weight, so a plan reads
+// as what to put on the plate ("1 egg · 50 g"). Values are per that portion.
 export const FOODS = [
-  {
-    name: "Grilled chicken breast",
-    portion: "150 g",
-    kcal: 248,
-    p: 46,
-    c: 0,
-    f: 5,
-  },
-  {
-    name: "Cooked brown rice",
-    portion: "1 cup · 195 g",
-    kcal: 216,
-    p: 5,
-    c: 45,
-    f: 2,
-  },
-  { name: "Greek yogurt", portion: "200 g", kcal: 146, p: 20, c: 8, f: 4 },
-  { name: "Rolled oats", portion: "60 g", kcal: 228, p: 8, c: 38, f: 5 },
-  { name: "Banana", portion: "1 medium", kcal: 105, p: 1, c: 27, f: 0 },
-  { name: "Eggs", portion: "2 large", kcal: 144, p: 13, c: 1, f: 10 },
-  { name: "Salmon", portion: "150 g", kcal: 310, p: 33, c: 0, f: 19 },
-  { name: "Avocado", portion: "100 g", kcal: 160, p: 2, c: 9, f: 15 },
-  { name: "Broccoli", portion: "100 g", kcal: 35, p: 3, c: 7, f: 0 },
-  { name: "Olive oil", portion: "1 tbsp", kcal: 119, p: 0, c: 0, f: 14 },
+  { name: "Grilled chicken breast", portion: "1 fillet · 150 g", kcal: 248, p: 46, c: 0, f: 5 },
+  { name: "Cooked brown rice", portion: "1 cup · 195 g", kcal: 216, p: 5, c: 45, f: 2 },
+  { name: "Greek yogurt", portion: "1 cup · 200 g", kcal: 146, p: 20, c: 8, f: 4 },
+  { name: "Rolled oats", portion: "⅔ cup · 60 g", kcal: 228, p: 8, c: 38, f: 5 },
+  { name: "Banana", portion: "1 banana · 118 g", kcal: 105, p: 1, c: 27, f: 0 },
+  { name: "Eggs", portion: "1 egg · 50 g", kcal: 72, p: 6.3, c: 0.4, f: 4.8 },
+  { name: "Salmon", portion: "1 fillet · 150 g", kcal: 310, p: 33, c: 0, f: 19 },
+  { name: "Avocado", portion: "½ avocado · 100 g", kcal: 160, p: 2, c: 9, f: 15 },
+  { name: "Broccoli", portion: "1 cup · 90 g", kcal: 31, p: 2.5, c: 6, f: 0.3 },
+  { name: "Olive oil", portion: "1 tbsp · 14 g", kcal: 119, p: 0, c: 0, f: 14 },
+  { name: "Boiled potatoes", portion: "1 potato · 170 g", kcal: 148, p: 3.2, c: 34, f: 0.2 },
+  { name: "Green salad", portion: "1 bowl · 150 g", kcal: 25, p: 1.5, c: 4.5, f: 0.3 },
 ];
+// A planned meal made of library foods with amounts; its totals are their sum.
+function planMeal(name, description, foods) {
+  const items = foods.map(([food, servings]) => mealItem(FOODS.find((f) => f.name === food), servings));
+  return { name, description, items, ...itemsTotals(items) };
+}
 export function defaultProgram() {
   return {
     id: id(),
@@ -242,30 +238,9 @@ export function newClient(
       c: 280,
       f: 75,
       meals: [
-        {
-          name: "Breakfast",
-          description: "Oats, yogurt & fruit",
-          kcal: 550,
-          p: 35,
-          c: 75,
-          f: 12,
-        },
-        {
-          name: "Lunch",
-          description: "Chicken, rice & vegetables",
-          kcal: 750,
-          p: 55,
-          c: 90,
-          f: 20,
-        },
-        {
-          name: "Dinner",
-          description: "Salmon, potatoes & greens",
-          kcal: 850,
-          p: 60,
-          c: 85,
-          f: 30,
-        },
+        planMeal("Breakfast", "Oats, yogurt & fruit", [["Rolled oats", 1], ["Greek yogurt", 1], ["Banana", 1]]),
+        planMeal("Lunch", "Chicken, rice & vegetables", [["Grilled chicken breast", 1], ["Cooked brown rice", 1.5], ["Broccoli", 1], ["Olive oil", 1]]),
+        planMeal("Dinner", "Salmon, potatoes & greens", [["Salmon", 1], ["Boiled potatoes", 1.5], ["Green salad", 1], ["Olive oil", 0.5]]),
       ],
     },
     habits: [

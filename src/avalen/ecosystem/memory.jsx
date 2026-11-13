@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useApp } from "../context.js";
 import { Button, Empty, Field, Modal, Notice, SectionHead } from "../ui.jsx";
 import { followUps } from "./memory.js";
+import { t } from '../i18n.js';
 function readable(field, value) {
   if (value === null) return "Not configured";
   if (field === "program")
@@ -48,11 +49,11 @@ export function CoachingMemory({ clientId, coach = false, compact = false }) {
   return (
     <div className="ecosystem-stack">
       <SectionHead
-        title={coach ? "Coaching Memory" : "Your coaching updates"}
+        title={coach ? t('Coaching Memory') : t('Your coaching updates')}
         action={
           coach ? (
             <Button secondary small onClick={() => setNote({})}>
-              Add note
+              {t('Add note')}
             </Button>
           ) : null
         }
@@ -60,10 +61,9 @@ export function CoachingMemory({ clientId, coach = false, compact = false }) {
       {!compact && coach && (
         <>
           <p className="muted">
-            The decisions, context and plan versions behind each client’s
-            progress. Private notes stay with the coach.
+            {t('The decisions, context and plan versions behind each client’s progress. Private notes stay with the coach.')}
           </p>
-          <Field label="Event type">
+          <Field label={t('Event type')}>
             <select value={kind} onChange={(e) => setKind(e.target.value)}>
               {["All", ...new Set(all.map((e) => e.type || "activity"))].map(
                 (t) => (
@@ -74,14 +74,11 @@ export function CoachingMemory({ clientId, coach = false, compact = false }) {
           </Field>
           {followUps(data, clientId).map((f) => (
             <Notice key={f.event.id}>
-              <b>Ready for a follow-up</b>
+              <b>{t('Ready for a follow-up')}</b>
               <p>
-                {f.count} sessions completed since {f.event.title.toLowerCase()}
-                . First 4 sessions: {f.afterVolume.toLocaleString()} kg volume;
-                previous {f.beforeCount} sessions:{" "}
-                {f.beforeVolume.toLocaleString()} kg. Different exercises,
-                effort and session counts limit comparisons. This does not show
-                that the change caused the result.
+                {f.count} {t('sessions completed since')} {f.event.title.toLowerCase()}
+                {t('. First 4 sessions:')} {f.afterVolume.toLocaleString()} {t('kg volume; previous')} {f.beforeCount} {t('sessions:')}{" "}
+                {f.beforeVolume.toLocaleString()} {t('kg. Different exercises, effort and session counts limit comparisons. This does not show that the change caused the result.')}
               </p>
             </Notice>
           ))}
@@ -94,27 +91,27 @@ export function CoachingMemory({ clientId, coach = false, compact = false }) {
             {new Date(event.at).toLocaleString()} · {event.by} ·{" "}
             {coach
               ? event.visibility === "client"
-                ? "Shared with client"
-                : "Coach only"
-              : "Plan update"}
+                ? t('Shared with client')
+                : t('Coach only')
+              : t('Plan update')}
           </small>
-          <h3>{event.title}</h3>
+          <h3>{t(event.title)}</h3>
           <p>{coach ? event.detail : event.explanation || event.detail}</p>
           {event.objective && (
             <p>
-              <b>Review objective:</b> {event.objective}
+              <b>{t('Review objective:')}</b> {event.objective}
             </p>
           )}
           {coach && event.field && (
             <MotionDetails>
-              <summary>View before and after</summary>
+              <summary>{t('View before and after')}</summary>
               <div className="memory-compare">
                 <div>
-                  <h4>Before</h4>
+                  <h4>{t('Before')}</h4>
                   <pre>{readable(event.field, event.before)}</pre>
                 </div>
                 <div>
-                  <h4>After</h4>
+                  <h4>{t('After')}</h4>
                   <pre>{readable(event.field, event.after)}</pre>
                 </div>
               </div>
@@ -122,7 +119,7 @@ export function CoachingMemory({ clientId, coach = false, compact = false }) {
           )}
           {coach && (
             <button className="text-link" onClick={() => setNote(event)}>
-              Add reason or follow-up
+              {t('Add reason or follow-up')}
             </button>
           )}
         </article>
@@ -130,33 +127,33 @@ export function CoachingMemory({ clientId, coach = false, compact = false }) {
       </MotionList>
       {!rows.length && (
         <Empty
-          title="A clear history starts here"
-          detail="Plan changes and coaching decisions appear here as they happen."
+          title={t('A clear history starts here')}
+          detail={t('Plan changes and coaching decisions appear here as they happen.')}
         />
       )}
       {note && (
         <Modal
           title={
-            note.id ? "Add decision context" : "A note for the next chapter"
+            note.id ? t('Add decision context') : t('A note for the next chapter')
           }
           onClose={() => !busy && setNote(null)}
         >
           <form onSubmit={submit}>
-            <Field label="Reason or note">
+            <Field label={t('Reason or note')}>
               <textarea name="reason" required maxLength={4000} />
             </Field>
             <Field
-              label="Review objective (optional)"
+              label={t('Review objective (optional)')}
               name="objective"
               maxLength={300}
-              placeholder="e.g. Review after four sessions"
+              placeholder={t('e.g. Review after four sessions')}
             />
             <label className="checkbox-row">
               <input name="share" type="checkbox" />
-              Share this note with the client
+              {t('Share this note with the client')}
             </label>
             <p className="fine-print muted">
-              Original decisions remain unchanged. This adds a dated follow-up.
+              {t('Original decisions remain unchanged. This adds a dated follow-up.')}
             </p>
             {error && (
               <p className="error" role="alert">
@@ -164,7 +161,7 @@ export function CoachingMemory({ clientId, coach = false, compact = false }) {
               </p>
             )}
             <Button type="submit" disabled={busy}>
-              {busy ? "Saving…" : "Save note"}
+              {busy ? t('Saving…') : t('Save note')}
             </Button>
           </form>
         </Modal>

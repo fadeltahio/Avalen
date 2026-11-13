@@ -4,7 +4,7 @@ body { background: var(--bg); }
 .app-shell { background: var(--bg); }
 .app-content { padding-inline: clamp(28px, 4vw, 64px); }
 .desktop-sidebar { width: 216px; background: var(--sidebar); border-color: var(--line); padding: 38px 22px; }
-.app-content { margin-left: 216px; }
+.app-content { margin-inline-start: 216px; }
 .sidebar-brand { gap: 12px; margin-bottom: 45px; }
 .sidebar-brand > span { font: 500 27px var(--font-display); letter-spacing: -.8px; }
 .desktop-sidebar > .eyebrow { font-size: 9px; letter-spacing: .15em; padding-inline: 12px; }
@@ -18,7 +18,7 @@ body { background: var(--bg); }
 .header-brand-name { font: 500 24px var(--font-display); letter-spacing: -.7px; }
 .header-identity > .a-mark { display: block; width: 24px; height: 24px; color: var(--green); }
 .header-logo { width: 28px; height: 28px; }
-.role-select { margin-left: 12px; padding-left: 16px; border-left: 1px solid var(--line); }
+.role-select { margin-inline-start: 12px; padding-inline-start: 16px; border-inline-start: 1px solid var(--line); }
 .role-select select { color: var(--muted); font-size: 11px; font-weight: 400; }
 .header-actions { gap: 10px; }
 .avatar { background: var(--surface-raised); color: var(--text); border: 1px solid var(--line); box-shadow: none; }
@@ -72,7 +72,7 @@ input, select, textarea { border-radius: 10px; }
 .workout-hero > .primary { align-self: flex-start; min-width: 170px; width: auto; background: var(--photo-text); color: var(--photo-bg); font-size: 12px; border-radius: 11px; margin-top: auto; }
 .daily-summary { display: flex; align-items: center; gap: 16px; padding: 22px 0; border-bottom: 1px solid var(--line); margin-bottom: 24px; }
 .daily-summary > div { flex: 1; display: flex; align-items: center; gap: 10px; }
-.daily-summary > div + div { border-left: 1px solid var(--line); padding-left: 18px; }
+.daily-summary > div + div { border-inline-start: 1px solid var(--line); padding-inline-start: 18px; }
 .daily-summary svg { color: var(--green); }
 .daily-summary b { font-size: 17px; font-weight: 500; display: block; font-variant-numeric: tabular-nums; }
 .daily-summary small { display: block; font-size: 9px; color: var(--muted); margin-top: 4px; }
@@ -81,7 +81,7 @@ input, select, textarea { border-radius: 10px; }
 .coach-note-heading { display: flex; align-items: center; gap: 10px; }
 .coach-note-heading b { font-size: 11px; font-weight: 500; display: block; }
 .coach-note-heading small { font-size: 10px; color: var(--muted); display: block; margin-top: 3px; }
-.coach-note-heading > svg { margin-left: auto; color: var(--muted); }
+.coach-note-heading > svg { margin-inline-start: auto; color: var(--muted); }
 .coach-note h2 { font: 400 28px/1.05 var(--font-display); margin: 22px 0 12px; letter-spacing: -.5px; }
 .coach-note p { font-size: 11px; line-height: 1.7; max-width: 340px; }
 .coach-note-actions { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 10px; padding-top: 16px; margin-top: 15px; border-top: 1px solid var(--line); }
@@ -90,7 +90,7 @@ input, select, textarea { border-radius: 10px; }
 .balance-heading { display: flex; align-items: center; gap: 10px; }
 .balance-icon { display: grid; place-items: center; width: 36px; height: 36px; background: var(--accent-soft); border-radius: 50%; color: var(--green); }
 .balance-heading h2 { font-size: 13px; font-weight: 500; }
-.balance-heading button { margin-left: auto; color: var(--muted); }
+.balance-heading button { margin-inline-start: auto; color: var(--muted); }
 .fuel-total { display: flex; align-items: baseline; flex-wrap: wrap; gap: 10px; margin: 22px 0 14px; }
 .fuel-total strong { font: 400 46px/.95 var(--font-display); letter-spacing: -1.2px; font-variant-numeric: lining-nums tabular-nums; }
 .fuel-total > span { font-size: 10px; color: var(--muted); }
@@ -109,7 +109,7 @@ input, select, textarea { border-radius: 10px; }
 .liquid-canvas { z-index: 0; pointer-events: none; }
 .water-heading { position: relative; z-index: 1; padding: 22px; pointer-events: none; }
 .water-heading h2 { font: 400 30px var(--font-display); }
-.water-heading > svg { position: absolute; right: 23px; top: 24px; opacity: .8; }
+.water-heading > svg { position: absolute; inset-inline-end: 23px; top: 24px; opacity: .8; }
 .water-heading p { font-size: 10px; margin-top: 7px; }
 .water-actions { z-index: 1; bottom: 20px; }
 .water-actions button { border-radius: 10px; font-size: 11px; }
@@ -156,9 +156,9 @@ input, select, textarea { border-radius: 10px; }
 .welcome { max-width: 640px; padding: 30px 32px 32px; background-position: center 32%; color: var(--photo-text); }
 .welcome-top .eyebrow { color: var(--photo-muted); max-width: 140px; line-height: 1.6; }
 .welcome-top button { border: 1px solid var(--photo-line); background: var(--photo-glass); color: var(--photo-text); border-radius: 999px; padding: 7px 13px; font-size: 10px; backdrop-filter: blur(12px); }
-.welcome-brand { flex: 1; padding: 0 0 45px; justify-content: flex-end; align-items: flex-start; text-align: left; }
-.welcome-brand > .a-mark, .welcome-brand > .brand-logo { position: absolute; top: 98px; left: 32px; width: 30px; height: 30px; }
-.welcome-brand h1 { position: absolute; top: 100px; left: 75px; font: 500 24px var(--font-display); text-transform: none; letter-spacing: -.5px; margin: 0; }
+.welcome-brand { flex: 1; padding: 0 0 45px; justify-content: flex-end; align-items: flex-start; text-align: start; }
+.welcome-brand > .a-mark, .welcome-brand > .brand-logo { position: absolute; top: 98px; inset-inline-start: 32px; width: 30px; height: 30px; }
+.welcome-brand h1 { position: absolute; top: 100px; inset-inline-start: 75px; font: 500 24px var(--font-display); text-transform: none; letter-spacing: -.5px; margin: 0; }
 .welcome-brand p { font: 400 clamp(45px,8vw,64px)/.98 var(--font-display); letter-spacing: -1.6px; margin: 0; color: var(--photo-text); }
 .welcome-brand em { font-style: normal; color: var(--photo-muted); }
 .welcome-bottom > .primary { width: 100%; background: var(--photo-text); color: var(--photo-bg); border: 0; border-radius: 12px; min-height: 56px; justify-content: space-between; font-size: 12px; }
@@ -175,25 +175,25 @@ input, select, textarea { border-radius: 10px; }
 }
 @media (min-width: 761px) and (max-width: 1050px) {
   .desktop-sidebar { width: 180px; padding-inline: 15px; }
-  .app-content { margin-left: 180px; padding-inline: 24px; }
+  .app-content { margin-inline-start: 180px; padding-inline: 24px; }
   .today-layout { grid-template-columns: minmax(0,1.2fr) minmax(0,1fr); gap: 18px; }
   .workout-hero.card { padding: 22px; min-height: 335px; }
   .daily-summary { gap: 9px; }
   .daily-summary > div { gap: 6px; }
-  .daily-summary > div + div { padding-left: 10px; }
+  .daily-summary > div + div { padding-inline-start: 10px; }
   .daily-summary > div > svg { display: none; }
   .coach-note-actions { display: block; }
-  .water-actions { left: 14px; right: 14px; gap: 5px; }
+  .water-actions { inset-inline-start: 14px; inset-inline-end: 14px; gap: 5px; }
   .water-actions button { padding-inline: 5px; font-size: 10px; }
 }
-@media (min-width: 761px) { .bottom-nav { display: none; } .header-brand-name, .header-identity > .a-mark { display: none; } .role-select { padding-left: 0; margin-left: 0; border-left: 0; } }
+@media (min-width: 761px) { .bottom-nav { display: none; } .header-brand-name, .header-identity > .a-mark { display: none; } .role-select { padding-inline-start: 0; margin-inline-start: 0; border-inline-start: 0; } }
 @media (max-width: 760px) {
   .app-content { margin: 0; padding-inline: 22px; }
   .app-header { height: 68px; margin-bottom: 24px; max-width: 520px; }
   .header-identity { gap: 8px; }
   .header-brand-name { font-size: 23px; }
-  .role-select { margin-left: 4px; padding-left: 10px; }
-  .role-select select { font-size: 10px; padding-right: 18px; }
+  .role-select { margin-inline-start: 4px; padding-inline-start: 10px; }
+  .role-select select { font-size: 10px; padding-inline-end: 18px; }
   .header-actions { gap: 3px; }
   .header-actions .avatar { width: 31px; height: 31px; }
   .page { padding-bottom: 124px; }
@@ -215,7 +215,7 @@ input, select, textarea { border-radius: 10px; }
   .workout-hero p { font-size: 10px; margin-bottom: 24px; }
   .daily-summary { padding: 19px 0; margin-bottom: 28px; }
   .daily-summary > div { gap: 7px; }
-  .daily-summary > div + div { padding-left: 12px; }
+  .daily-summary > div + div { padding-inline-start: 12px; }
   .daily-summary b { font-size: 17px; }
   .daily-summary small { font-size: 9px; }
   .today-side > .home-section-head { order: 1; }
@@ -228,7 +228,7 @@ input, select, textarea { border-radius: 10px; }
   .nutrition-diary-link { margin-top: 18px; }
   .hydration.compact .water-scene { height: 288px; }
   .coach-note h2 { font-size: 29px; }
-  .bottom-nav { display: flex; position: fixed; left: 50%; right: auto; bottom: max(12px,env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(calc(100% - 28px),430px); min-height: 70px; padding: 6px; gap: 2px; border-radius: 20px; background: color-mix(in srgb,var(--card) 95%,transparent); border: 1px solid var(--line); backdrop-filter: blur(20px); box-shadow: 0 8px 30px var(--shadow-nav); }
+  .bottom-nav { display: flex; position: fixed; left: 50%; inset-inline-end: auto; bottom: max(12px,env(safe-area-inset-bottom)); transform: translateX(-50%); width: min(calc(100% - 28px),430px); min-height: 70px; padding: 6px; gap: 2px; border-radius: 20px; background: color-mix(in srgb,var(--card) 95%,transparent); border: 1px solid var(--line); backdrop-filter: blur(20px); box-shadow: 0 8px 30px var(--shadow-nav); }
   .bottom-nav button, .bottom-nav button.active { flex: 1; min-width: 0; width: auto; height: 56px; min-height: 56px; padding: 4px 0; border-radius: 14px; flex-direction: column; gap: 6px; background: transparent; color: var(--muted); transition: color 180ms ease, background 180ms ease; }
   .bottom-nav button.active { background: var(--accent-soft); color: var(--green); }
   .bottom-nav button span, .bottom-nav button.active span { position: static; width: auto; height: auto; max-width: none; overflow: visible; clip-path: none; opacity: 1; font-size: 9px; letter-spacing: .03em; font-weight: 500; }
@@ -243,13 +243,13 @@ input, select, textarea { border-radius: 10px; }
   .meal-capture p { font-size: 10px; }
   .meal-capture .eyebrow { font-size: 8px; }
   .welcome { padding-inline: 27px; }
-  .welcome-brand > .a-mark, .welcome-brand > .brand-logo { left: 27px; }
-  .welcome-brand h1 { left: 69px; }
+  .welcome-brand > .a-mark, .welcome-brand > .brand-logo { inset-inline-start: 27px; }
+  .welcome-brand h1 { inset-inline-start: 69px; }
 }
 @media (max-width: 360px) {
   .app-content { padding-inline: 16px; }
   .header-brand-name { font-size: 21px; }
-  .role-select { padding-left: 7px; margin-left: 2px; }
+  .role-select { padding-inline-start: 7px; margin-inline-start: 2px; }
   .header-identity { gap: 6px; }
   .header-actions .icon-btn { width: 36px; padding: 6px; }
   .today-intro h1 { font-size: 39px; }

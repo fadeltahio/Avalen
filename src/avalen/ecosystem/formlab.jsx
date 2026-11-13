@@ -23,6 +23,7 @@ import { useFile } from "../store.js";
 import { connection, request } from "./connection.js";
 import { uploadVideo } from "./uploads.js";
 import { VoiceRecording, AudioPlayer } from "./recording.jsx";
+import { t } from '../i18n.js';
 const stamp = (n) =>
   `${Math.floor(n / 60)}:${String(Math.floor(n % 60)).padStart(2, "0")}`;
 function useVideoURL(file) {
@@ -62,7 +63,7 @@ export function FormLab({
       await runAction("form.delete", client.id, { id: remove.id });
       setRemove(null);
       setSelectedId(null);
-      notify?.("Recording deleted");
+      notify?.(t('Recording deleted'));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -74,26 +75,26 @@ export function FormLab({
       className={`ecosystem-stack ${compact ? "formlab-compact" : "card"}`}
     >
       <SectionHead
-        title={compact ? "Technique feedback" : "FormLab"}
+        title={compact ? t('Technique feedback') : "FormLab"}
         action={
           !coach ? (
             <Button small secondary onClick={() => setUpload(true)}>
               <Camera size={16} />
-              Send a form video
+              {t('Send a form video')}
             </Button>
           ) : null
         }
       />
       {!compact && (
         <p className="muted">
-          A closer look at how you move.{" "}
+          {t('A closer look at how you move.')}{" "}
           {coach
-            ? "Review technique in context, then leave clear feedback at the moments that matter."
-            : "Share a short video with your coach and build your technique over time."}
+            ? t('Review technique in context, then leave clear feedback at the moments that matter.')
+            : t('Share a short video with your coach and build your technique over time.')}
         </p>
       )}
       {!compact && (
-        <Field label="Technique review status">
+        <Field label={t('Technique review status')}>
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             {["All", "Pending review", "Reviewed", "Viewed"].map((f) => (
               <option key={f}>{f}</option>
@@ -120,15 +121,15 @@ export function FormLab({
             <span>
               <b>
                 {row.exerciseName}
-                {row.setNumber ? ` · set ${row.setNumber}` : ""}
+                {row.setNumber ? t(' · set {setNumber}', { setNumber: row.setNumber }) : ""}
               </b>
               <small>
                 {new Date(row.createdAt).toLocaleDateString()} ·{" "}
                 {row.status === "pending"
-                  ? "Waiting for coach review"
+                  ? t('Waiting for coach review')
                   : row.viewedAt
-                    ? "Feedback viewed"
-                    : "Feedback ready"}
+                    ? t('Feedback viewed')
+                    : t('Feedback ready')}
               </small>
             </span>
             <ArrowRight size={16} />
@@ -136,8 +137,8 @@ export function FormLab({
         ))}
       {!rows.length && !compact && (
         <Empty
-          title="Your technique, over time"
-          detail="Exercise videos and your coach’s feedback will appear here. Each review stays in your history."
+          title={t('Your technique, over time')}
+          detail={t('Exercise videos and your coach’s feedback will appear here. Each review stays in your history.')}
         />
       )}
       {upload && (
@@ -151,7 +152,7 @@ export function FormLab({
       )}
       {selected && (
         <Modal
-          title={`${selected.exerciseName} · FormLab`}
+          title={t('{exerciseName} · FormLab', { exerciseName: selected.exerciseName })}
           wide
           onClose={() => setSelectedId(null)}
         >
@@ -161,7 +162,7 @@ export function FormLab({
             client={client}
             coach={coach}
           />
-          <SectionHead title="Exercise review history" />
+          <SectionHead title={t('Exercise review history')} />
           {rows
             .filter(
               (r) =>
@@ -193,26 +194,25 @@ export function FormLab({
               }}
             >
               <MessageCircle size={15} />
-              Discuss this review
+              {t('Discuss this review')}
             </button>
             <button
               className="text-link red"
               onClick={() => setRemove(selected)}
             >
               <Trash2 size={15} />
-              Delete recording
+              {t('Delete recording')}
             </button>
           </div>
         </Modal>
       )}
       {remove && (
         <Modal
-          title="Delete this recording?"
+          title={t('Delete this recording?')}
           onClose={() => !busy && setRemove(null)}
         >
           <p>
-            The private video will be deleted. A dated record of the submission
-            remains in Coaching Memory.
+            {t('The private video will be deleted. A dated record of the submission remains in Coaching Memory.')}
           </p>
           {error && (
             <p className="error" role="alert">
@@ -220,7 +220,7 @@ export function FormLab({
             </p>
           )}
           <Button disabled={busy} onClick={deleteSubmission}>
-            {busy ? "Deleting…" : "Delete recording"}
+            {busy ? t('Deleting…') : t('Delete recording')}
           </Button>
         </Modal>
       )}
@@ -284,7 +284,7 @@ function VideoSubmission({
         file,
         consent,
       });
-      notify?.("Video sent to your coach");
+      notify?.(t('Video sent to your coach'));
       onClose();
     } catch (e) {
       setError(e.message);
@@ -294,7 +294,7 @@ function VideoSubmission({
   }
   return (
     <Modal
-      title="Let your coach see the movement"
+      title={t('Let your coach see the movement')}
       onClose={() => {
         if (!busy) {
           abort.current?.abort();
@@ -304,10 +304,9 @@ function VideoSubmission({
     >
       <form className="formlab-upload" onSubmit={submit}>
         <p className="muted">
-          Up to 2 minutes · 100 MB · MP4, MOV or WebM. Share only the movement
-          you want reviewed.
+          {t('Up to 2 minutes · 100 MB · MP4, MOV or WebM. Share only the movement you want reviewed.')}
         </p>
-        <Field label="Exercise">
+        <Field label={t('Exercise')}>
           <select
             value={exerciseId}
             onChange={(e) => setExerciseId(e.target.value)}
@@ -316,7 +315,7 @@ function VideoSubmission({
               <optgroup key={d.id} label={d.name}>
                 {d.exercises.map((ex) => (
                   <option value={ex.id} key={ex.id}>
-                    {ex.name}
+                    {t(ex.name)}
                   </option>
                 ))}
               </optgroup>
@@ -324,7 +323,7 @@ function VideoSubmission({
           </select>
         </Field>
         <Field
-          label="Set number (optional)"
+          label={t('Set number (optional)')}
           type="number"
           min="1"
           max="500"
@@ -336,12 +335,12 @@ function VideoSubmission({
             <div className="ecosystem-toolbar">
               <label className="upload-zone">
                 <Camera size={22} />
-                <b>Record or choose a video</b>
+                <b>{t('Record or choose a video')}</b>
                 <input
                   type="file"
                   accept="video/mp4,video/quicktime,video/webm"
                   capture="environment"
-                  aria-label="Record or choose exercise video"
+                  aria-label={t('Record or choose exercise video')}
                   disabled={uploading}
                   onChange={(e) => {
                     const candidate = e.target.files?.[0];
@@ -356,8 +355,8 @@ function VideoSubmission({
                 <progress value={progress} max="100" />
                 <small>
                   {progress < 100
-                    ? `Uploading ${progress}%`
-                    : "Upload received. Validating your recording…"}
+                    ? t('Uploading {progress}%', { progress })
+                    : t('Upload received. Validating your recording…')}
                 </small>
               </div>
             )}
@@ -368,7 +367,7 @@ function VideoSubmission({
                 disabled={uploading}
                 onClick={() => uploadVideoFile(chosen)}
               >
-                Retry upload
+                {t('Retry upload')}
               </Button>
             )}
           </>
@@ -381,9 +380,9 @@ function VideoSubmission({
               playsInline
             />
             <p className="fine-print muted">
-              {Math.ceil(file.duration)} seconds · Ready to send
+              {Math.ceil(file.duration)} {t('seconds · Ready to send')}
               {file.expiresAt
-                ? ` · recording retained until ${new Date(file.expiresAt).toLocaleDateString()}`
+                ? t(' · recording retained until {value}', { value: new Date(file.expiresAt).toLocaleDateString() })
                 : ""}
             </p>
             <Button
@@ -392,16 +391,16 @@ function VideoSubmission({
               disabled={busy}
               onClick={() => setFile(null)}
             >
-              Choose another video
+              {t('Choose another video')}
             </Button>
           </>
         )}
-        <Field label="What should your coach look at? (optional)">
+        <Field label={t('What should your coach look at? (optional)')}>
           <textarea
             maxLength={2000}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="e.g. Is my setup stable on the last rep?"
+            placeholder={t('e.g. Is my setup stable on the last rep?')}
           />
         </Field>
         <label className="checkbox-row">
@@ -410,7 +409,7 @@ function VideoSubmission({
             checked={consent}
             onChange={(e) => setConsent(e.target.checked)}
           />
-          Share this private recording with my coach for technique review
+          {t('Share this private recording with my coach for technique review')}
         </label>
         {error && (
           <p role="alert" className="error">
@@ -418,7 +417,7 @@ function VideoSubmission({
           </p>
         )}
         <Button disabled={!file || !consent || busy || uploading} type="submit">
-          {busy ? "Sending…" : "Send to coach"}
+          {busy ? t('Sending…') : t('Send to coach')}
           <ArrowRight size={16} />
         </Button>
       </form>
@@ -561,7 +560,7 @@ function FormReview({ submission, client, coach }) {
       setFeedback("");
       setAudio(null);
       setReviewIndex(submission.reviews.length);
-      notify?.("Technique feedback shared");
+      notify?.(t('Technique feedback shared'));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -572,7 +571,7 @@ function FormReview({ submission, client, coach }) {
     <div className="ecosystem-stack">
       <p className="muted">
         {new Date(submission.createdAt).toLocaleString()}
-        {submission.setNumber ? ` · Set ${submission.setNumber}` : ""}
+        {submission.setNumber ? t(' · Set {setNumber}', { setNumber: submission.setNumber }) : ""}
       </p>
       {submission.comment && <Notice>{submission.comment}</Notice>}
       <div
@@ -600,7 +599,7 @@ function FormReview({ submission, client, coach }) {
           onPause={() => setPlaying(false)}
           onError={() =>
             setError(
-              "This recording is unavailable, expired or unsupported in this browser.",
+              t('This recording is unavailable, expired or unsupported in this browser.'),
             )
           }
           style={{ width: "100%", height: "100%", maxHeight: "none" }}
@@ -651,14 +650,14 @@ function FormReview({ submission, client, coach }) {
       <div className="formlab-timeline">
       <input
         type="range"
-        aria-label="Video position"
+        aria-label={t('Video position')}
         min="0"
         max={duration}
         step="0.033333"
         value={Math.min(time, duration)}
         onChange={(e) => seek(Number(e.target.value))}
       />
-      <div className="formlab-markers" role="group" aria-label="Feedback moments">{shown.map(a => <button key={a.id} style={{left: `${duration > 0 ? Math.max(0, Math.min(100, a.time / duration * 100)) : 0}%`}} aria-label={`Feedback at ${stamp(a.time)}: ${a.text || 'Technique drawing'}`} aria-pressed={selected === a.id} onClick={() => { seek(a.time); setSelected(a.id); }}/>)}</div>
+      <div className="formlab-markers" role="group" aria-label={t('Feedback moments')}>{shown.map(a => <button key={a.id} style={{left: `${duration > 0 ? Math.max(0, Math.min(100, a.time / duration * 100)) : 0}%`}} aria-label={t('Feedback at {stamp}: {value}', { stamp: stamp(a.time), value: a.text || 'Technique drawing' })} aria-pressed={selected === a.id} onClick={() => { seek(a.time); setSelected(a.id); }}/>)}</div>
       </div>
       <div className="formlab-controls">
         <Button
@@ -670,23 +669,23 @@ function FormReview({ submission, client, coach }) {
               : video.current
                   .play()
                   .catch(() =>
-                    setError("Playback could not start. Try another browser."),
+                    setError(t('Playback could not start. Try another browser.')),
                   )
           }
         >
           {playing ? <Pause size={16} /> : <Play size={16} />}{" "}
-          {playing ? "Pause" : "Play"}
+          {playing ? t('Pause') : t('Play')}
         </Button>
         <Button secondary small onClick={() => seek(time - 1 / 30)}>
-          Previous frame
+          {t('Previous frame')}
         </Button>
         <Button secondary small onClick={() => seek(time + 1 / 30)}>
-          Next frame
+          {t('Next frame')}
         </Button>
         <span className="record-time">
           {stamp(time)} / {stamp(duration)}
         </span>
-        <Field label="Playback speed">
+        <Field label={t('Playback speed')}>
           <select
             defaultValue="1"
             onChange={(e) => {
@@ -702,14 +701,14 @@ function FormReview({ submission, client, coach }) {
         </Field>
       </div>
       {submission.reviews.length > 1 && (
-        <Field label="Review version">
+        <Field label={t('Review version')}>
           <select
             value={reviewIndex}
             onChange={(e) => setReviewIndex(Number(e.target.value))}
           >
             {submission.reviews.map((r, i) => (
               <option key={r.id} value={i}>
-                Review {i + 1} · {new Date(r.at).toLocaleDateString()}
+                {t('Review')} {i + 1} · {new Date(r.at).toLocaleDateString()}
               </option>
             ))}
           </select>
@@ -718,8 +717,8 @@ function FormReview({ submission, client, coach }) {
       {review && (
         <>
           <Notice>
-            <b>Coach feedback</b>
-            <p>{review.feedback || "See the timestamped notes below."}</p>
+            <b>{t('Coach feedback')}</b>
+            <p>{review.feedback || t('See the timestamped notes below.')}</p>
           </Notice>
           <AudioPlayer file={review.audio} />
         </>
@@ -737,9 +736,9 @@ function FormReview({ submission, client, coach }) {
           >
             <time>{stamp(a.time)}</time>
             <span>
-              {a.text || "Technique drawing"}
+              {a.text || t('Technique drawing')}
               {a.shapes.length
-                ? ` · ${a.shapes.length} drawing${a.shapes.length === 1 ? "" : "s"}`
+                ? t(' · {count} drawings', { count: a.shapes.length })
                 : ""}
             </span>
           </button>
@@ -747,24 +746,22 @@ function FormReview({ submission, client, coach }) {
       </div>
       {coach ? (
         <>
-          <SectionHead title="Annotate the moment" />
+          <SectionHead title={t('Annotate the moment')} />
           <p className="fine-print muted">
-            Pause or step through the video, draw on the frame, then add a note.
-            Touch and pointer drawing are supported. Timestamped text works with
-            a keyboard.
+            {t('Pause or step through the video, draw on the frame, then add a note. Touch and pointer drawing are supported. Timestamped text works with a keyboard.')}
           </p>
           <Tabs
-            label="Drawing tool"
+            label={t('Drawing tool')}
             items={["arrow", "line", "circle", "highlight"]}
             value={tool}
             onChange={setTool}
           />
-          <Field label={`Comment at ${stamp(time)}`}>
+          <Field label={t('Comment at {stamp}', { stamp: stamp(time) })}>
             <textarea
               maxLength={2000}
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder="A clear cue for this exact moment…"
+              placeholder={t('A clear cue for this exact moment…')}
             />
           </Field>
           <div className="button-row">
@@ -786,7 +783,7 @@ function FormReview({ submission, client, coach }) {
                 setShapes([]);
               }}
             >
-              Add timestamped note
+              {t('Add timestamped note')}
             </Button>
             <Button
               secondary
@@ -795,7 +792,7 @@ function FormReview({ submission, client, coach }) {
               onClick={() => setShapes((s) => s.slice(0, -1))}
             >
               <Undo2 size={14} />
-              Undo drawing
+              {t('Undo drawing')}
             </Button>
             <Button
               secondary
@@ -803,10 +800,10 @@ function FormReview({ submission, client, coach }) {
               disabled={!annotations.length}
               onClick={() => setAnnotations((a) => a.slice(0, -1))}
             >
-              Remove last draft note
+              {t('Remove last draft note')}
             </Button>
           </div>
-          <Field label="Overall feedback">
+          <Field label={t('Overall feedback')}>
             <textarea
               maxLength={4000}
               value={feedback}
@@ -818,14 +815,13 @@ function FormReview({ submission, client, coach }) {
             onBusyChange={setVoiceBusy}
             clientId={client.id}
             onChange={setAudio}
-            label="Technique voice feedback"
+            label={t('Technique voice feedback')}
           />
           <Button disabled={busy || voiceBusy} onClick={publish}>
-            {busy ? "Sharing feedback…" : "Share feedback with client"}
+            {busy ? t('Sharing feedback…') : t('Share feedback with client')}
           </Button>
           <small className="muted">
-            Published reviews remain in history. A follow-up creates a new
-            version.
+            {t('Published reviews remain in history. A follow-up creates a new version.')}
           </small>
         </>
       ) : review && !submission.viewedAt ? (
@@ -836,7 +832,7 @@ function FormReview({ submission, client, coach }) {
             setBusy(true);
             try {
               await runAction("form.viewed", client.id, { id: submission.id });
-              notify?.("Feedback marked as viewed");
+              notify?.(t('Feedback marked as viewed'));
             } catch (e) {
               setError(e.message);
             } finally {
@@ -844,7 +840,7 @@ function FormReview({ submission, client, coach }) {
             }
           }}
         >
-          Mark feedback as viewed
+          {t('Mark feedback as viewed')}
         </Button>
       ) : null}
       {error && (

@@ -1,5 +1,6 @@
 import { equal, memory, newId } from "./memory.js";
 import { utcAdd, weekday, zonedDay, dateKey } from "./time.js";
+import { t } from '../i18n.js';
 export const defaultScheduleRules = {
   independent: false,
   requireApproval: true,
@@ -24,31 +25,31 @@ export function policyError(rules) {
     !rules.allowedDays.length ||
     rules.allowedDays.some((n) => !Number.isInteger(n) || n < 0 || n > 6)
   )
-    return "Choose at least one valid training day.";
+    return t('Choose at least one valid training day.');
   if (
     !Number.isInteger(Number(rules.minSpacingDays)) ||
     rules.minSpacingDays < 1 ||
     rules.minSpacingDays > 7
   )
-    return "Spacing must be 1–7 days.";
+    return t('Spacing must be 1–7 days.');
   if (
     !Number.isInteger(Number(rules.maxWeekly)) ||
     rules.maxWeekly < 1 ||
     rules.maxWeekly > 7
   )
-    return "Weekly frequency must be 1–7 sessions.";
+    return t('Weekly frequency must be 1–7 sessions.');
   if (
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(rules.windowStart) ||
     !/^([01]\d|2[0-3]):[0-5]\d$/.test(rules.windowEnd) ||
     rules.windowStart >= rules.windowEnd
   )
-    return "Choose a valid daytime window.";
+    return t('Choose a valid daytime window.');
   if (
     Object.values(rules.priorities || {}).some(
       (p) => ![1, 2, 3].includes(Number(p)),
     )
   )
-    return "Session priorities must be 1, 2 or 3.";
+    return t('Session priorities must be 1, 2 or 3.');
   return "";
 }
 const weekStart = (date) => utcAdd(date, -((weekday(date) + 6) % 7));
@@ -68,14 +69,14 @@ export function scheduleConflicts(client, sessions, original, proposed, today) {
   )
     issues.push({
       hard: true,
-      text: "Every prescribed session must remain in the schedule.",
+      text: t('Every prescribed session must remain in the schedule.'),
     });
   if (
     sorted.some(
       (s, i) => !dateKey(s.date) || (i > 0 && s.date === sorted[i - 1].date),
     )
   )
-    issues.push({ hard: true, text: "Two sessions cannot share a day." });
+    issues.push({ hard: true, text: t('Two sessions cannot share a day.') });
   for (const row of proposed) {
     const old = original.find(
       (s) => s.date === row.originalDate && s.dayId === row.dayId,
@@ -85,21 +86,21 @@ export function scheduleConflicts(client, sessions, original, proposed, today) {
       completed.has(old.date) &&
       (row.date !== old.date || (row.time || "") !== (old.time || ""))
     )
-      issues.push({ hard: true, text: "Completed workouts cannot move." });
+      issues.push({ hard: true, text: t('Completed workouts cannot move.') });
     if (row.date !== old.date) {
       if (row.date < today)
         issues.push({
           hard: true,
-          text: "Sessions cannot move into the past.",
+          text: t('Sessions cannot move into the past.'),
         });
       if (!rules.allowedDays.includes(weekday(row.date)))
         issues.push({
-          text: `${row.date} is outside the allowed training days.`,
+          text: t('{date} is outside the allowed training days.', { date: row.date }),
         });
       if (completed.has(row.date))
         issues.push({
           hard: true,
-          text: "A completed workout already occupies this date.",
+          text: t('A completed workout already occupies this date.'),
         });
     }
     if (
@@ -108,7 +109,7 @@ export function scheduleConflicts(client, sessions, original, proposed, today) {
       (row.time < rules.windowStart || row.time > rules.windowEnd)
     )
       issues.push({
-        text: `${row.date} is outside the permitted training window.`,
+        text: t('{date} is outside the permitted training window.', { date: row.date }),
       });
   }
   const changedDates = new Set(
@@ -123,7 +124,7 @@ export function scheduleConflicts(client, sessions, original, proposed, today) {
     );
     if (gap < Number(rules.minSpacingDays))
       issues.push({
-        text: `${a.date} and ${b.date} need at least ${rules.minSpacingDays} days of spacing.`,
+        text: t('{date} and {date2} need at least {minSpacingDays} days of spacing.', { date: a.date, date2: b.date, minSpacingDays: rules.minSpacingDays }),
       });
   }
   const counts = new Map();
@@ -135,7 +136,7 @@ export function scheduleConflicts(client, sessions, original, proposed, today) {
       [...changedDates].some((d) => weekStart(d) === week)
     )
       issues.push({
-        text: `Week of ${week} exceeds ${rules.maxWeekly} sessions.`,
+        text: t('Week of {week} exceeds {maxWeekly} sessions.', { week, maxWeekly: rules.maxWeekly }),
       });
   if (rules.preserveOrder) {
     const a = [...original]
@@ -143,7 +144,7 @@ export function scheduleConflicts(client, sessions, original, proposed, today) {
         .map((s) => `${s.date}:${s.dayId}`),
       b = sorted.map((s) => `${s.originalDate}:${s.dayId}`);
     if (!equal(a, b))
-      issues.push({ text: "This would change the prescribed workout order." });
+      issues.push({ text: t('This would change the prescribed workout order.') });
   }
   return [...new Map(issues.map((i) => [i.text, i])).values()];
 }
@@ -164,11 +165,11 @@ export function proposeSchedule(
     explanation = "";
   if (request.mode === "move") {
     if (!dateKey(request.from) || !dateKey(request.to))
-      throw new Error("Choose the original and new training dates.");
+      throw new Error(t('Choose the original and new training dates.'));
     const row = proposed.find((s) => s.date === request.from);
-    if (!row) throw new Error("Choose a scheduled workout.");
+    if (!row) throw new Error(t('Choose a scheduled workout.'));
     if (completed.has(row.date))
-      throw new Error("Completed workouts cannot move.");
+      throw new Error(t('Completed workouts cannot move.'));
     row.date = request.to;
     if (request.time) row.time = request.time;
     explanation =
@@ -229,7 +230,7 @@ export function proposeSchedule(
     search(0, [], "");
     if (!answer)
       throw new Error(
-        "No valid arrangement fits the remaining week. Try moving one session into next week or discuss which session to skip with your coach.",
+        t('No valid arrangement fits the remaining week. Try moving one session into next week or discuss which session to skip with your coach.'),
       );
     proposed = answer;
     explanation = `Remaining sessions arranged around availability, recovery and ${rules.preserveOrder ? "the prescribed sequence" : "coach-set session priorities"}. ${request.includeMissed ? "You explicitly included missed sessions." : "Earlier missed sessions were not added back automatically."}`;
@@ -242,7 +243,7 @@ export function proposeSchedule(
   );
   if (!moved.length)
     throw new Error(
-      "Your current schedule already fits. No dates need to change.",
+      t('Your current schedule already fits. No dates need to change.'),
     );
   const issues = scheduleConflicts(client, sessions, original, proposed, today);
   return {
@@ -267,7 +268,7 @@ export function applyProposal(
 ) {
   if (!equal(client.schedule, proposal.original))
     throw new Error(
-      "The schedule changed after this proposal. Create a fresh preview.",
+      t('The schedule changed after this proposal. Create a fresh preview.'),
     );
   const today = zonedDay(client.checkinPlan?.timezone || "UTC"),
     issues = scheduleConflicts(
@@ -290,7 +291,7 @@ export function applyProposal(
   }
   if (issues.length && (!override || !reason.trim()))
     throw new Error(
-      "Explain the scheduling exception and explicitly approve the rule conflicts.",
+      t('Explain the scheduling exception and explicitly approve the rule conflicts.'),
     );
   client.schedule = proposal.proposed
     .map(({ originalDate, ...s }) => s)
@@ -311,7 +312,7 @@ export function applyProposal(
       recordId: proposal.id,
       before: proposal.original,
       after: structuredClone(client.schedule),
-      explanation: `Your training dates were adjusted. ${proposal.proposed.filter((s) => s.date !== s.originalDate).length} sessions moved; your exercises and prescriptions stay the same.`,
+      explanation: t('Your training dates were adjusted. {length} sessions moved; your exercises and prescriptions stay the same.', { length: proposal.proposed.filter((s) => s.date !== s.originalDate).length }),
     },
   );
   return "approved";

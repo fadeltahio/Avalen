@@ -4,7 +4,7 @@
 
 /* Session rows open in place, in the order a client will train them. */
 .session-detail-exercises > .session-exercise { display: block; padding: 0; }
-.session-exercise-row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 76px; padding: 10px 0; color: var(--text); text-align: left; }
+.session-exercise-row { display: flex; align-items: center; gap: 14px; width: 100%; min-height: 76px; padding: 10px 0; color: var(--text); text-align: start; }
 .session-exercise-row:active { transform: none; }
 .session-exercise-row > span { flex: 1; min-width: 0; }
 .session-exercise-row > svg { flex: none; transition: transform var(--motion-state) var(--ease-settle); }
@@ -63,12 +63,12 @@
 .volume-chart { display: grid; grid-template-columns: 38px minmax(0,1fr); gap: 0 8px; }
 .volume-axis { display: flex; flex-direction: column; justify-content: space-between; height: 190px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
 .volume-plot { position: relative; height: 190px; overflow: hidden; border-block: 1px solid var(--line); background: linear-gradient(var(--line), var(--line)) 0 50% / 100% 1px no-repeat; cursor: pointer; touch-action: pan-y; }
-.volume-plot button { position: absolute; bottom: 0; left: calc(6px + (100% - 12px) * var(--at)); width: 6px; min-width: 0; min-height: 2px; margin-left: -3px; padding: 0; border-radius: 1px 1px 0 0; background: var(--text); transform-origin: bottom; transition: opacity 140ms ease; animation: volume-rise 520ms var(--ease-precise) both; animation-delay: calc(var(--bar) * 26ms); }
+.volume-plot button { position: absolute; bottom: 0; inset-inline-start: calc(6px + (100% - 12px) * var(--at)); width: 6px; min-width: 0; min-height: 2px; margin-inline-start: -3px; padding: 0; border-radius: 1px 1px 0 0; background: var(--text); transform-origin: bottom; transition: opacity 140ms ease; animation: volume-rise 520ms var(--ease-precise) both; animation-delay: calc(var(--bar) * 26ms); }
 .volume-plot button:active { transform: none; }
 .volume-plot button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 .volume-plot.has-pick button { opacity: .24; }
 .volume-plot.has-pick button.is-picked { opacity: 1; }
-.volume-plot button.is-picked::after { content: ""; position: absolute; bottom: 100%; left: 50%; height: 190px; border-left: 1px dashed var(--muted); }
+.volume-plot button.is-picked::after { content: ""; position: absolute; bottom: 100%; left: 50%; height: 190px; border-inline-start: 1px dashed var(--muted); }
 @keyframes volume-rise { from { transform: scaleY(0); } to { transform: none; } }
 .volume-dates { display: flex; grid-column: 2; justify-content: space-between; padding-top: 6px; color: var(--muted); font-size: 10px; }
 

@@ -1,3 +1,4 @@
+import { locale } from "./i18n.js";
 import { useEffect, useRef, useState } from "react";
 import { createWorkspace } from "./seed.js";
 import { checkinSchedule } from "./checkin-model.js";
@@ -8,6 +9,7 @@ import { connection, subscribe, connectedUpdate, request, refreshConnection, has
 
 import { commitLocalWorkspace } from "./local-transaction.js";
 
+import { t } from './i18n.js';
 export const STORAGE_KEY = "avalen.workspace.v1";
 export { uid } from "./id.js";
 import { uid } from "./id.js";
@@ -20,7 +22,7 @@ export const offsetDay = (n, key = dayKey()) => {
   return dayKey(d);
 };
 export const shortDate = (key) =>
-  dateOf(key).toLocaleDateString("en", { month: "short", day: "numeric" });
+  dateOf(key).toLocaleDateString(locale(), { month: "short", day: "numeric" });
 export const daysBetween = (a, b) =>
   Math.round((dateOf(b) - dateOf(a)) / 86400000);
 export const sum = (arr, key) =>
@@ -47,7 +49,7 @@ export function useWorkspace() {
       raw = localStorage.getItem(STORAGE_KEY);
       return { data: foundations(raw === null ? createWorkspace() : parseWorkspace(raw)), recovery: null };
     } catch {
-      return { data: createWorkspace(), recovery: { raw, message: 'Your saved workspace could not be read safely. Nothing has been overwritten. Download a recovery copy before making any changes.' } };
+      return { data: createWorkspace(), recovery: { raw, message: t('Your saved workspace could not be read safely. Nothing has been overwritten. Download a recovery copy before making any changes.') } };
     }
   });
   const [data, setData] = useState(initial.data);
@@ -74,7 +76,7 @@ export function useWorkspace() {
           accept(foundations(parseWorkspace(e.newValue)));
           setRecovery(null);
         } catch {
-          setRecovery({ raw: e.newValue, message: 'Another tab saved an unreadable workspace. Editing is paused to protect your records. Download a recovery copy and reload after it has been repaired.' });
+          setRecovery({ raw: e.newValue, message: t('Another tab saved an unreadable workspace. Editing is paused to protect your records. Download a recovery copy and reload after it has been repaired.') });
         }
       }
     };
@@ -173,43 +175,43 @@ export function attentionFor(data, client) {
     flags.push({
       key: "plateau",
       tone: "amber",
-      title: "Weight trend stable",
-      detail: "Weight has stayed within 0.4 kg for at least 14 days.",
+      title: t('Weight trend stable'),
+      detail: t('Weight has stayed within 0.4 kg for at least 14 days.'),
       tab: "Progress",
     });
   if (m.missed >= 2)
     flags.push({
       key: "training",
       tone: "red",
-      title: `${m.missed} workouts missed`,
-      detail: `${m.missed} scheduled workouts have no completed log in the last 21 days.`,
+      title: t('{count} workouts missed', { count: m.missed }),
+      detail: t('{missed} scheduled workouts have no completed log in the last 21 days.', { missed: m.missed }),
       tab: "Plan",
     });
   const checkin = checkinSchedule(client,data.checkins);
   if (checkin.due)
-    flags.push({key:'checkin',tone:'amber',title:checkin.overdue?'Check-in overdue':'Check-in due today',detail:`Due ${shortDate(checkin.dueDate)} · every ${checkin.intervalDays} days.${checkin.last?` Last submitted ${shortDate(checkin.last.date)}.`:' No check-in submitted yet.'}`,tab:'Check-ins'});
+    flags.push({key:'checkin',tone:'amber',title:checkin.overdue?t('Check-in overdue'):t('Check-in due today'),detail:t('Due {shortDate} · every {intervalDays} days.{value}', { shortDate: shortDate(checkin.dueDate), intervalDays: checkin.intervalDays, value: checkin.last ? ` ${t('Last submitted {date}.', { date: shortDate(checkin.last.date) })}` : ` ${t('No check-in submitted yet.')}` }),tab:'Check-ins'});
   if (m.nutritionDays >= 3 && m.nutrition !== null && m.nutrition < 70)
     flags.push({
       key: "nutrition",
       tone: "amber",
-      title: "Nutrition needs a review",
-      detail: `${m.nutrition}% of ${m.nutritionDays} completed days were within 15% of their saved calorie targets.`,
+      title: t('Nutrition needs a review'),
+      detail: t('{nutrition}% of {nutritionDays} completed days were within 15% of their saved calorie targets.', { nutrition: m.nutrition, nutritionDays: m.nutritionDays }),
       tab: "Nutrition",
     });
   if (client.subscription.status === "Overdue")
     flags.push({
       key: "billing",
       tone: "red",
-      title: "Payment overdue",
-      detail: `${client.subscription.currency} ${client.subscription.amount.toLocaleString()} was due ${shortDate(client.subscription.nextDate)}.`,
+      title: t('Payment overdue'),
+      detail: t('{currency} {value} was due {shortDate}.', { currency: client.subscription.currency, value: client.subscription.amount.toLocaleString(), shortDate: shortDate(client.subscription.nextDate) }),
       tab: "Billing",
     });
   if (daysBetween(dayKey(), client.programEnd) <= 7)
     flags.push({
       key: "ending",
       tone: "amber",
-      title: "Program ending",
-      detail: `Current block ends ${shortDate(client.programEnd)}.`,
+      title: t('Program ending'),
+      detail: t('Current block ends {shortDate}.', { shortDate: shortDate(client.programEnd) }),
       tab: "Plan",
     });
   const skips = {};
@@ -226,8 +228,8 @@ export function attentionFor(data, client) {
       flags.push({
         key: `skip-${name}`,
         tone: "amber",
-        title: "Exercise consistently skipped",
-        detail: `${name} had skipped sets in ${n} sessions. Ask why before changing the plan.`,
+        title: t('Exercise consistently skipped'),
+        detail: t('{name} had skipped sets in {n} sessions. Ask why before changing the plan.', { name, n }),
         tab: "Plan",
       }),
     );
@@ -312,8 +314,8 @@ export function finishSession(d, draft) {
   d.timeline.unshift({
     id: uid(),
     clientId: draft.clientId,
-    title: `Completed ${draft.title}`,
-    detail: `${sets.length} sets · ${sum(sets, (x) => x.kind === "Duration" ? 0 : x.weight * x.reps).toLocaleString()} kg volume`,
+    title: t('Completed {title}', { title: draft.title }),
+    detail: t('{length} sets · {value} kg volume', { length: sets.length, value: sum(sets, (x) => x.kind === "Duration" ? 0 : x.weight * x.reps).toLocaleString() }),
     at: s.finishedAt,
     by: "client",
   });
@@ -326,14 +328,14 @@ function db() {
     request.onupgradeneeded = () => request.result.createObjectStore("files");
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => { dbPromise = undefined; reject(request.error); };
-    request.onblocked = () => { dbPromise = undefined; reject(new Error('Close other Avalen tabs and try the upload again.')); };
+    request.onblocked = () => { dbPromise = undefined; reject(new Error(t('Close other Avalen tabs and try the upload again.'))); };
   }));
 }
 export async function saveFile(file, { types = ["image/"], maxMB = 10, clientId, scope, purpose } = {}) {
   if (!types.some((t) => file.type.startsWith(t)))
-    throw new Error("Choose a supported file type.");
+    throw new Error(t('Choose a supported file type.'));
   if (file.size > maxMB * 1024 * 1024)
-    throw new Error(`Choose a file smaller than ${maxMB} MB.`);
+    throw new Error(t('Choose a file smaller than {maxMB} MB.', { maxMB }));
   if(connection()) return request('/media',{method:'POST',body:file,headers:{'Content-Type':file.type,'X-Client-Id':clientId || connection().data.activeClientId,'X-File-Name':encodeURIComponent(file.name),'X-Media-Scope':scope || 'client','X-Media-Purpose':purpose || 'general'}});
   const id = uid(),
     database = await db();
@@ -346,18 +348,18 @@ export async function saveFile(file, { types = ["image/"], maxMB = 10, clientId,
     tx.oncomplete = resolve;
     tx.onerror = () =>
       reject(
-        tx.error || new Error("The file could not be saved. Please try again."),
+        tx.error || new Error(t('The file could not be saved. Please try again.')),
       );
     tx.onabort = () =>
       reject(
         tx.error ||
-          new Error("File storage was interrupted. Please try again."),
+          new Error(t('File storage was interrupted. Please try again.')),
       );
   });
   return { id, name: file.name, type: file.type, size: file.size };
 }
 export async function getFile(id) {
-  if(connection()) {const response=await fetch(`/api/media/${encodeURIComponent(id)}`,{credentials:'same-origin'});if(!response.ok)throw new Error('This recording is unavailable or access has expired.');return response.blob();}
+  if(connection()) {const response=await fetch(`/api/media/${encodeURIComponent(id)}`,{credentials:'same-origin'});if(!response.ok)throw new Error(t('This recording is unavailable or access has expired.'));return response.blob();}
   return getDeviceFile(id);
 }
 export async function deleteDeviceFile(id){const database=await db();return new Promise((resolve,reject)=>{const tx=database.transaction('files','readwrite');tx.objectStore('files').delete(id);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});}

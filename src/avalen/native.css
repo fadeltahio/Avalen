@@ -1,0 +1,11 @@
+/* Native app (and installed web app): keep scrolling content out from under the
+   clock and Dynamic Island. Zero height wherever there is no top safe area. */
+.status-bar-scrim { position: fixed; z-index: 40; top: 0; inset-inline: 0; height: env(safe-area-inset-top, 0px); background: var(--bg); pointer-events: none; }
+
+.language-heading { margin: 22px 0 10px; font-size: 15px; }
+.language-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.language-option { display: flex; align-items: center; justify-content: space-between; min-height: 52px; padding: 0 16px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 16px; }
+.language-option.selected { border-color: var(--text); }
+
+/* Settings rows that open a page are links; they look like the button rows beside them. */
+a.simple-row { color: inherit; text-decoration: none; }

@@ -438,7 +438,7 @@ test("existing nutrition logging and workout completion remain functional in aut
     })
     .toBe(1);
   let saved = await service.call("/api/workspace", { account: service.coach });
-  expect(saved.data.foodLogs[0].kcal).toBe(275);
+  expect(saved.data.foodLogs[0].kcal).toBe(240);
   await nav("Home").click();
   await page
     .getByRole("button", { name: "Start Workout", exact: true })

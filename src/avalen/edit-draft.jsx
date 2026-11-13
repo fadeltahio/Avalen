@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, RotateCcw } from 'lucide-react';
 import { Button, Modal } from './ui.jsx';
 
+import { t } from './i18n.js';
 export function useEditDraft(key, initial) {
   const storageKey = `avalen.edit.${key}`;
   const initialJSON = JSON.stringify(initial);
@@ -19,7 +20,7 @@ export function useEditDraft(key, initial) {
       if (dirty) localStorage.setItem(storageKey, JSON.stringify({ version: 1, value, base }));
       else localStorage.removeItem(storageKey);
       setError('');
-    } catch { setError('This draft could not be saved on this device. Keep this screen open until you save your changes.'); }
+    } catch { setError(t('This draft could not be saved on this device. Keep this screen open until you save your changes.')); }
   }, [value, dirty, storageKey, initialJSON, base]);
   useEffect(() => {
     if (!dirty || !error) return;
@@ -35,8 +36,8 @@ export function EditSaveBar({ draft, label, onSave, disabled = false, saved = fa
   const [discard, setDiscard] = useState(false);
   return <>
     {draft.error && <p role="alert" className="error">{draft.error}</p>}
-    {draft.conflict && <p role="alert" className="error">The assigned plan changed since this draft was started. Review the changes before saving.</p>}
-    <div className="edit-save-bar"><div role="status"><b>{draft.dirty ? 'Unpublished changes' : saved ? 'Plan updated' : 'Current plan'}</b><small>{draft.dirty ? draft.error ? 'Draft not saved' : 'Draft saved on this device' : 'Changes are up to date'}</small></div><div className="edit-save-actions">{draft.dirty && <button type="button" className="icon-btn" aria-label="Discard draft" onClick={() => setDiscard(true)}><RotateCcw size={18}/></button>}<Button aria-label={label} type={onSave ? 'button' : 'submit'} disabled={disabled} onClick={onSave}>{label === 'Save nutrition plan' ? 'Save plan' : label}<Check size={17}/></Button></div></div>
-    {discard && <Modal title="Discard this draft?" onClose={() => setDiscard(false)}><p>Your assigned plan will stay as it is. Only unpublished changes will be removed.</p><div className="button-row"><Button onClick={() => { draft.clear(); setDiscard(false); }}>Discard draft</Button><Button secondary onClick={() => setDiscard(false)}>Keep editing</Button></div></Modal>}
+    {draft.conflict && <p role="alert" className="error">{t('The assigned plan changed since this draft was started. Review the changes before saving.')}</p>}
+    <div className="edit-save-bar"><div role="status"><b>{draft.dirty ? t('Unpublished changes') : saved ? t('Plan updated') : t('Current plan')}</b><small>{draft.dirty ? draft.error ? t('Draft not saved') : t('Draft saved on this device') : t('Changes are up to date')}</small></div><div className="edit-save-actions">{draft.dirty && <button type="button" className="icon-btn" aria-label={t('Discard draft')} onClick={() => setDiscard(true)}><RotateCcw size={18}/></button>}<Button aria-label={label} type={onSave ? 'button' : 'submit'} disabled={disabled} onClick={onSave}>{label === 'Save nutrition plan' ? t('Save plan') : label}<Check size={17}/></Button></div></div>
+    {discard && <Modal title={t('Discard this draft?')} onClose={() => setDiscard(false)}><p>{t('Your assigned plan will stay as it is. Only unpublished changes will be removed.')}</p><div className="button-row"><Button onClick={() => { draft.clear(); setDiscard(false); }}>{t('Discard draft')}</Button><Button secondary onClick={() => setDiscard(false)}>{t('Keep editing')}</Button></div></Modal>}
   </>;
 }

@@ -59,6 +59,8 @@ import {
 import { Plan, Progress, Nutrition } from "./client.jsx";
 import { Appearance, ConnectedDevices } from "./preferences.jsx";
 import { openDevicesOnReturn } from "./wearables.jsx";
+import { t, lines } from "./i18n.js";
+import { startDomTranslation } from "./i18n-dom.js";
 import { ResumeWorkout } from "./resume.jsx";
 import { IntakeFlow } from "./IntakeFlow.jsx";
 import { EditorialHome, SessionDetail, SessionSearch, Splash } from "./editorial.jsx";
@@ -93,6 +95,8 @@ import "./assistant.css";
 import "./food-scan.css";
 import "./polish.css";
 import "./payments.css";
+import "./native.css";
+import "./rtl.css";
 import { ClientPayments } from "./payments.jsx";
 import { AvalenAssistant } from "./AvalenAssistant.jsx";
 
@@ -105,11 +109,12 @@ const clientNav = [
   ["you", "More", MoreHorizontal],
 ];
 const coachNav = [
-  ["dashboard", "Dashboard", Home],
+  ["dashboard", "Home", Home],
   ["clients", "Clients", Users],
   ["programs", "Programs", FileText],
   ["inbox", "Inbox", MessageCircle],
   ["business", "Business", BarChart3],
+  ["more", "More", MoreHorizontal],
 ];
 function savedRole() {
   try { return sessionStorage.getItem('avalen.role') === 'coach' ? 'coach' : 'client'; }
@@ -283,10 +288,10 @@ function App() {
   if (recovery) return (
     <div className="error-screen">
       <Mark large />
-      <h1>Your records come first.</h1>
+      <h1>{t('Your records come first.')}</h1>
       <p role="alert">{recovery.message}</p>
-      {recovery.raw !== null && <Button onClick={() => download(new Blob([recovery.raw], { type: 'application/json' }), 'avalen-recovery.json')}>Download recovery copy</Button>}
-      <Button secondary onClick={() => location.reload()}>Try loading again</Button>
+      {recovery.raw !== null && <Button onClick={() => download(new Blob([recovery.raw], { type: 'application/json' }), 'avalen-recovery.json')}>{t('Download recovery copy')}</Button>}
+      <Button secondary onClick={() => location.reload()}>{t('Try loading again')}</Button>
     </div>
   );
   return (
@@ -297,26 +302,27 @@ function App() {
         <Welcome onDismiss={() => setWelcomePreview(false)} onJoined={() => setIntakeOpen(true)}/>
       ) : (
         <div className={`app-shell role-${role} ${sessionDetail ? 'viewing-session' : ''} ${exerciseDetail ? 'viewing-exercise' : ''}`}>
-          <a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); const main = document.getElementById('main-content'); main?.focus(); main?.scrollIntoView({behavior:'instant'}); }}>Skip to content</a>
+          <div className="status-bar-scrim" aria-hidden="true"/>
+          <a className="skip-link" href="#main-content" onClick={event => { event.preventDefault(); const main = document.getElementById('main-content'); main?.focus(); main?.scrollIntoView({behavior:'instant'}); }}>{t('Skip to content')}</a>
           <aside className="desktop-sidebar">
             <div className="sidebar-brand">
               <BrandLogo brand={data.coach} />
               <span>{data.coach.brand}</span>
             </div>
             <span className="eyebrow">
-              {role === "coach" ? "COACH WORKSPACE" : "YOUR COACHING"}
+              {role === "coach" ? t('COACH WORKSPACE') : t('YOUR COACHING')}
             </span>
-            <nav aria-label="Workspace navigation">
+            <nav aria-label={t('Workspace navigation')}>
               {nav.map(([id, label, Icon]) => (
                 <button
                   key={id}
-                  aria-label={label}
+                  aria-label={t(label)}
                   aria-current={screen === id ? 'page' : undefined}
                   className={screen === id || (role === "client" && id === "you" && screen === "coach") ? "active" : ""}
                   onClick={() => navigate(id)}
                 >
                   <Icon size={19} />
-                  {label}
+                  {t(label)}
                   {id === (role === "coach" ? "inbox" : "you") &&
                     unread > 0 && <i>{unread}</i>}
                 </button>
@@ -325,24 +331,24 @@ function App() {
             <div className="sidebar-bottom">
               <div className="workspace-label">
                 <span />
-                {connection()?'Connected workspace':'Local workspace'}
+                {connection()?t('Connected workspace'):t('Local workspace')}
               </div>
               <p>
-                Thoughtful coaching.
+                {t('Thoughtful coaching.')}
                 <br />
-                Meaningful progress.
+                {t('Meaningful progress.')}
               </p>
-              <small>{connection()?'Saved to your private account':'Saved on this device'}</small>
+              <small>{connection()?t('Saved to your private account'):t('Saved on this device')}</small>
             </div>
           </aside>
           <div className={`app-content ${role === 'client' && data.drafts[client.id] ? 'has-workout' : ''}`}>
             <header className="app-header">
               <div className="header-identity">
-                <button className="profile-button" aria-label={role === 'coach' ? 'Coach brand settings' : 'Your profile'} onClick={() => navigate(role === 'coach' ? 'business' : 'you', role === 'coach' ? 'Brand' : '')}><Avatar name={role === 'coach' ? data.coach.name : client.name}/></button>
+                <button className="profile-button" aria-label={role === 'coach' ? t('Coach brand settings') : t('Your profile')} onClick={() => navigate(role === 'coach' ? 'business' : 'you', role === 'coach' ? 'Brand' : '')}><Avatar name={role === 'coach' ? data.coach.name : client.name}/></button>
                 <span className="header-wordmark">AVALEN</span>
-                {connection()?<button className="text-link" onClick={()=>setAccountSettings(true)}>Account</button>:<label className="role-select"><select aria-label="Workspace role" value={role} onChange={e => changeRole(e.target.value)}><option value="client">Client</option><option value="coach">Coach</option></select></label>}
+                {connection()?<button className="text-link" onClick={()=>setAccountSettings(true)}>{t('Account')}</button>:<label className="role-select"><select aria-label={t('Workspace role')} value={role} onChange={e => changeRole(e.target.value)}><option value="client">{t('Client')}</option><option value="coach">{t('Coach')}</option></select></label>}
               </div>
-              <div className="header-actions">{role === 'client' && <><IconButton label="Search sessions" disabled={navigatingBack} onClick={()=>setSearch(true)}><Search size={22}/></IconButton></>}<IconButton label={role === "client" ? "Coach messages" : "Notifications"} onClick={()=>role === "client" ? navigate("coach","Messages") : setNotifications(true)}>{role === "client" ? <MessageCircle size={20}/> : <Bell size={20}/>}{unread > 0 && <i className="notification-dot"/>}</IconButton></div>
+              <div className="header-actions">{role === 'client' && <><IconButton label={t('Search sessions')} disabled={navigatingBack} onClick={()=>setSearch(true)}><Search size={22}/></IconButton></>}<IconButton label={role === "client" ? t('Coach messages') : t('Notifications')} onClick={()=>role === "client" ? navigate("coach","Messages") : setNotifications(true)}>{role === "client" ? <MessageCircle size={20}/> : <Bell size={20}/>}{unread > 0 && <i className="notification-dot"/>}</IconButton></div>
             </header>
             <main
               key={`${screen}-${client.id}`}
@@ -350,14 +356,14 @@ function App() {
               id="main-content"
               tabIndex={-1}
             >
-              {storageError && <Notice>{storageError}{unsavedAction()&&<div className="button-row"><Button small onClick={async()=>{try{await retryUnsent();notify('Action saved. Reload this view before repeating it.');}catch(e){notify(e.message);}}}>Retry unsaved action</Button><Button small secondary onClick={()=>download(new Blob([JSON.stringify(unsavedAction(),null,2)],{type:'application/json'}),'avalen-unsaved-action.json')}>Download recovery copy</Button><button className="text-link muted" onClick={()=>{discardUnsent();notify('Unconfirmed action removed from this device. Reload to check the server before entering it again.');}}>Discard local retry</button></div>}</Notice>}
-              <Suspense fallback={<div className="route-loader" role="status" aria-label="Loading workspace" aria-busy="true"><BrandMark/></div>}>
+              {storageError && <Notice>{storageError}{unsavedAction()&&<div className="button-row"><Button small onClick={async()=>{try{await retryUnsent();notify(t('Action saved. Reload this view before repeating it.'));}catch(e){notify(e.message);}}}>{t('Retry unsaved action')}</Button><Button small secondary onClick={()=>download(new Blob([JSON.stringify(unsavedAction(),null,2)],{type:'application/json'}),'avalen-unsaved-action.json')}>{t('Download recovery copy')}</Button><button className="text-link muted" onClick={()=>{discardUnsent();notify(t('Unconfirmed action removed from this device. Reload to check the server before entering it again.'));}}>{t('Discard local retry')}</button></div>}</Notice>}
+              <Suspense fallback={<div className="route-loader" role="status" aria-label={t('Loading workspace')} aria-busy="true"><BrandMark/></div>}>
               {exerciseDetail ? <ExerciseDetail key={exerciseDetail.name} exercise={exerciseDetail} client={viewedClient} coachView={role === 'coach'} onBack={closeExercise}/> : sessionDetail ? <SessionDetail key={sessionDetail.day.id} session={sessionDetail} onBack={closeSession}/> : screen === "today" ? (
                 <EditorialHome />
               ) : screen === "plan" ? (
                 <Plan />
               ) : screen === "nutrition" ? (
-                <><Heading title="Nutrition." subtitle="Your coach’s plan. Your daily progress."/><Nutrition /></>
+                <><Heading title={t('Nutrition.')} subtitle={t('Your coach’s plan. Your daily progress.')}/><Nutrition /></>
               ) : screen === "progress" ? (
                 <Progress />
               ) : screen === "coach" ? (
@@ -372,30 +378,32 @@ function App() {
                 <Programs />
               ) : screen === "inbox" ? (
                 <Inbox />
+              ) : screen === "more" ? (
+                <CoachMore onAccount={() => setAccountSettings(true)} />
               ) : (
                 <Business />
               )}
               </Suspense>
               <footer className="page-footer">
-                {connection()?'Connected workspace · Private account':`${data.demo ? "Demo workspace" : "Local workspace"} · Saved on this device`}
+                {connection()?t('Connected workspace · Private account'):t('{value} · Saved on this device', { value: data.demo ? "Demo workspace" : "Local workspace" })}
               </footer>
             </main>
             {role === 'client' && screen !== 'today' && !(screen === 'plan' && ['', 'Training'].includes(subtab) && (!route.viewDate || route.viewDate === dayKey())) && data.drafts[client.id] && <ResumeWorkout compact />}
-            <nav ref={bottomNav} className="bottom-nav" aria-label="Main navigation" style={{'--nav-count': nav.length}}>
+            <nav ref={bottomNav} className="bottom-nav" aria-label={t('Main navigation')} style={{'--nav-count': nav.length}}>
               
               <MovingIndicator container={bottomNav} value={screen} selector='[aria-current="page"]' className="motion-nav-indicator"/>
               {nav.map(([id, label, Icon]) => (
                 <button
                   key={id}
-                  aria-label={label}
+                  aria-label={t(label)}
                   aria-description={id === (role === "coach" ? "inbox" : "you") && unread > 0 ? `${unread} unread messages` : undefined}
                   aria-current={screen === id || (role === "client" && id === "you" && screen === "coach") ? "page" : undefined}
                   className={screen === id || (role === "client" && id === "you" && screen === "coach") ? "active" : ""}
                   onClick={() => navigate(id)}
                 >
                   <Icon size={21} strokeWidth={screen === id ? 2.4 : 1.5} />
-                  <span>{label}</span>
-                  {id === (role === "coach" ? "inbox" : "you") && unread > 0 && <i aria-label={`${unread} unread messages`}>{unread}</i>}
+                  <span>{t(label)}</span>
+                  {id === (role === "coach" ? "inbox" : "you") && unread > 0 && <i aria-label={t('{unread} unread messages', { unread })}>{unread}</i>}
                 </button>
               ))}
             </nav>
@@ -406,7 +414,7 @@ function App() {
       {intakeOpen && role === 'client' && <IntakeFlow onClose={closeIntake}/>}
       {accountSettings && <AccountSettings onClose={()=>setAccountSettings(false)}/>}
       {search && <SessionSearch onClose={() => setSearch(false)}/>}
-      {toast && <div className="app-toast" role="status" key={toast.id}><Check size={17}/><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo(); setToast(null); }}>Undo</button>}<button aria-label="Dismiss notification" onClick={() => setToast(null)}><X size={17}/></button></div>}
+      {toast && <div className="app-toast" role="status" key={toast.id}><Check size={17}/><span>{toast.message}</span>{toast.undo && <button onClick={() => { toast.undo(); setToast(null); }}>{t('Undo')}</button>}<button aria-label={t('Dismiss notification')} onClick={() => setToast(null)}><X size={17}/></button></div>}
       {workout && (
         <Workout
           onClose={pauseWorkout}
@@ -428,7 +436,7 @@ function App() {
         />
       )}
       {notifications && (
-        <Modal title="Your updates" onClose={() => setNotifications(false)}>
+        <Modal title={t('Your updates')} onClose={() => setNotifications(false)}>
           {role === "coach"
             ? data.clients.flatMap((c) =>
                 attentionFor(data, c).map((f) => (
@@ -441,8 +449,8 @@ function App() {
                     }}
                   >
                     <span>
-                      <b>{c.name}</b>
-                      <small className={f.tone}>{f.title}</small>
+                      <b>{t(c.name)}</b>
+                      <small className={f.tone}>{t(f.title)}</small>
                     </span>
                     <ChevronRight size={16} />
                   </button>
@@ -463,15 +471,14 @@ function App() {
                   >
                     <MessageCircle size={19} />
                     <span>
-                      <b>From your coach</b>
+                      <b>{t('From your coach')}</b>
                       <small>{m.text.slice(0, 95)}</small>
                     </span>
                     <ChevronRight size={16} />
                   </button>
                 ))}
           <Notice>
-            In-app updates only. Push notifications are not enabled in this
-            local preview.
+            {t('In-app updates only. Push notifications are not enabled in this local preview.')}
           </Notice>
         </Modal>
       )}
@@ -486,20 +493,51 @@ function Welcome({ onDismiss, onJoined }) {
   const [join, setJoin] = useState(false), [error, setError] = useState(''), [privacy, setPrivacy] = useState(false);
   async function explore() { if (await save(d => d.onboarded = true)) onDismiss(); }
   return <div className="editorial-welcome">
-    <img className="editorial-welcome-photo" src={welcomePortrait} alt="Athlete preparing for training"/>
+    <img className="editorial-welcome-photo" src={welcomePortrait} alt={t('Athlete preparing for training')}/>
     <div className="editorial-welcome-shade"/>
     <div className="editorial-welcome-wordmark">AVALEN</div>
-    <div className="editorial-welcome-content motion-stage"><p className="welcome-greeting">{data.onboarded ? `Welcome ${data.clients.find(c => c.id === data.activeClientId)?.name.split(' ')[0]}!` : 'A little about you. A lot of possibility.'}</p><h1>Realize your<br/>potential.</h1><p className="welcome-description">Your training. Your goals. Your coach.<br/>A more personal way to move forward.</p><div className="welcome-time"><Clock3 size={19}/><span>Make it yours in less than 1 minute</span></div><p className="welcome-privacy">Your information stays on this device. <button onClick={() => setPrivacy(true)}>Your privacy</button></p><Button aria-label="Get Started" disabled={saving} onClick={() => data.onboarded ? onDismiss() : setJoin(true)}>Let’s go</Button><button className="welcome-skip" aria-label="Explore demo" disabled={saving} onClick={explore}>Skip for now</button>{saveError && <p className="error" role="alert">{saveError}</p>}</div>
-    {join && <Modal title="Make it personal." onClose={() => setJoin(false)} canClose={!saving}><p className="muted">Join your coach’s preview with code <b>00000</b>.</p><form onSubmit={async e => {
+    <div className="editorial-welcome-content motion-stage"><p className="welcome-greeting">{data.onboarded ? t('Welcome {name}!', {name: data.clients.find(c => c.id === data.activeClientId)?.name.split(' ')[0]}) : t('A little about you. A lot of possibility.')}</p><h1>{lines(t('Realize your\npotential.'))}</h1><p className="welcome-description">{lines(t('Your training. Your goals. Your coach.\nA more personal way to move forward.'))}</p><div className="welcome-time"><Clock3 size={19}/><span>{t('Make it yours in less than 1 minute')}</span></div><p className="welcome-privacy">{t('Your information stays on this device.')} <button onClick={() => setPrivacy(true)}>{t('Your privacy')}</button></p><Button aria-label={t('Get Started')} disabled={saving} onClick={() => data.onboarded ? onDismiss() : setJoin(true)}>{t('Let’s go')}</Button><button className="welcome-skip" aria-label={t('Explore demo')} disabled={saving} onClick={explore}>{t('Skip for now')}</button>{saveError && <p className="error" role="alert">{saveError}</p>}</div>
+    {join && <Modal title={t('Make it personal.')} onClose={() => setJoin(false)} canClose={!saving}><p className="muted">{t('Join your coach’s preview with code')} <b>00000</b>.</p><form onSubmit={async e => {
       e.preventDefault(); const fields = new FormData(e.currentTarget);
-      if (fields.get('code') !== '00000') { setError('Use 00000 for this preview.'); return; }
-      if (!String(fields.get('name')).trim()) { setError('Please enter your name.'); return; }
+      if (fields.get('code') !== '00000') { setError(t('Use 00000 for this preview.')); return; }
+      if (!String(fields.get('name')).trim()) { setError(t('Please enter your name.')); return; }
       const c = newClient(fields.get('name').trim(), fields.get('email').trim());
       c.created = dayKey(); c.schedule = c.schedule.filter(s => s.date >= dayKey()); c.goal = fields.get('goal'); c.needsIntake = true;
       if (await save(d => { d.clients.push(c); d.activeClientId = c.id; d.onboarded = true; d.demo = false; })) { onDismiss(); onJoined(); }
-    }}><fieldset className="save-fields" disabled={saving}><Field label="Your name" name="name" autoComplete="name" required maxLength={70}/><Field label="Email" name="email" type="email" autoComplete="email" required/><Field label="Your focus"><select name="goal" defaultValue="Build strength"><option>Build strength</option><option>Improve fitness</option><option>Build a consistent routine</option><option>Improve body composition</option></select></Field><Field label="Coach code" name="code" inputMode="numeric" pattern="[0-9]{5}" maxLength={5} required placeholder="00000"/>{error && <p className="error" role="alert">{error}</p>}{saveError && <p className="error" role="alert">{saveError}</p>}<Button type="submit">{saving ? "Saving profile…" : "Join my coach"} <ArrowRight size={18}/></Button><p className="fine-print muted">Local preview. Your entries are saved on this device.</p></fieldset></form></Modal>}
-    {privacy && <Modal title="Your privacy" onClose={() => setPrivacy(false)}><p className="account-legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">Privacy policy</a> · <a href="/support.html" target="_blank" rel="noreferrer">Help & support</a></p><p>This preview saves your profile and training records in this browser on this device. It does not send your information to a coach or connect to a health account.</p><p>You can export your records from More. Starting a fresh test profile keeps existing profiles and their records.</p><Button onClick={() => setPrivacy(false)}>Got it</Button></Modal>}
+    }}><fieldset className="save-fields" disabled={saving}><Field label={t('Your name')} name="name" autoComplete="name" required maxLength={70}/><Field label={t('Email')} name="email" type="email" autoComplete="email" required/><Field label={t('Your focus')}><select name="goal" defaultValue="Build strength"><option value="Build strength">{t('Build strength')}</option><option value="Improve fitness">{t('Improve fitness')}</option><option value="Build a consistent routine">{t('Build a consistent routine')}</option><option value="Improve body composition">{t('Improve body composition')}</option></select></Field><Field label={t('Coach code')} name="code" inputMode="numeric" pattern="[0-9]{5}" maxLength={5} required placeholder="00000"/>{error && <p className="error" role="alert">{error}</p>}{saveError && <p className="error" role="alert">{saveError}</p>}<Button type="submit">{saving ? t('Saving profile…') : t('Join my coach')} <ArrowRight size={18}/></Button><p className="fine-print muted">{t('Local preview. Your entries are saved on this device.')}</p></fieldset></form></Modal>}
+    {privacy && <Modal title={t('Your privacy')} onClose={() => setPrivacy(false)}><p className="account-legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">{t('Privacy policy')}</a> · <a href="/support.html" target="_blank" rel="noreferrer">{t('Help & support')}</a></p><p>{t('This preview saves your profile and training records in this browser on this device. It does not send your information to a coach or connect to a health account.')}</p><p>{t('You can export your records from More. Starting a fresh test profile keeps existing profiles and their records.')}</p><Button onClick={() => setPrivacy(false)}>{t('Got it')}</Button></Modal>}
   </div>;
+}
+
+// The coach's More: the same settings a client finds under More, for the coach.
+function CoachMore({ onAccount }) {
+  const { data, update, navigate } = React.useContext(AppContext);
+  return (
+    <>
+      <Heading title={t('You')} />
+      <section className="card you-profile">
+        <Avatar name={data.coach.name} size="large" />
+        <h2>{t(data.coach.name)}</h2>
+        <p>{data.coach.brand}</p>
+        <Button secondary small onClick={() => navigate("business", "Brand")}>{t('Brand & business')}</Button>
+      </section>
+      <Appearance />
+      <div className="card list">
+        <label className="simple-row">
+          <Settings size={19} />
+          <span>
+            <b>{t('Reduce motion')}</b>
+            <small>{t('Keep transitions minimal')}</small>
+          </span>
+          <input type="checkbox" role="switch" checked={data.settings.reducedMotion} onChange={(e) => update((d) => (d.settings.reducedMotion = e.target.checked))} />
+        </label>
+        {connection() ? <button className="simple-row" onClick={onAccount}><Shield size={19} /><span><b>{t('Account')}</b><small>{t('Sign in details, privacy and sign out')}</small></span><ChevronRight size={16} /></button>
+          : <a className="simple-row" href="/?connected=1"><Shield size={19} /><span><b>{t('Account & connection')}</b><small>{t('Connect a private coaching workspace')}</small></span><ChevronRight size={16} /></a>}
+        <a className="simple-row" href="/privacy.html" target="_blank" rel="noreferrer"><FileText size={19} /><span><b>{t('Privacy policy')}</b><small>{t('Understand how your data is stored')}</small></span><ChevronRight size={16} /></a>
+        <a className="simple-row" href="/support.html" target="_blank" rel="noreferrer"><MessageCircle size={19} /><span><b>{t('Help & support')}</b><small>{t('Questions, problems and feedback')}</small></span><ChevronRight size={16} /></a>
+      </div>
+    </>
+  );
 }
 
 function You() {
@@ -515,29 +553,29 @@ function You() {
     });
   return (
     <>
-      <Heading title="You" />
+      <Heading title={t('You')} />
       <section className="card you-profile">
         <Avatar name={client.name} size="large" />
-        <h2>{client.name}</h2>
+        <h2>{t(client.name)}</h2>
         <p>{client.goal}</p>
         <Button secondary small onClick={() => setEdit(true)}>
-          Edit profile
+          {t('Edit profile')}
         </Button>
       </section>
       <ClientPayments />
-      <button className="more-coach-shortcut" onClick={() => navigate("coach", "Overview")}><MessageCircle size={20}/><span>Your coach<small>Messages, check-ins and membership</small></span><ChevronRight size={18}/></button>
+      <button className="more-coach-shortcut" onClick={() => navigate("coach", "Overview")}><MessageCircle size={20}/><span>{t('Your coach')}<small>{t('Messages, check-ins and membership')}</small></span><ChevronRight size={18}/></button>
 
-      <MotionDetails className="settings-disclosure"><summary>Coaching updates<ChevronRight size={18}/></summary><CoachingMemory clientId={client.id} compact/></MotionDetails>
+      <MotionDetails className="settings-disclosure"><summary>{t('Coaching updates')}<ChevronRight size={18}/></summary><CoachingMemory clientId={client.id} compact/></MotionDetails>
       {connection() && <AISharingPreference/>}
       <Appearance />
-      {!connection() && <MotionDetails className="settings-disclosure"><summary>Account & connection<ChevronRight size={18}/></summary><a className="simple-row" href="/?connected=1">Connect a private coaching workspace <ArrowRight size={18}/></a></MotionDetails>}
-      <MotionDetails className="settings-disclosure" open={openDevicesOnReturn() || undefined}><summary>Connected devices<small>Sleep, recovery and activity from your wearable</small><ChevronRight size={18}/></summary><ConnectedDevices /></MotionDetails>
+      {!connection() && <MotionDetails className="settings-disclosure"><summary>{t('Account & connection')}<ChevronRight size={18}/></summary><a className="simple-row" href="/?connected=1">{t('Connect a private coaching workspace')} <ArrowRight size={18}/></a></MotionDetails>}
+      <MotionDetails className="settings-disclosure" open={openDevicesOnReturn() || undefined}><summary>{t('Connected devices')}<small>{t('Sleep, recovery and activity from your wearable')}</small><ChevronRight size={18}/></summary><ConnectedDevices /></MotionDetails>
       <div className="card list">
         <button className="simple-row" onClick={() => setPrivacy(true)}>
           <Shield size={19} />
           <span>
-            <b>{connection()?'Privacy & your recordings':'Privacy & this preview'}</b>
-            <small>Understand how your data is stored</small>
+            <b>{connection()?t('Privacy & your recordings'):t('Privacy & this preview')}</b>
+            <small>{t('Understand how your data is stored')}</small>
           </span>
           <ChevronRight size={16} />
         </button>
@@ -574,16 +612,16 @@ function You() {
         >
           <Download size={19} />
           <span>
-            <b>Export my data</b>
-            <small>JSON records · media files are downloaded separately</small>
+            <b>{t('Export my data')}</b>
+            <small>{t('JSON records · media files are downloaded separately')}</small>
           </span>
           <ChevronRight size={16} />
         </button>
         <label className="simple-row">
           <Settings size={19} />
           <span>
-            <b>Reduce motion</b>
-            <small>Keep transitions minimal</small>
+            <b>{t('Reduce motion')}</b>
+            <small>{t('Keep transitions minimal')}</small>
           </span>
           <input
             type="checkbox"
@@ -596,29 +634,28 @@ function You() {
         </label>
       </div>
       {!connection() && <section className="card">
-        <h3>Test another perspective</h3>
+        <h3>{t('Test another perspective')}</h3>
         <p className="muted">
-          Preview a client, or use the role selector at the top to explore the
-          coach workspace. This switch is for testing only.
+          {t('Preview a client, or use the role selector at the top to explore the coach workspace. This switch is for testing only.')}
         </p>
-        <Field label="Client preview">
+        <Field label={t('Client preview')}>
           <select
             value={client.id}
             onChange={(e) => update((d) => (d.activeClientId = e.target.value))}
           >
             {data.clients.map((c) => (
               <option key={c.id} value={c.id}>
-                {c.name}
+                {t(c.name)}
               </option>
             ))}
           </select>
         </Field>
         <Button secondary onClick={() => setReset(true)}>
-          Start a fresh test profile
+          {t('Start a fresh test profile')}
         </Button>
       </section>}
       {edit && (
-        <Modal title="Your profile" onClose={() => setEdit(false)} canClose={!saving}>
+        <Modal title={t('Your profile')} onClose={() => setEdit(false)} canClose={!saving}>
           <form
             onSubmit={async (e) => {
               e.preventDefault();
@@ -647,16 +684,15 @@ function You() {
               />
             ))}
             {saveError && <p className="error" role="alert">{saveError}</p>}
-            <Button type="submit">{saving ? 'Saving profile…' : 'Save profile'}</Button>
+            <Button type="submit">{saving ? t('Saving profile…') : t('Save profile')}</Button>
             </fieldset>
           </form>
         </Modal>
       )}
       {reset && (
-        <Modal title="A clean start" onClose={() => setReset(false)}>
+        <Modal title={t('A clean start')} onClose={() => setReset(false)}>
           <p>
-            Create a new profile with no workout, food or progress history.
-            Existing profiles and their records will be kept.
+            {t('Create a new profile with no workout, food or progress history. Existing profiles and their records will be kept.')}
           </p>
           <Button
             onClick={() => {
@@ -664,34 +700,27 @@ function You() {
               setReset(false);
             }}
           >
-            Return to Get Started
+            {t('Return to Get Started')}
           </Button>
         </Modal>
       )}
       {privacy && (
         <Modal
-          title={connection() ? "Your private coaching data" : "Your data in this preview"}
+          title={connection() ? t('Your private coaching data') : t('Your data in this preview')}
           onClose={() => setPrivacy(false)}
         >
-          <p className="account-legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">Privacy policy</a> · <a href="/support.html" target="_blank" rel="noreferrer">Help & support</a></p>
-          {connection()?<><h3>Your private coaching workspace</h3><p>Your records are stored by this Avalen service. Your account and assigned coach can access your coaching records; private coach notes stay with the coach. Recordings are retained until their displayed expiry date and can be deleted from FormLab. Unpublished editor drafts can remain on this device.</p><p>AI and transcription receive evidence or recordings only when configured and you explicitly allow the request. In-app reminders are active; external notifications and wearables need configured services.</p></>:<><h3>Local, not cloud-connected</h3>
+          <p className="account-legal-links"><a href="/privacy.html" target="_blank" rel="noreferrer">{t('Privacy policy')}</a> · <a href="/support.html" target="_blank" rel="noreferrer">{t('Help & support')}</a></p>
+          {connection()?<><h3>{t('Your private coaching workspace')}</h3><p>{t('Your records are stored by this Avalen service. Your account and assigned coach can access your coaching records; private coach notes stay with the coach. Recordings are retained until their displayed expiry date and can be deleted from FormLab. Unpublished editor drafts can remain on this device.')}</p><p>{t('AI and transcription receive evidence or recordings only when configured and you explicitly allow the request. In-app reminders are active; external notifications and wearables need configured services.')}</p></>:<><h3>{t('Local, not cloud-connected')}</h3>
           <p>
-            Your records are saved in this browser. Uploaded photos, videos and
-            PDFs are stored on this device. Anyone with access to this browser
-            profile can access them.
+            {t('Your records are saved in this browser. Uploaded photos, videos and PDFs are stored on this device. Anyone with access to this browser profile can access them.')}
           </p>
-          <h3>Use test data only</h3>
+          <h3>{t('Use test data only')}</h3>
           <p>
-            The coach/client switch and code 00000 are demo tools, not
-            authentication. Don’t use this version for real private health
-            records.
+            {t('The coach/client switch and code 00000 are demo tools, not authentication. Don’t use this version for real private health records.')}
           </p>
-          <h3>What isn’t connected yet</h3>
+          <h3>{t('What isn’t connected yet')}</h3>
           <p>
-            Secure sign-in, cloud sync, real payments, push notifications,
-            wearable imports and AI food/report recognition require production
-            services. App-store submission also requires a native build and a
-            full security and privacy review.
+            {t('Secure sign-in, cloud sync, real payments, push notifications, wearable imports and AI food/report recognition require production services. App-store submission also requires a native build and a full security and privacy review.')}
           </p></>}
         </Modal>
       )}
@@ -711,17 +740,18 @@ class ErrorBoundary extends React.Component {
     return this.state.error ? (
       <div className="error-screen">
         <Mark large />
-        <h1>Let’s get you back on track.</h1>
+        <h1>{t('Let’s get you back on track.')}</h1>
         <p>
-          The screen couldn’t load. Your saved records haven’t been cleared.
+          {t('The screen couldn’t load. Your saved records haven’t been cleared.')}
         </p>
-        <Button onClick={() => location.reload()}>Reload app</Button>
+        <Button onClick={() => location.reload()}>{t('Reload app')}</Button>
       </div>
     ) : (
       this.props.children
     );
   }
 }
+startDomTranslation();
 createRoot(document.getElementById("root")).render(
   <ErrorBoundary>
     <AccountGate><App /></AccountGate>

@@ -3,6 +3,7 @@ import {useMotionReduced} from './motion.jsx';
 import {connection} from './ecosystem/connection.js';
 import {AudioPlayer} from './ecosystem/recording.jsx';
 import { Checkins } from "./checkins.jsx";
+import { t, locale } from './i18n.js';
 export { Checkins } from "./checkins.jsx";
 import { checkinSchedule } from "./checkin-model.js";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -54,7 +55,7 @@ export function CoachHome() {
   const latest = data.checkins.filter((c) => c.clientId === client.id).sort((a, b) => a.date.localeCompare(b.date)).at(-1);
   return (
     <>
-      <Heading title="Your coach" />
+      <Heading title={t('Your coach')} />
       <Tabs
         items={["Overview", "Feed", "Messages", "Check-in"]}
         value={tab}
@@ -65,20 +66,20 @@ export function CoachHome() {
           <section className="card coach-profile">
             <Avatar name={data.coach.name} size="large" />
             <div>
-              <span className="eyebrow">YOUR COACH</span>
-              <h2>{data.coach.name}</h2>
-              <p>{data.coach.brand} coaching</p>
+              <span className="eyebrow">{t('YOUR COACH')}</span>
+              <h2>{t(data.coach.name)}</h2>
+              <p>{t('{brand} coaching', { brand: data.coach.brand })}</p>
             </div>
             <Button small secondary onClick={() => setSubtab("Messages")}>
               <MessageCircle size={17} />
-              Message
+              {t('Message')}
             </Button>
           </section>
           <section className="card program-title">
-            <span className="eyebrow">YOUR MEMBERSHIP</span>
+            <span className="eyebrow">{t('YOUR MEMBERSHIP')}</span>
             <h2>{client.subscription.plan}</h2>
             <p>
-              {client.program.name} · {client.program.phase}
+              {t(client.program.name)} · {client.program.phase}
             </p>
             <div className="two-stats">
               <div>
@@ -86,28 +87,27 @@ export function CoachHome() {
                   {client.subscription.currency}{" "}
                   {client.subscription.amount.toLocaleString()}
                 </strong>
-                <small>per billing period</small>
+                <small>{t('per billing period')}</small>
               </div>
               <div>
                 <strong>{shortDate(client.subscription.nextDate)}</strong>
-                <small>Next payment · {client.subscription.status}</small>
+                <small>{t('Next payment · {status}', { status: client.subscription.status })}</small>
               </div>
             </div>
             <p className="fine-print muted">
-              Payment details are recorded by your coach. No automatic charge is
-              enabled.
+              {t('Payment details are recorded by your coach. No automatic charge is enabled.')}
             </p>
           </section>
           <section className="card">
-            <SectionHead title="Your check-in" />
+            <SectionHead title={t('Your check-in')} />
             <p>
               {latest?.response ||
-                "Take a moment to reflect. Your check-in helps your coach adapt the plan to your life."}
+                t('Take a moment to reflect. Your check-in helps your coach adapt the plan to your life.')}
             </p>
             <Button secondary onClick={() => setSubtab("Check-in")}>
               {latest?.date === dayKey()
-                ? "View today’s check-in"
-                : checkinDue.due ? "Complete your check-in" : `Next check-in · ${shortDate(checkinDue.dueDate)}`}
+                ? t('View today’s check-in')
+                : checkinDue.due ? t('Complete your check-in') : t('Next check-in · {shortDate}', { shortDate: shortDate(checkinDue.dueDate) })}
               <ArrowRight size={16} />
             </Button>
           </section>
@@ -144,15 +144,15 @@ export function Feed({ coach = false, limit }) {
   return (
     <>
       <SectionHead
-        title={coach ? "Member feed" : "From your coach"}
+        title={coach ? t('Member feed') : t('From your coach')}
         action={
           coach ? (
             <button className="text-link" onClick={() => setCompose(true)}>
               <Plus size={16} />
-              New post
+              {t('New post')}
             </button>
           ) : (
-            <span className="pill">Members only</span>
+            <span className="pill">{t('Members only')}</span>
           )
         }
       />
@@ -161,13 +161,13 @@ export function Feed({ coach = false, limit }) {
           <div className="feed-author">
             <Avatar name={data.coach.name} />
             <span>
-              <b>{data.coach.name}</b>
+              <b>{t(data.coach.name)}</b>
               <small>
-                {new Date(p.at).toLocaleDateString("en", {
+                {new Date(p.at).toLocaleDateString(locale(), {
                   month: "short",
                   day: "numeric",
                 })}{" "}
-                · Members only
+                {t('· Members only')}
               </small>
             </span>
           </div>
@@ -175,14 +175,14 @@ export function Feed({ coach = false, limit }) {
             {p.file ? (
               <Media fileId={p.file.id} type={p.file.type} alt={p.title} />
             ) : (
-              <img src={IMAGES[p.image]} alt="Training environment" loading="lazy" decoding="async" />
+              <img src={IMAGES[p.image]} alt={t('Training environment')} loading="lazy" decoding="async" />
             )}
           </div>
-          <h2>{p.title}</h2>
+          <h2>{t(p.title)}</h2>
           <p className="preserve-lines">{p.text}</p>
           <div className="feed-actions">
             <button
-              aria-label="Like post"
+              aria-label={t('Like post')}
               aria-pressed={p.likes.includes(actorId)}
               onClick={() => toggle(p.id, "likes")}
             >
@@ -193,7 +193,7 @@ export function Feed({ coach = false, limit }) {
               {p.likes.length}
             </button>
             <button
-              aria-label="Save post"
+              aria-label={t('Save post')}
               aria-pressed={p.saved.includes(actorId)}
               onClick={() => toggle(p.id, "saved")}
             >
@@ -201,20 +201,20 @@ export function Feed({ coach = false, limit }) {
                 size={18}
                 fill={p.saved.includes(actorId) ? "currentColor" : "none"}
               />
-              {p.saved.includes(actorId) ? "Saved" : "Save"}
+              {p.saved.includes(actorId) ? t('Saved') : t('Save')}
             </button>
           </div>
         </article>
       ))}
       {!posts.length && (
         <Empty
-          title="A little inspiration, soon"
-          detail="Your coach’s member posts will appear here."
+          title={t('A little inspiration, soon')}
+          detail={t('Your coach’s member posts will appear here.')}
         />
       )}
       {compose && (
         <Modal
-          title="Share with your members"
+          title={t('Share with your members')}
           canClose={!busy && !publishing}
           onClose={() => { if (!uploadLock.current) setCompose(false); }}
         >
@@ -223,7 +223,7 @@ export function Feed({ coach = false, limit }) {
               e.preventDefault();
               if (uploadLock.current) return;
               if (!form.title.trim() || !form.text.trim()) {
-                setError("Add a title and a message before publishing.");
+                setError(t('Add a title and a message before publishing.'));
                 return;
               }
               uploadLock.current = true; setPublishing(true); setError('');
@@ -246,13 +246,13 @@ export function Feed({ coach = false, limit }) {
             }}
           >
             <Field
-              label="Title"
+              label={t('Title')}
               required
               maxLength={100}
               value={form.title}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
             />
-            <Field label="Post">
+            <Field label={t('Post')}>
               <textarea
                 required
                 maxLength={4000}
@@ -260,7 +260,7 @@ export function Feed({ coach = false, limit }) {
                 onChange={(e) => setForm({ ...form, text: e.target.value })}
               />
             </Field>
-            <Field label="Cover">
+            <Field label={t('Cover')}>
               <select
                 disabled={busy}
                 value={form.image}
@@ -286,7 +286,7 @@ export function Feed({ coach = false, limit }) {
               </select>
             </Field>
             <label className="upload-zone">
-              Upload a photo or video
+              {t('Upload a photo or video')}
               <input
                 type="file"
                 disabled={busy}
@@ -314,11 +314,11 @@ export function Feed({ coach = false, limit }) {
                 }}
               />
             </label>
-            {form.file && <p>{form.file.name}</p>}
-            {busy && <p role="status">Saving attachment…</p>}
+            {form.file && <p>{t(form.file.name)}</p>}
+            {busy && <p role="status">{t('Saving attachment…')}</p>}
             {error && <p className="error" role="alert">{error}</p>}
             <Button type="submit" disabled={busy || publishing}>
-              {publishing ? "Publishing…" : busy ? "Saving attachment…" : "Publish to members"} <Send size={16} />
+              {publishing ? t('Publishing…') : busy ? t('Saving attachment…') : t('Publish to members')} <Send size={16} />
             </Button>
           </form>
         </Modal>
@@ -371,38 +371,38 @@ export function Messages({clientId, coach = false}) {
       const result = await update(workspace => workspace.messages.push(message));
       if (result?.error) throw new Error(result.error);
       draft.clear(); setMessageContext(null); latest(); composer.current?.focus();
-    } catch (issue) {setError(issue.message || 'Your message was not sent. Your draft is still here.');}
+    } catch (issue) {setError(issue.message || t('Your message was not sent. Your draft is still here.'));}
     finally {sendLock.current = false; setSending(false);}
   }
-  return <section className="card messages refined-messages" aria-label={`Conversation with ${person}`}>
-    <div className="conversation-heading"><Avatar name={person || 'Coach'}/><span><h2>{person}</h2><small>{coach ? 'Client conversation' : 'Your coach'}</small></span><span className="conversation-privacy">Private</span></div>
-    <div ref={thread} className="message-thread" role="log" aria-label="Conversation history" aria-relevant="additions" onScroll={() => {const element = thread.current; nearBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 60; if (nearBottom.current) setNewMessages(false);}} onLoadCapture={() => {if (nearBottom.current) latest(true);}}>
+  return <section className="card messages refined-messages" aria-label={t('Conversation with {person}', { person })}>
+    <div className="conversation-heading"><Avatar name={person || 'Coach'}/><span><h2>{person}</h2><small>{coach ? t('Client conversation') : t('Your coach')}</small></span><span className="conversation-privacy">{t('Private')}</span></div>
+    <div ref={thread} className="message-thread" role="log" aria-label={t('Conversation history')} aria-relevant="additions" onScroll={() => {const element = thread.current; nearBottom.current = element.scrollHeight - element.scrollTop - element.clientHeight < 60; if (nearBottom.current) setNewMessages(false);}} onLoadCapture={() => {if (nearBottom.current) latest(true);}}>
       {messages.map((message, index) => <React.Fragment key={message.id}>
-        {(!index || dayKey(new Date(messages[index - 1].at)) !== dayKey(new Date(message.at))) && <div className="message-date"><span>{dayKey(new Date(message.at)) === dayKey() ? 'Today' : new Date(message.at).toLocaleDateString('en', {month:'short', day:'numeric'})}</span></div>}
+        {(!index || dayKey(new Date(messages[index - 1].at)) !== dayKey(new Date(message.at))) && <div className="message-date"><span>{dayKey(new Date(message.at)) === dayKey() ? t('Today') : new Date(message.at).toLocaleDateString(locale(), {month:'short', day:'numeric'})}</span></div>}
         <div className={`message ${message.from === ownRole ? 'mine' : ''}`}>
           {message.context && <blockquote>{message.context}</blockquote>}
           {message.text && <p>{message.text}</p>}<AudioPlayer file={message.audio}/>
           {message.file && <Media fileId={message.file.id} type={message.file.type} alt={message.file.name}/>}
-          <small><time dateTime={message.at}>{new Date(message.at).toLocaleTimeString('en', {hour:'numeric', minute:'2-digit'})}</time>{message.from === ownRole && (message.read ? <CheckCheck size={12} aria-label="Read"/> : <Check size={12} aria-label="Saved"/>)}</small>
+          <small><time dateTime={message.at}>{new Date(message.at).toLocaleTimeString(locale(), {hour:'numeric', minute:'2-digit'})}</time>{message.from === ownRole && (message.read ? <CheckCheck size={12} aria-label={t('Read')}/> : <Check size={12} aria-label={t('Saved')}/>)}</small>
         </div>
       </React.Fragment>)}
-      {!messages.length && <Empty icon={MessageCircle} title="Start the conversation" detail="Questions, small wins, or a technique check—send it here."/>}
+      {!messages.length && <Empty icon={MessageCircle} title={t('Start the conversation')} detail={t('Questions, small wins, or a technique check—send it here.')}/>}
     </div>
-    {newMessages && <button className="message-jump" onClick={() => latest()}><ArrowDown size={15}/>Jump to latest</button>}
-    {coach && <details className="saved-replies"><summary>Saved replies<ChevronRight size={14}/></summary><Field label="Quick reply"><select defaultValue="" onChange={event => {setText(event.target.value); event.target.value = ''; composer.current?.focus();}}><option value="" disabled>Choose a saved reply</option>{data.savedReplies.map(reply => <option key={reply}>{reply}</option>)}</select></Field></details>}
-    {messageContext?.title && (!messageContext.clientId || messageContext.clientId === clientId) && <Notice>About: {messageContext.title} <button className="text-link" onClick={() => setMessageContext(null)}>Remove</button></Notice>}
-    {file && <div className="message-attachment"><Paperclip size={16}/><span>{file.name}</span><IconButton label="Remove attachment" disabled={sending} onClick={() => setFile(null)}><X size={17}/></IconButton></div>}
+    {newMessages && <button className="message-jump" onClick={() => latest()}><ArrowDown size={15}/>{t('Jump to latest')}</button>}
+    {coach && <details className="saved-replies"><summary>{t('Saved replies')}<ChevronRight size={14}/></summary><Field label={t('Quick reply')}><select defaultValue="" onChange={event => {setText(event.target.value); event.target.value = ''; composer.current?.focus();}}><option value="" disabled>{t('Choose a saved reply')}</option>{data.savedReplies.map(reply => <option key={reply}>{reply}</option>)}</select></Field></details>}
+    {messageContext?.title && (!messageContext.clientId || messageContext.clientId === clientId) && <Notice>{t('About:')} {t(messageContext.title)} <button className="text-link" onClick={() => setMessageContext(null)}>{t('Remove')}</button></Notice>}
+    {file && <div className="message-attachment"><Paperclip size={16}/><span>{t(file.name)}</span><IconButton label={t('Remove attachment')} disabled={sending} onClick={() => setFile(null)}><X size={17}/></IconButton></div>}
     <form className="message-compose" onSubmit={send} aria-busy={sending}>
-      <label className="icon-btn upload-inline" aria-label="Attach photo, video or audio"><Paperclip size={19}/><input type="file" disabled={uploading || sending} accept="image/*,video/*,audio/*" onChange={async event => {
+      <label className="icon-btn upload-inline" aria-label={t('Attach photo, video or audio')}><Paperclip size={19}/><input type="file" disabled={uploading || sending} accept="image/*,video/*,audio/*" onChange={async event => {
         const input = event.currentTarget, selected = input.files?.[0]; if (!selected || uploadLock.current) return;
         uploadLock.current = true; setUploading(true); setError('');
         try {setFile(await saveFile(selected, {types:['image/', 'video/', 'audio/'], maxMB:30, clientId}));}
         catch (issue) {setError(issue.message);} finally {uploadLock.current = false; setUploading(false); input.value = '';}
       }}/></label>
-      <textarea ref={composer} aria-label="Message" rows={1} value={text} maxLength={4000} disabled={sending} placeholder="Write a message…" onChange={event => setText(event.target.value)} onKeyDown={event => {if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) send(event);}}/>
-      <IconButton label={sending ? 'Sending message' : 'Send message'} type="submit" disabled={uploading || sending || (!text.trim() && !file)}><Send size={19}/></IconButton>
+      <textarea ref={composer} aria-label={t('Message')} rows={1} value={text} maxLength={4000} disabled={sending} placeholder={t('Write a message…')} onChange={event => setText(event.target.value)} onKeyDown={event => {if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) send(event);}}/>
+      <IconButton label={sending ? t('Sending message') : t('Send message')} type="submit" disabled={uploading || sending || (!text.trim() && !file)}><Send size={19}/></IconButton>
     </form>
-    <div className="message-status" role="status">{uploading ? 'Saving attachment…' : sending ? 'Saving message…' : text || file ? 'Draft saved on this device' : connection() ? 'Saved to your private coaching account' : 'Device preview · messages stay on this device'}</div>
+    <div className="message-status" role="status">{uploading ? t('Saving attachment…') : sending ? t('Saving message…') : text || file ? t('Draft saved on this device') : connection() ? t('Saved to your private coaching account') : t('Device preview · messages stay on this device')}</div>
     {(error || draft.error) && <p className="error" role="alert">{error || draft.error}</p>}
   </section>;
 }

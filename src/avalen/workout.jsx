@@ -22,6 +22,7 @@ import {
   Tabs,
 } from "./ui.jsx";
 
+import { t } from './i18n.js';
 export function makeDraft(data, client, day, date) {
   return {
     id: uid(),
@@ -60,7 +61,7 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
     ? [
         [m.sessions.length, "WORKOUTS"],
         [`${m.training ?? 0}%`, "CONSISTENCY"],
-        [m.change === null ? "—" : `${m.change} kg`, "WEIGHT CHANGE"],
+        [m.change === null ? "—" : `${m.change} ${t('kg')}`, t('WEIGHT CHANGE')],
       ]
     : [
         [Math.round(session.duration / 60) || 1, "MINUTES"],
@@ -156,7 +157,7 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
     ctx.fillText("The work speaks for itself.", 80, 1805);
     return await new Promise((resolve, reject) =>
       canvas.toBlob(
-        (b) => (b ? resolve(b) : reject(new Error("Could not create image."))),
+        (b) => (b ? resolve(b) : reject(new Error(t('Could not create image.')))),
         "image/png",
       ),
     );
@@ -176,11 +177,11 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
         });
       else {
         download(blob, "avalen-progress.png");
-        setMessage("Image download started. Add it to your Instagram story or post.");
+        setMessage(t('Image download started. Add it to your Instagram story or post.'));
       }
     } catch (e) {
       if (e.name !== "AbortError")
-        setError("Could not export your image. Please try again.");
+        setError(t('Could not export your image. Please try again.'));
     } finally {
       operationLock.current = false;
       setBusy(false);
@@ -188,11 +189,11 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
   }
   return (
     <Modal
-      title={story ? "Your progress story" : "You showed up."}
+      title={story ? t('Your progress story') : t('You showed up.')}
       className="share-modal"
       onClose={onClose}
     >
-      {!celebrate && <p className="muted">A little proof of the work. Made to share.</p>}
+      {!celebrate && <p className="muted">{t('A little proof of the work. Made to share.')}</p>}
       {story && (
         <Tabs
           items={[
@@ -204,7 +205,7 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
           onChange={setWeeks}
         />
       )}
-      {celebrate && !story && <div className="workout-earned" role="status"><span className="earned-mark"><Check size={26}/></span><div><span className="eyebrow">SESSION SAVED</span><h2>You put in the work.</h2><p>{session.prs?.length ? `${session.prs.length} personal record${session.prs.length === 1 ? '' : 's'} · ${session.prs.join(', ')}` : `${sets.filter(s => !s.skipped).length} working sets. One step forward.`}</p></div></div>}
+      {celebrate && !story && <div className="workout-earned" role="status"><span className="earned-mark"><Check size={26}/></span><div><span className="eyebrow">{t('SESSION SAVED')}</span><h2>{t('You put in the work.')}</h2><p>{session.prs?.length ? t('{count} personal records · {list}', { count: session.prs.length, list: session.prs.map((name) => t(name)).join(t(', ')) }) : t('{length} working sets. One step forward.', { length: sets.filter(s => !s.skipped).length })}</p></div></div>}
       <div
         className={`share-poster ${celebrate ? 'earned-poster' : ''}`}
         style={{
@@ -217,7 +218,7 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
         </div>
         <div className="share-result">
           <span className="eyebrow">
-            {story ? `YOUR LAST ${weeks} WEEKS` : "WORKOUT COMPLETE"}
+            {story ? t('YOUR LAST {weeks} WEEKS', { weeks }) : t('WORKOUT COMPLETE')}
           </span>
           <h2>{title}</h2>
           <i />
@@ -229,15 +230,15 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
               </span>
             ))}
           </div>
-          <p>The work speaks for itself.</p>
+          <p>{t('The work speaks for itself.')}</p>
         </div>
       </div>
-      <SectionLabel>Make it yours</SectionLabel>
+      <SectionLabel>{t('Make it yours')}</SectionLabel>
       <div className="background-picker">
         {IMAGES.map((url, i) => (
           <button
             key={url}
-            aria-label={`${BACKGROUNDS[i]} background`}
+            aria-label={t('{value} background', { value: BACKGROUNDS[i] })}
             aria-pressed={!custom && background === i}
             disabled={busy || uploading}
             style={{ backgroundImage: `url(${url})` }}
@@ -253,7 +254,7 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
         ))}
       </div>
       <label className="upload-inline">
-        Use your own photo
+        {t('Use your own photo')}
         <input
           type="file"
           accept="image/*"
@@ -279,14 +280,14 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
           }}
         />
       </label>
-      {(uploading || (custom && customUrl === '')) && <Notice>Preparing your photo…</Notice>}
-      {custom && customUrl === null && <p className="error" role="alert">This photo is unavailable. Choose a background or upload it again.</p>}
+      {(uploading || (custom && customUrl === '')) && <Notice>{t('Preparing your photo…')}</Notice>}
+      {custom && customUrl === null && <p className="error" role="alert">{t('This photo is unavailable. Choose a background or upload it again.')}</p>}
       <div className="button-row share-actions">
         <Button
           disabled={busy || uploading || !bg || (data.coach.logo && logoUrl === "")}
           onClick={() => exportImage(true)}
         >
-          {busy ? "Preparing image…" : "Share result"}
+          {busy ? t('Preparing image…') : t('Share result')}
           <Share2 size={16} />
         </Button>
         <Button
@@ -294,7 +295,7 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
           disabled={busy || uploading || !bg || (data.coach.logo && logoUrl === "")}
           onClick={() => exportImage(false)}
         >
-          Save image
+          {t('Save image')}
         </Button>
       </div>
       <button
@@ -302,13 +303,13 @@ export function ShareWorkout({ session, onClose, celebrate = false }) {
         onClick={async () => {
           try {
             await navigator.clipboard.writeText(caption);
-            setMessage("Caption copied.");
+            setMessage(t('Caption copied.'));
           } catch {
             setMessage(caption);
           }
         }}
       >
-        Copy caption
+        {t('Copy caption')}
       </button>
       {message && <Notice>{message}</Notice>}
       {error && (

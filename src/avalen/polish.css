@@ -15,9 +15,9 @@
 .exercise-sheet-actions { display: grid; gap: 10px; margin-top: 16px; }
 .exercise-sheet-actions > button { width: 100%; margin: 0; }
 
-/* Milestones read left to right: mark, name, status. */
+/* Milestones read left to inset-inline-end: mark, name, status. */
 .simple-row.milestone-row { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 12px; }
-.simple-row.milestone-row > b { margin-left: 0; font-size: 14px; font-weight: 500; text-align: left; white-space: normal; }
+.simple-row.milestone-row > b { margin-inline-start: 0; font-size: 14px; font-weight: 500; text-align: start; white-space: normal; }
 .milestone-row > span:last-child { font-size: 12px; white-space: nowrap; }
 .milestone-row > span:first-child { display: grid; place-items: center; }
 

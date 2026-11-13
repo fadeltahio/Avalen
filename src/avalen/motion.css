@@ -79,7 +79,7 @@ input[type="radio"] {
   position: absolute;
   height: 2px;
   bottom: 0;
-  left: 0;
+  inset-inline-start: 0;
   background: var(--text);
   transform-origin: left center;
   pointer-events: none;
@@ -98,7 +98,7 @@ input[type="radio"] {
 .motion-nav-indicator {
   position: absolute;
   top: 0;
-  left: 0;
+  inset-inline-start: 0;
   height: 2px;
   background: var(--text);
   transform-origin: left center;
@@ -651,8 +651,8 @@ input[type="radio"] {
   transition: transform var(--motion-screen) var(--ease-precise);
 }
 .memory-timeline {
-  padding-left: 12px;
-  border-left: 1px solid var(--line);
+  padding-inline-start: 12px;
+  border-inline-start: 1px solid var(--line);
 }
 .memory-entry {
   position: relative;
@@ -661,7 +661,7 @@ input[type="radio"] {
   content: "";
   position: absolute;
   top: 24px;
-  left: -17px;
+  inset-inline-start: -17px;
   width: 7px;
   height: 7px;
   border-radius: 50%;

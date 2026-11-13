@@ -57,7 +57,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible { outline:2px solid v
 .coach-meal-editor[open] > summary svg { transform:rotate(90deg); }
 .coach-meal-fields { padding:20px 18px 8px; }
 /* Profile is a useful identity block, not another full hero. */
-.you-profile { display:grid; grid-template-columns:48px minmax(0,1fr) auto; column-gap:14px; align-items:center; padding:20px; text-align:left; }
+.you-profile { display:grid; grid-template-columns:48px minmax(0,1fr) auto; column-gap:14px; align-items:center; padding:20px; text-align:start; }
 .you-profile > .avatar { width:48px; height:48px; font-size:15px; grid-column:1; grid-row:1 / 3; margin:0; }
 .you-profile > h2 { grid-column:2; grid-row:1; margin:0; font-size:20px; line-height:1.3; }
 .you-profile > p { grid-column:2; grid-row:2; margin:6px 0 0; font-size:12px; line-height:1.5; }
@@ -65,7 +65,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible { outline:2px solid v
 .settings-disclosure { margin:0 0 18px; border-block:1px solid var(--line); }
 .settings-disclosure > summary { position:relative; display:flex; align-items:center; flex-wrap:wrap; gap:6px 12px; min-height:64px; padding:14px 28px 14px 0; font-size:14px; cursor:pointer; }
 .settings-disclosure > summary small { flex-basis:100%; font-size:12px; color:var(--muted); }
-.settings-disclosure > summary > svg { position:absolute; right:0; top:22px; }
+.settings-disclosure > summary > svg { position:absolute; inset-inline-end:0; top:22px; }
 .settings-disclosure[open] > summary > svg { transform:rotate(90deg); }
 .settings-disclosure .card { margin:12px 0 18px; }
 .settings-disclosure .empty { padding:20px 10px; min-height:0; }
@@ -73,8 +73,8 @@ button:focus-visible,summary:focus-visible,a:focus-visible { outline:2px solid v
 .appearance-settings > p,.appearance-settings > small { font-size:12px; line-height:1.6; }
 /* Real-data shortcuts; missing body readings never become zero or disappear. */
 .progress-snapshot { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); border-block:1px solid var(--line); margin-bottom:24px; }
-.progress-snapshot > button { display:flex; flex-direction:column; align-items:flex-start; text-align:left; gap:9px; padding:18px 12px 18px 0; min-width:0; }
-.progress-snapshot > button + button { border-left:1px solid var(--line); padding-left:20px; }
+.progress-snapshot > button { display:flex; flex-direction:column; align-items:flex-start; text-align:start; gap:9px; padding:18px 12px 18px 0; min-width:0; }
+.progress-snapshot > button + button { border-inline-start:1px solid var(--line); padding-inline-start:20px; }
 .progress-snapshot small { color:var(--muted); font-size:12px; }
 .progress-snapshot b { font-size:28px; font-weight:550; font-variant-numeric:tabular-nums; }
 .progress-snapshot em { font-size:12px; font-style:normal; color:var(--muted); font-weight:400; }
@@ -164,10 +164,10 @@ button:focus-visible,summary:focus-visible,a:focus-visible { outline:2px solid v
 .feature-loading { min-height:112px; padding:20px; border:1px solid var(--line); }
 .feature-loading > span { display:block; height:20px; width:45%; margin-bottom:16px; }
 .feature-loading > p { color:var(--muted); font-size:13px; }
-.training-exercise-list .exercise-row { display:grid; grid-template-columns:58px minmax(0,1fr) 18px; gap:14px; padding:16px 0; text-align:left; }
+.training-exercise-list .exercise-row { display:grid; grid-template-columns:58px minmax(0,1fr) 18px; gap:14px; padding:16px 0; text-align:start; }
 .training-exercise-list .exercise-photo-number { position:relative; display:block; width:58px; height:70px; }
 .training-exercise-list .exercise-photo-number .exercise-thumb { width:58px; height:70px; object-fit:cover; display:block; border-radius:2px; filter:grayscale(.35); }
-.training-exercise-list .exercise-photo-number > i { position:absolute; left:4px; bottom:4px; padding:2px 4px; font-size:10px; font-style:normal; background:#000b; color:#fff; }
+.training-exercise-list .exercise-photo-number > i { position:absolute; inset-inline-start:4px; bottom:4px; padding:2px 4px; font-size:10px; font-style:normal; background:#000b; color:#fff; }
 .training-exercise-list .exercise-row-copy { display:block; min-width:0; }
 .training-exercise-list .exercise-row-copy > .exercise-group { display:block; font-size:11px; color:var(--muted); margin-bottom:5px; }
 .training-exercise-list .exercise-row-copy > b { display:block; font-size:15px; font-weight:600; line-height:1.4; margin-bottom:7px; }
@@ -175,7 +175,7 @@ button:focus-visible,summary:focus-visible,a:focus-visible { outline:2px solid v
 .training-exercise-list .exercise-prescription strong { font-weight:400; color:var(--text); }
 .training-exercise-list .exercise-prescription > span { display:flex; gap:4px; align-items:center; }
 .training-exercise-list .exercise-row > svg:last-child { color:var(--muted); }
-.checkin-progress-dot { display:block; flex:0 0 12px; width:12px; height:12px; border:1px solid var(--muted); border-radius:50%; margin-right:3px; }
+.checkin-progress-dot { display:block; flex:0 0 12px; width:12px; height:12px; border:1px solid var(--muted); border-radius:50%; margin-inline-end:3px; }
 .page-progress .photo-add { height:110px; }
 
 /* Flow continuity: a clear position, one next action, and finite confirmation. */

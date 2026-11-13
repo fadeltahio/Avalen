@@ -62,13 +62,13 @@ test('photo upload reviews coach food and portion before updating calories and r
  await page.getByRole('button',{name:'Review meal',exact:true}).click();
  await page.getByLabel('Match your meal',{exact:true}).selectOption('plan:1');
  await page.getByRole('button',{name:/1\.5×/}).click();
- await expect(page.getByLabel('Calories (kcal)',{exact:true})).toHaveValue('1125');
+ await expect(page.getByLabel('Calories (kcal)',{exact:true})).toHaveValue('1083');
  await page.getByRole('button',{name:'Log meal',exact:true}).click();
  const after=await state(page);const log=after.foods.at(-1);
  expect(after.foods).toHaveLength(initialCount+1);
- expect(log).toMatchObject({source:'photo-coach-plan',kcal:1125,confirmed:true,meal:'Lunch'});expect(log.photo.id).toBeTruthy();
- await expect(ringValue(page)).toContainText((before.totalCalories+1125).toLocaleString());
- await page.reload();await expect(ringValue(page)).toContainText((before.totalCalories+1125).toLocaleString());
+ expect(log).toMatchObject({source:'photo-coach-plan',kcal:1083,confirmed:true,meal:'Lunch'});expect(log.photo.id).toBeTruthy();
+ await expect(ringValue(page)).toContainText((before.totalCalories+1083).toLocaleString());
+ await page.reload();await expect(ringValue(page)).toContainText((before.totalCalories+1083).toLocaleString());
  await nav(page,'Nutrition').click();
  const proteinRing=page.locator('.ring-item.macro-protein');const protein=Number((await proteinRing.getAttribute('aria-label')).match(/Protein: ([\d.]+)/)[1]);await expect(proteinRing.locator('.ring b')).toHaveText(`${protein.toLocaleString()}g`);
  await page.getByRole('button').filter({hasText:'Chicken, rice & vegetables'}).click();

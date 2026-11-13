@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Check,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   ClipboardCheck,
   Dumbbell,
@@ -85,6 +86,9 @@ import {
   Tabs,
 } from "./ui.jsx";
 
+import { language, t } from './i18n.js';
+import { groupLabel } from './exercise-catalogue.js';
+import { portionLabel } from './portions.js';
 export function Today() {
   const { data, client, navigate, openWorkout, openShare, ask } = useApp();
   const [date, setDate] = useState(dayKey());
@@ -108,57 +112,57 @@ export function Today() {
     <>
       <div className="today-intro">
         <div>
-          <span className="eyebrow"><Dumbbell size={12}/>{data.coach.brand} · YOUR TRAINING</span>
+          <span className="eyebrow"><Dumbbell size={12}/>{data.coach.brand} {t('· YOUR TRAINING')}</span>
           <h1>{greeting},<br/><em>{client.name.split(' ')[0]}.</em></h1>
-          <p>{client.program.name} <span> / </span> {client.program.phase}</p>
+          <p>{t(client.program.name)} <span> / </span> {client.program.phase}</p>
         </div>
       </div>
       <div className="today-layout">
         <div className="today-main">
-          <div className="section-head home-section-head"><h2>Training plan</h2><button className="text-link" onClick={() => navigate('plan', 'Training')}>View plan <ChevronRight size={14}/></button></div>
-          <div className="training-week-summary" aria-label="Training this week"><span>THIS WEEK</span><b>{weekSessions.length}{plannedSessions > 0 && <small> / {plannedSessions}</small>} <small>sessions</small></b><div className="week-track" aria-hidden="true">{Array.from({length: Math.max(plannedSessions, weekSessions.length)}, (_, i) => <i key={i} className={i < weekSessions.length ? 'complete' : ''}/>)}</div></div>
+          <div className="section-head home-section-head"><h2>{t('Training plan')}</h2><button className="text-link" onClick={() => navigate('plan', 'Training')}>{t('View plan')} <ChevronRight size={14}/></button></div>
+          <div className="training-week-summary" aria-label={t('Training this week')}><span>{t('THIS WEEK')}</span><b>{weekSessions.length}{plannedSessions > 0 && <small> / {plannedSessions}</small>} <small>{t('sessions')}</small></b><div className="week-track" aria-hidden="true">{Array.from({length: Math.max(plannedSessions, weekSessions.length)}, (_, i) => <i key={i} className={i < weekSessions.length ? 'complete' : ''}/>)}</div></div>
           <Calendar selected={date} onChange={setDate} client={client} sessions={data.sessions}/>
           {isToday && data.drafts[client.id] ? <ResumeWorkout /> : (
             <section id="training-session" className={`workout-hero card ${completed ? 'done' : ''}`} style={{backgroundImage: `url(${coverUrl || (day ? trainingPortrait : recoveryCover)})`}}>
               <div className="session-photo" aria-hidden="true"><img src={coverUrl || (day ? trainingPortrait : recoveryCover)} alt=""/></div>
-              <div className="workout-card-top"><span>{isToday ? 'TODAY’S SESSION' : shortDate(date)}</span><span className="workout-tag">{completed ? <><Check size={12}/>Completed</> : day ? <><Dumbbell size={12}/>Workout</> : 'Recovery'}</span></div>
-              <h2>{day?.name || 'Space to recover.'}</h2>
-              {muscles.length > 0 && <div className="muscle-tags" aria-label="Muscle groups">{muscles.map(group => <span key={group}>{group}</span>)}</div>}
-              <div className="session-details">{day ? <><span><Clock3 size={13}/>{completed ? Math.round(completed.duration / 60) : day.minutes} min</span><span><Dumbbell size={13}/>{day.exercises.length} exercises</span><span>{completed ? `${completed.sets.filter(x => !x.skipped).length} sets logged` : `${sum(day.exercises, e => Number(e.sets))} working sets`}</span></> : <span>Rest well. Come back stronger.</span>}</div>
-              {completed ? <Button onClick={() => openShare(completed)}>Workout complete <Share2 size={16}/></Button> : day ? (
-                <Button disabled={future || date < dayKey()} onClick={() => openWorkout(day, date)}>{future ? <><Lock size={15}/>Scheduled for {shortDate(date)}</> : date < dayKey() ? 'Not logged' : 'Start Workout'}{!future && <ArrowRight size={17}/>}</Button>
-              ) : <Button onClick={() => navigate('plan','Habits')}>View recovery habits <ArrowRight size={16}/></Button>}
+              <div className="workout-card-top"><span>{isToday ? t('TODAY’S SESSION') : shortDate(date)}</span><span className="workout-tag">{completed ? <><Check size={12}/>{t('Completed')}</> : day ? <><Dumbbell size={12}/>{t('Workout')}</> : t('Recovery')}</span></div>
+              <h2>{day?.name || t('Space to recover.')}</h2>
+              {muscles.length > 0 && <div className="muscle-tags" aria-label={t('Muscle groups')}>{muscles.map(group => <span key={group}>{groupLabel(group)}</span>)}</div>}
+              <div className="session-details">{day ? <><span><Clock3 size={13}/>{completed ? Math.round(completed.duration / 60) : day.minutes} {t('min')}</span><span><Dumbbell size={13}/>{day.exercises.length} {t('exercises')}</span><span>{completed ? t('{length} sets logged', { length: completed.sets.filter(x => !x.skipped).length }) : t('{sum} working sets', { sum: sum(day.exercises, e => Number(e.sets)) })}</span></> : <span>{t('Rest well. Come back stronger.')}</span>}</div>
+              {completed ? <Button onClick={() => openShare(completed)}>{t('Workout complete')} <Share2 size={16}/></Button> : day ? (
+                <Button disabled={future || date < dayKey()} onClick={() => openWorkout(day, date)}>{future ? <><Lock size={15}/>{t('Scheduled for')} {shortDate(date)}</> : date < dayKey() ? t('Not logged') : t('Start Workout')}{!future && <ArrowRight size={17}/>}</Button>
+              ) : <Button onClick={() => navigate('plan','Habits')}>{t('View recovery habits')} <ArrowRight size={16}/></Button>}
             </section>
           )}
-          <section className="next-training" aria-label="Upcoming training">
-            <SectionHead title="Your next sessions" action={<button className="text-link" onClick={() => navigate('plan', 'Training')}>Explore all <ChevronRight size={14}/></button>}/>
+          <section className="next-training" aria-label={t('Upcoming training')}>
+            <SectionHead title={t('Your next sessions')} action={<button className="text-link" onClick={() => navigate('plan', 'Training')}>{t('Explore all')} <ChevronRight size={14}/></button>}/>
             <div className="session-carousel">{client.program.days.filter(d => d.id !== day?.id).slice(0,2).map((d, i) => {
               const next = client.schedule.find(s => s.dayId === d.id && s.date >= dayKey());
               return <SessionPreview key={d.id} number={i + 1} day={d} next={next} onSelect={() => { if (!next) return; setDate(next.date); window.scrollTo({top:0,behavior:data.settings.reducedMotion || matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'}); }}/>
             })}</div>
           </section>
-          <button className="programme-link-row" aria-label="View programme" onClick={() => navigate('plan','Training')}><span><b>{client.program.name}</b><small>{client.program.weeks} weeks · {client.program.phase}</small></span><ArrowRight size={20}/></button>
-          <section className="daily-summary" aria-label="Daily activity">
-            <div><Dumbbell size={17}/><span><b>{Math.round(weekVolume).toLocaleString()}<em> kg</em></b><small>volume lifted this week</small></span></div>
-            <div><Footprints size={17}/><span><b>{(values.steps || 0).toLocaleString()}</b><small>{isToday ? 'steps today' : 'steps logged'}</small></span></div>
-            <button aria-label="Update daily habits" onClick={() => navigate('plan','Habits')}><ArrowRight size={18}/></button>
+          <button className="programme-link-row" aria-label={t('View programme')} onClick={() => navigate('plan','Training')}><span><b>{t(client.program.name)}</b><small>{t('{weeks} weeks · {phase}', { weeks: client.program.weeks, phase: client.program.phase })}</small></span><ArrowRight size={20}/></button>
+          <section className="daily-summary" aria-label={t('Daily activity')}>
+            <div><Dumbbell size={17}/><span><b>{Math.round(weekVolume).toLocaleString()}<em> kg</em></b><small>{t('volume lifted this week')}</small></span></div>
+            <div><Footprints size={17}/><span><b>{(values.steps || 0).toLocaleString()}</b><small>{isToday ? t('steps today') : t('steps logged')}</small></span></div>
+            <button aria-label={t('Update daily habits')} onClick={() => navigate('plan','Habits')}><ArrowRight size={18}/></button>
           </section>
           <section className="coach-note card">
-            <div className="coach-note-heading"><Avatar name={data.coach.name}/><span><b>{data.coach.name}</b><small>Your coach</small></span><MessageCircle size={18}/></div>
-            <h2>{coachMessage ? 'A note from your coach.' : 'Let’s check in.'}</h2>
-            <p>{coachMessage ? coachMessage.text.slice(0, 180) + (coachMessage.text.length > 180 ? '…' : '') : 'Share how training is feeling and get help with your plan.'}</p>
-            <div className="coach-note-actions"><button className="text-link" onClick={() => ask('Today’s training', 'How I’m feeling today: ')}>Message your coach <ArrowRight size={15}/></button><button className="text-link" onClick={() => navigate('coach','Check-in')}>Weekly Check-in <ChevronRight size={14}/></button></div>
+            <div className="coach-note-heading"><Avatar name={data.coach.name}/><span><b>{t(data.coach.name)}</b><small>{t('Your coach')}</small></span><MessageCircle size={18}/></div>
+            <h2>{coachMessage ? t('A note from your coach.') : t('Let’s check in.')}</h2>
+            <p>{coachMessage ? coachMessage.text.slice(0, 180) + (coachMessage.text.length > 180 ? '…' : '') : t('Share how training is feeling and get help with your plan.')}</p>
+            <div className="coach-note-actions"><button className="text-link" onClick={() => ask('Today’s training', 'How I’m feeling today: ')}>{t('Message your coach')} <ArrowRight size={15}/></button><button className="text-link" onClick={() => navigate('coach','Check-in')}>{t('Weekly Check-in')} <ChevronRight size={14}/></button></div>
           </section>
         </div>
         <div className="today-side">
-          <div className="section-head home-section-head"><h2>Your daily balance</h2><span className="muted">{isToday ? 'Today' : shortDate(date)}</span></div>
-          <section className="card daily-nutrition" aria-label="Nutrition summary">
-            <div className="balance-heading"><span className="balance-icon"><Flame size={18}/></span><h2>Training fuel</h2><button className="icon-btn" aria-label="Open nutrition diary" onClick={() => navigate('plan','Nutrition')}><ArrowRight size={18}/></button></div>
-            <div className="fuel-total"><strong>{kcal.toLocaleString()}</strong><span>of {client.nutrition.kcal.toLocaleString()} kcal</span></div>
+          <div className="section-head home-section-head"><h2>{t('Your daily balance')}</h2><span className="muted">{isToday ? t('Today') : shortDate(date)}</span></div>
+          <section className="card daily-nutrition" aria-label={t('Nutrition summary')}>
+            <div className="balance-heading"><span className="balance-icon"><Flame size={18}/></span><h2>{t('Training fuel')}</h2><button className="icon-btn" aria-label={t('Open nutrition diary')} onClick={() => navigate('plan','Nutrition')}><ArrowRight size={18}/></button></div>
+            <div className="fuel-total"><strong>{kcal.toLocaleString()}</strong><span>{t('of {value} kcal', { value: client.nutrition.kcal.toLocaleString() })}</span></div>
             <Meter value={kcal} target={client.nutrition.kcal}/>
-            <div className="protein-summary"><span>Protein</span><b>{protein} <small>/ {client.nutrition.p} g</small></b></div>
+            <div className="protein-summary"><span>{t('Protein')}</span><b>{protein} <small>{t('/ {p} g', { p: client.nutrition.p })}</small></b></div>
             <Meter value={protein} target={client.nutrition.p}/>
-            <button className="nutrition-diary-link" onClick={() => navigate('plan','Nutrition')}>Open food diary <Plus size={16}/></button>
+            <button className="nutrition-diary-link" onClick={() => navigate('plan','Nutrition')}>{t('Open food diary')} <Plus size={16}/></button>
           </section>
           {client.habits.some(h => h.id === 'water') && <Hydration date={date} compact/>}
         </div>
@@ -169,11 +173,11 @@ export function Today() {
 
 function SessionPreview({ day, next, onSelect, number }) {
   const coverUrl = useFile(day.coverFile?.id);
-  return <button className="session-preview" disabled={!next} aria-label={`Preview ${day.name}`} onClick={onSelect}>
+  return <button className="session-preview" disabled={!next} aria-label={t('Preview {name}', { name: day.name })} onClick={onSelect}>
     <img src={coverUrl || (day.exercises[0] ? exerciseImage(day.exercises[0]) : recoveryCover)} alt=""/>
-    <span className="preview-number">{String(number).padStart(2,'0')}</span><span className="preview-tags"><span><Clock3 size={11}/>{day.minutes} min</span><span>{next ? shortDate(next.date) : 'Unscheduled'}</span></span>
-    <span className="preview-title">{day.name}<ArrowRight size={14}/></span>
-    <span className="preview-prescription">{day.exercises.length} exercises · {sum(day.exercises, e => Number(e.sets))} sets</span>
+    <span className="preview-number">{String(number).padStart(2,'0')}</span><span className="preview-tags"><span><Clock3 size={11}/>{day.minutes} {t('min')}</span><span>{next ? shortDate(next.date) : t('Unscheduled')}</span></span>
+    <span className="preview-title">{t(day.name)}<ArrowRight size={14}/></span>
+    <span className="preview-prescription">{t('{length} exercises · {sum} sets', { length: day.exercises.length, sum: sum(day.exercises, e => Number(e.sets)) })}</span>
   </button>;
 }
 
@@ -184,7 +188,7 @@ export function Plan() {
     : "Training";
   return (
     <>
-      <Heading title="Your plan." />
+      <Heading title={t('Your plan.')} />
       <Tabs
         items={["Training", "Habits", "FormLab"]}
         value={tab}
@@ -220,25 +224,25 @@ function Training() {
           <SectionHead
             title={day.name}
             action={
-              <span className="muted">{day.exercises.length} exercises</span>
+              <span className="muted">{t('{length} exercises', { length: day.exercises.length })}</span>
             }
           />
           <div className="training-start-action">
             <Button
-              aria-label={draft && date === dayKey() ? `Resume workout: ${draft.title}` : undefined} disabled={!done && date !== dayKey()}
+              aria-label={draft && date === dayKey() ? t('Resume workout: {title}', { title: draft.title }) : undefined} disabled={!done && date !== dayKey()}
               onClick={() => (done ? openShare(done) : openWorkout(day, date))}
             >
               {done
-                ? "View workout result"
+                ? t('View workout result')
                 : date > dayKey()
                   ? "Available on " + shortDate(date)
                   : date < dayKey()
-                    ? "Workout not logged"
-                    : draft ? "Resume workout" : "Start Workout"}
+                    ? t('Workout not logged')
+                    : draft ? t('Resume workout') : t('Start Workout')}
               <ArrowRight size={16} />
             </Button>
           </div>
-          <button className="training-detail-link" onClick={() => viewSession(day,date)}><span>View session details</span><ArrowRight size={17}/></button>
+          <button className="training-detail-link" onClick={() => viewSession(day,date)}><span>{t('View session details')}</span><ArrowRight size={17}/></button>
           <div className="card list training-exercise-list">
             {day.exercises.map((e, i) => (
               <button
@@ -248,9 +252,9 @@ function Training() {
               >
                 <span className="exercise-photo-number"><ExerciseThumbnail exercise={e}/><i>{String(i + 1).padStart(2,'0')}</i></span>
                 <span className="exercise-row-copy">
-                  <span className="exercise-group">{e.group || 'Training'}{e.videoFile && <span className="coach-demo-label"> · Coach video</span>}</span>
-                  <b>{e.name}</b>
-                  <small className="exercise-prescription"><strong>{e.sets} × {e.reps} {e.kind === 'Duration' ? 'sec' : 'reps'}</strong><span><Clock3 size={11}/>{e.rest}s rest</span></small>
+                  <span className="exercise-group">{e.group ? groupLabel(e.group) : t('Training')}{e.videoFile && <span className="coach-demo-label"> {t('· Coach video')}</span>}</span>
+                  <b>{t(e.name)}</b>
+                  <small className="exercise-prescription"><strong>{e.sets} × {e.reps} {e.kind === 'Duration' ? 'sec' : 'reps'}</strong><span><Clock3 size={11}/>{e.rest}{t('s rest')}</span></small>
                 </span>
                 <ChevronRight size={16} />
               </button>
@@ -261,16 +265,16 @@ function Training() {
       ) : (
         <Empty
           icon={Dumbbell}
-          title="A planned rest day"
-          detail="Recovery is part of the programme. Your habits are still here for you."
+          title={t('A planned rest day')}
+          detail={t('Recovery is part of the programme. Your habits are still here for you.')}
         />
       )}
-      <MotionDetails className="programme-overview"><summary><span>About your programme<small>{client.program.name} · {client.program.phase}</small></span><ChevronRight size={18}/></summary>
+      <MotionDetails className="programme-overview"><summary><span>{t('About your programme')}<small>{t(client.program.name)} · {client.program.phase}</small></span><ChevronRight size={18}/></summary>
       <div className="card program-title">
         <span className="eyebrow">{client.program.phase}</span>
-        <h2>{client.program.name}</h2>
+        <h2>{t(client.program.name)}</h2>
         <p>
-          {client.program.weeks}-week programme · through{" "}
+          {client.program.weeks}{t('-week programme · through')}{" "}
           {shortDate(client.programEnd)}
         </p>
         {client.program.progression && <p className="program-progression"><TrendingUp size={15}/>{client.program.progression}</p>}
@@ -278,7 +282,7 @@ function Training() {
           date >= client.travel.start &&
           date <= client.travel.end && (
             <Notice>
-              Travel plan active. Your regular plan resumes{" "}
+              {t('Travel plan active. Your regular plan resumes')}{" "}
               {shortDate(offsetDay(1, client.travel.end))}.
             </Notice>
           )}
@@ -289,14 +293,14 @@ function Training() {
         <Modal title={detail.name} onClose={() => setDetail(null)}>
           <ExerciseMedia exercise={detail}/>
           <FormLab client={client} exercise={detail} compact/>
-          <p className="exercise-coach-cue"><span>COACH’S CUE</span>{detail.notes || 'Ask your coach for technique guidance.'}</p>
+          <p className="exercise-coach-cue"><span>{t('COACH’S CUE')}</span>{detail.notes || t('Ask your coach for technique guidance.')}</p>
           <div className="three-stats">
             <Stat
-              label={detail.kind === 'Duration' ? 'Sets × seconds' : 'Sets × reps'}
+              label={detail.kind === 'Duration' ? t('Sets × seconds') : t('Sets × reps')}
               value={`${detail.sets} × ${detail.reps}`}
             />
-            <Stat label="Tempo" value={detail.tempo || "—"} />
-            <Stat label="Reps in reserve" value={detail.rir ?? "—"} />
+            <Stat label={t('Tempo')} value={detail.tempo || "—"} />
+            <Stat label={t('Reps in reserve')} value={detail.rir ?? "—"} />
           </div>
           <div className="exercise-sheet-actions">
             <Button
@@ -306,7 +310,7 @@ function Training() {
                 openExercise(name);
               }}
             >
-              Progress & history <ArrowRight size={16} />
+              {t('Progress & history')} <ArrowRight size={16} />
             </Button>
             <Button
               secondary
@@ -315,7 +319,7 @@ function Training() {
                 ask(`${detail.name} · ${day.name}`);
               }}
             >
-              Ask coach <MessageCircle size={16} />
+              {t('Ask coach')} <MessageCircle size={16} />
             </Button>
           </div>
         </Modal>
@@ -326,7 +330,7 @@ function Training() {
 
 export function ExerciseThumbnail({ exercise }) {
   const url = useFile(exercise.imageFile?.id);
-  return <img className="exercise-thumb" src={url || exerciseImage(exercise)} alt={`${exercise.name} exercise`} loading="lazy" decoding="async"/>;
+  return <img className="exercise-thumb" src={url || exerciseImage(exercise)} alt={t('{name} exercise', { name: exercise.name })} loading="lazy" decoding="async"/>;
 }
 
 function DailyUpdates({ date, foods }) {
@@ -339,8 +343,8 @@ function DailyUpdates({ date, foods }) {
     ...(client.habits.some(h => h.id === 'water') ? [{title:'Drink more water',value:habits.water || 0,target:client.habits.find(h => h.id === 'water').target,unit:'L',tone:'blue'}] : []),
     ...(client.habits.some(h => h.id === 'steps') ? [{title:'Move a little more',value:habits.steps || 0,target:client.habits.find(h => h.id === 'steps').target,unit:'steps',tone:'amber'}] : []),
   ];
-  return <section className="daily-updates"><h2>Daily updates</h2><Tabs label="Daily updates" items={['Meals','Recommendations','Water']} value={tab} onChange={setTab}/>
-    {tab === 'Recommendations' ? rows.map(r => <div className="recommendation" key={r.title}><div><h3>{r.value >= r.target ? r.unit === 'g' ? 'Protein target reached' : r.unit === 'L' ? 'Water target reached' : 'Step target reached' : r.title}</h3><strong>{r.value.toLocaleString()}<small> {r.unit}</small></strong></div><Meter value={r.value} target={r.target} tone={r.tone}/><p>{r.value >= r.target ? 'Your coach’s daily target is complete.' : `${round(r.target - r.value).toLocaleString()} ${r.unit} away from your coach’s target`}</p></div>) : tab === 'Water' ? <Hydration date={date}/> : <div className="daily-meals">{['Breakfast','Lunch','Dinner','Snack'].map(meal => { const entries = foods.filter(f => f.meal === meal); return <div className="recommendation" key={meal}><div><h3>{meal}</h3><strong>{sum(entries,'kcal')}<small> kcal</small></strong></div><p>{entries.map(f => f.name).join(' · ') || 'No food logged yet'}</p></div>; })}</div>}
+  return <section className="daily-updates"><h2>{t('Daily updates')}</h2><Tabs label={t('Daily updates')} items={['Meals','Recommendations','Water']} value={tab} onChange={setTab}/>
+    {tab === 'Recommendations' ? rows.map(r => <div className="recommendation" key={r.title}><div><h3>{r.value >= r.target ? r.unit === 'g' ? t('Protein target reached') : r.unit === 'L' ? t('Water target reached') : t('Step target reached') : r.title}</h3><strong>{r.value.toLocaleString()}<small> {r.unit}</small></strong></div><Meter value={r.value} target={r.target} tone={r.tone}/><p>{r.value >= r.target ? t('Your coach’s daily target is complete.') : t('{value} {unit} away from your coach’s target', { value: round(r.target - r.value).toLocaleString(), unit: r.unit })}</p></div>) : tab === 'Water' ? <Hydration date={date}/> : <div className="daily-meals">{['Breakfast','Lunch','Dinner','Snack'].map(meal => { const entries = foods.filter(f => f.meal === meal); return <div className="recommendation" key={meal}><div><h3>{meal}</h3><strong>{sum(entries,'kcal')}<small> kcal</small></strong></div><p>{entries.map(f => f.name).join(' · ') || t('No food logged yet')}</p></div>; })}</div>}
   </section>;
 }
 
@@ -363,14 +367,14 @@ export function Nutrition() {
     <>
       <div className="date-select">
         <IconButton
-          label="Previous nutrition day"
+          label={t('Previous nutrition day')}
           onClick={() => setDate(offsetDay(-1, date))}
         >
-          <ChevronRight style={{ transform: "rotate(180deg)" }} size={16} />
+          <ChevronLeft size={16} />
         </IconButton>
-        <span>{date === dayKey() ? "Today" : shortDate(date)}</span>
+        <span>{date === dayKey() ? t('Today') : shortDate(date)}</span>
         <IconButton
-          label="Next nutrition day"
+          label={t('Next nutrition day')}
           disabled={date === dayKey()}
           onClick={() => setDate(offsetDay(1, date))}
         >
@@ -379,7 +383,7 @@ export function Nutrition() {
       </div>
       <section className="card nutrition-card">
         <SectionHead
-          title="Your daily targets"
+          title={t('Your daily targets')}
           action={<span className="pill">{client.nutrition.mode}</span>}
         />
         <div className="rings">
@@ -387,14 +391,14 @@ export function Nutrition() {
             motionKey={date}
             value={sum(foods, "kcal")}
             target={targets.kcal}
-            label="Calories" tone="macro-calories"
+            label={t('Calories')} tone="macro-calories"
           />
           <Ring
             motionKey={date}
             value={sum(foods, "p")}
             target={targets.p}
             unit="g"
-            label="Protein"
+            label={t('Protein')}
             tone="macro-protein"
           />
           <Ring
@@ -402,7 +406,7 @@ export function Nutrition() {
             value={sum(foods, "c")}
             target={targets.c}
             unit="g"
-            label="Carbs"
+            label={t('Carbs')}
             tone="macro-carbs"
           />
           <Ring
@@ -410,19 +414,19 @@ export function Nutrition() {
             value={sum(foods, "f")}
             target={targets.f}
             unit="g"
-            label="Fat"
+            label={t('Fat')}
             tone="macro-fat"
           />
         </div>
-        <div className="nutrition-target-context"><span>{Math.abs(targets.kcal - sum(foods, 'kcal')).toLocaleString()} kcal {sum(foods, 'kcal') <= targets.kcal ? 'remaining' : 'above target'}</span><small>{foods.length} {foods.length === 1 ? 'entry' : 'entries'} logged</small></div>
+        <div className="nutrition-target-context"><span>{Math.abs(targets.kcal - sum(foods, 'kcal')).toLocaleString()} kcal {sum(foods, 'kcal') <= targets.kcal ? 'remaining' : t('above target')}</span><small>{foods.length} {foods.length === 1 ? 'entry' : 'entries'} {t('logged')}</small></div>
       </section>
-      <div className="nutrition-quick-actions"><Button onClick={() => setAdd(true)}><Plus size={18}/>Log food</Button><Button secondary onClick={() => setAdd('Photo')}><Camera size={18}/>Photo meal</Button></div>
-      <MotionDetails className="nutrition-plan-disclosure" open={planOpen} onToggle={event => setPlanOpen(event.currentTarget.open)}><summary><span>Your coach’s meal plan<small>{client.nutrition.meals?.length || 0} {client.nutrition.mode === 'Structured' ? 'prescribed' : 'suggested'} meals · quick log</small></span><ChevronRight size={18}/></summary><CoachMealPlan onLog={setPlannedMeal}/></MotionDetails>
+      <div className="nutrition-quick-actions"><Button onClick={() => setAdd(true)}><Plus size={18}/>{t('Log food')}</Button><Button secondary onClick={() => setAdd('Photo')}><Camera size={18}/>{t('Photo meal')}</Button></div>
+      <MotionDetails className="nutrition-plan-disclosure" open={planOpen} onToggle={event => setPlanOpen(event.currentTarget.open)}><summary><span>{t('Your coach’s meal plan')}<small>{client.nutrition.meals?.length || 0} {client.nutrition.mode === 'Structured' ? 'prescribed' : 'suggested'} {t('meals · quick log')}</small></span><ChevronRight size={18}/></summary><CoachMealPlan onLog={setPlannedMeal}/></MotionDetails>
       <SectionHead
-        title="Food diary"
+        title={t('Food diary')}
         action={
           <button className="text-link" onClick={() => setAdd(true)}>
-            <Plus size={16} /> Add food
+            <Plus size={16} /> {t('Add food')}
           </button>
         }
       />
@@ -438,9 +442,9 @@ export function Nutrition() {
                 <Utensils size={18} />
               </span>
               <span>
-                <b>{f.name}</b>
+                <b>{t(f.name)}</b>
                 <small>
-                  {f.meal} · {f.portion} · {f.p == null ? 'Protein not entered' : `${f.p}g protein`}
+                  {t(f.meal)} · {portionLabel(f.portion)} · {f.p == null ? t('Protein not entered') : t('{p}g protein', { p: f.p })}
                 </small>
               </span>
               <b>
@@ -453,19 +457,19 @@ export function Nutrition() {
         ) : (
           <Empty
             icon={Utensils}
-            title="A fresh page for today"
-            detail="Add a food or meal photo to start your diary."
+            title={t('A fresh page for today')}
+            detail={t('Add a food or meal photo to start your diary.')}
             action={
               <Button small onClick={() => setAdd(true)}>
-                Log your first meal
+                {t('Log your first meal')}
               </Button>
             }
           />
         )}
       </MotionList>
-      {foods.length > 0 && <div className="nutrition-day-status"><span><b>{dayRecord?.complete ? 'Day complete' : 'Logging in progress'}</b><small>{dayRecord?.complete ? 'Included in your nutrition trend. Editing reopens the day.' : date < dayKey() && !dayRecord ? `No historical target was saved. Completing this day compares it with the current ${targets.kcal.toLocaleString()} kcal target.` : 'Finish logging to include this day in your nutrition trend.'}</small></span><button disabled={completing} onClick={async () => { if (completing) return; setCompleting(true); setCompletionError(''); const result = await update(d => { const day = ensureNutritionDay(d, client, date); day.complete = !day.complete; }); setCompleting(false); if (result?.error) {setCompletionError(result.error); return;} notify?.(dayRecord?.complete ? 'Day reopened' : 'Day marked complete'); }}>{completing ? 'Saving…' : dayRecord?.complete ? 'Reopen day' : 'Finish logging'}<Check size={16}/></button></div>}
+      {foods.length > 0 && <div className="nutrition-day-status"><span><b>{dayRecord?.complete ? t('Day complete') : t('Logging in progress')}</b><small>{dayRecord?.complete ? t('Included in your nutrition trend. Editing reopens the day.') : date < dayKey() && !dayRecord ? t('No historical target was saved. Completing this day compares it with the current {value} kcal target.', { value: targets.kcal.toLocaleString() }) : t('Finish logging to include this day in your nutrition trend.')}</small></span><button disabled={completing} onClick={async () => { if (completing) return; setCompleting(true); setCompletionError(''); const result = await update(d => { const day = ensureNutritionDay(d, client, date); day.complete = !day.complete; }); setCompleting(false); if (result?.error) {setCompletionError(result.error); return;} notify?.(dayRecord?.complete ? t('Day reopened') : t('Day marked complete')); }}>{completing ? t('Saving…') : dayRecord?.complete ? t('Reopen day') : t('Finish logging')}<Check size={16}/></button></div>}
       {completionError && <p className="error" role="alert">{completionError}</p>}
-      <MotionDetails className="nutrition-updates"><summary><span>Water, steps and recommendations<small>How today compares with your coach’s targets</small></span><ChevronRight size={18}/></summary><DailyUpdates date={date} foods={foods}/></MotionDetails>
+      <MotionDetails className="nutrition-updates"><summary><span>{t('Water, steps and recommendations')}<small>{t('How today compares with your coach’s targets')}</small></span><ChevronRight size={18}/></summary><DailyUpdates date={date} foods={foods}/></MotionDetails>
       {editingFood && <PhotoMealLogger initialEntry={editingFood} date={date} onClose={() => setEditingFood(null)}/>}
       {add && (add === 'Photo' ? <PhotoMealLogger date={date} onClose={()=>setAdd(false)}/> : <FoodLogger date={date} onClose={()=>setAdd(false)}/>)}
       {plannedMeal && <PhotoMealLogger date={date} initialMeal={plannedMeal} requirePhoto={false} onClose={()=>setPlannedMeal(null)}/>}
@@ -479,29 +483,29 @@ export function Nutrition() {
             />
           )}
           <p>
-            {detail.portion} · {detail.meal}
+            {portionLabel(detail.portion)} · {t(detail.meal)}
           </p>
           <div className="three-stats">
-            <Stat label="Protein" value={detail.p == null ? '—' : `${detail.p}g`} />
-            <Stat label="Carbs" value={detail.c == null ? '—' : `${detail.c}g`} />
-            <Stat label="Fat" value={detail.f == null ? '—' : `${detail.f}g`} />
+            <Stat label={t('Protein')} value={detail.p == null ? '—' : `${detail.p}g`} />
+            <Stat label={t('Carbs')} value={detail.c == null ? '—' : `${detail.c}g`} />
+            <Stat label={t('Fat')} value={detail.f == null ? '—' : `${detail.f}g`} />
           </div>
           <p className="big-number">
             {detail.kcal} <small>kcal</small>
           </p>
           {removalError && <p role="alert" className="error">{removalError}</p>}
           <div className="button-row">
-            <Button disabled={removing} onClick={() => { setEditingFood(detail); setDetail(null); }}>Edit entry</Button>
+            <Button disabled={removing} onClick={() => { setEditingFood(detail); setDetail(null); }}>{t('Edit entry')}</Button>
             <Button
               secondary
               onClick={() => {
                 ask(
-                  `${detail.name} · ${detail.kcal} kcal · ${shortDate(detail.date)}`,
+                  `${t(detail.name)} · ${detail.kcal} ${t('kcal')} · ${shortDate(detail.date)}`,
                 );
                 setDetail(null);
               }}
             >
-              Ask coach
+              {t('Ask coach')}
             </Button>
             <Button
               secondary
@@ -515,11 +519,11 @@ export function Nutrition() {
                 });
                 setRemoving(false);
                 if (result?.error) { setRemovalError(result.error); return; }
-                notify?.("Entry removed", () => update(d => recordFood(d,client,detail)));
+                notify?.(t('Entry removed'), () => update(d => recordFood(d,client,detail)));
                 setDetail(null);
               }}
             >
-              {removing ? 'Removing…' : 'Remove entry'}
+              {removing ? t('Removing…') : t('Remove entry')}
             </Button>
           </div>
         </Modal>
@@ -576,11 +580,11 @@ export function FoodLogger({ date, onClose, initialTab = 'Search' }) {
     e.preventDefault();
     if (uploadLock.current || busy) return;
     if (!food.name.trim()) {
-      setError("Give this food a name.");
+      setError(t('Give this food a name.'));
       return;
     }
     if (food.kcal === "" || ["kcal", "p", "c", "f"].some((key) => !Number.isFinite(Number(food[key])) || Number(food[key]) < 0 || Number(food[key]) > 10000)) {
-      setError("Enter nutrition values between 0 and 10,000.");
+      setError(t('Enter nutrition values between 0 and 10,000.'));
       return;
     }
     const entry = { ...food, name: food.name.trim(), portion: food.portion.trim() || '1 serving', id: uid(), clientId: client.id, date, photo,
@@ -589,13 +593,13 @@ export function FoodLogger({ date, onClose, initialTab = 'Search' }) {
     const result = await update(d => recordFood(d,client,entry));
     setBusy(false);
     if (result?.error) { setError(result.error); return; }
-    notify?.('Food added to diary', () => update(d => { d.foodLogs = d.foodLogs.filter(f => f.id !== entry.id); }));
+    notify?.(t('Food added to diary'), () => update(d => { d.foodLogs = d.foodLogs.filter(f => f.id !== entry.id); }));
     onClose();
   }
   if (review) return <PhotoMealLogger key={review.name} initialFood={review} date={date} requirePhoto={false} onBack={() => setReview(null)} onClose={onClose}/>;
   if (tab === 'Photo') return <PhotoMealLogger date={date} onBack={() => setTab('Search')} onClose={onClose}/>;
   return (
-    <Modal title="Add food" className="food-logger-modal" canClose={!busy} onClose={onClose}>
+    <Modal title={t('Add food')} className="food-logger-modal" canClose={!busy} onClose={onClose}>
       <Tabs
         items={["Search", "Favourites", "Manual", "Photo"]}
         value={tab}
@@ -610,32 +614,30 @@ export function FoodLogger({ date, onClose, initialTab = 'Search' }) {
       )}
       {["Search", "Favourites"].includes(tab) && !(tab === "Search" && scanning) && (
         <>
-          {tab === "Search" && <button type="button" className="food-scan-entry" onClick={() => setScanning(true)}><ScanBarcode size={22}/><span><b>Scan a barcode</b><small>Packaged foods from the supermarket</small></span><ChevronRight size={18}/></button>}
+          {tab === "Search" && <button type="button" className="food-scan-entry" onClick={() => setScanning(true)}><ScanBarcode size={22}/><span><b>{t('Scan a barcode')}</b><small>{t('Packaged foods from the supermarket')}</small></span><ChevronRight size={18}/></button>}
           <label className="search">
             <Search size={16} />
             <input
-              aria-label="Search food library"
+              aria-label={t('Search food library')}
               type="search"
               enterKeyHint="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search your food library"
+              placeholder={t('Search your food library')}
             />
           </label>
-          {tab === 'Search' && !query && recent.length > 0 && <div className="recent-foods"><span className="eyebrow">LOG AGAIN</span>{recent.map(f => <button key={f.id} onClick={() => setReview(f)}><span><b>{f.name}</b><small>{f.kcal} kcal · {f.portion}</small></span><Plus size={18}/></button>)}</div>}
+          {tab === 'Search' && !query && recent.length > 0 && <div className="recent-foods"><span className="eyebrow">{t('LOG AGAIN')}</span>{recent.map(f => <button key={f.id} onClick={() => setReview(f)}><span><b>{t(f.name)}</b><small>{t('{kcal} kcal · {portion}', { kcal: f.kcal, portion: f.portion })}</small></span><Plus size={18}/></button>)}</div>}
           <div className="food-search-results">
             {foods.map((f) => (
               <div className="food-option" key={f.name}>
                 <button
                   onClick={() => reviewFood(f)}
                 >
-                  <b>{f.name}{f.ar && <span className="food-ar" lang="ar" dir="rtl">{f.ar}</span>}</b>
-                  <small>
-                    {f.portion} · {f.kcal} kcal
-                  </small>
+                  <b>{t(f.name)}{f.ar && language() === 'en' && <span className="food-ar" lang="ar" dir="rtl">{f.ar}</span>}</b>
+                  <small>{t('{portion} · {kcal} kcal', { portion: portionLabel(f.portion), kcal: f.kcal })}</small>
                 </button>
                 <IconButton
-                  label={`Favourite ${f.name}`}
+                  label={t('Favourite {name}', { name: f.name })}
                   onClick={() =>
                     update((d) => {
                       d.favorites = d.favorites.includes(f.name)
@@ -655,15 +657,14 @@ export function FoodLogger({ date, onClose, initialTab = 'Search' }) {
             ))}
             {!foods.length && (
               <Empty
-                title={tab === 'Favourites' && !query ? 'Your favourites, one tap away' : 'No matching foods'}
-                detail={tab === 'Favourites' && !query ? 'Save foods with the heart beside each entry.' : 'Add the values from your meal or food label.'}
-                action={<Button secondary onClick={() => {setFood(previous => ({...previous, name:query.trim()}));setTab('Manual');}}>Add a food manually <Plus size={16}/></Button>}
+                title={tab === 'Favourites' && !query ? t('Your favourites, one tap away') : t('No matching foods')}
+                detail={tab === 'Favourites' && !query ? t('Save foods with the heart beside each entry.') : t('Add the values from your meal or food label.')}
+                action={<Button secondary onClick={() => {setFood(previous => ({...previous, name:query.trim()}));setTab('Manual');}}>{t('Add a food manually')} <Plus size={16}/></Button>}
               />
             )}
           </div>
           <small className="muted">
-            Everyday and Egyptian foods with typical values per portion. For
-            packaged products, scan the barcode to use the label values.
+            {t('Everyday and Egyptian foods with typical values per portion. For packaged products, scan the barcode to use the label values.')}
           </small>
         </>
       )}
@@ -674,7 +675,7 @@ export function FoodLogger({ date, onClose, initialTab = 'Search' }) {
               <label className="upload-zone">
                 <Camera size={24} />
                 <b>
-                  {photo ? "Change meal photo" : "Choose or take a meal photo"}
+                  {photo ? t('Change meal photo') : t('Choose or take a meal photo')}
                 </b>
                 <input
                   type="file"
@@ -687,30 +688,29 @@ export function FoodLogger({ date, onClose, initialTab = 'Search' }) {
               {photo && (
                 <Media
                   fileId={photo.id}
-                  alt="Meal preview"
+                  alt={t('Meal preview')}
                   className="food-photo"
                 />
               )}
               <Notice>
-                Photo diary: enter the nutrition values below. Automatic food
-                recognition is not connected.
+                {t('Photo diary: enter the nutrition values below. Automatic food recognition is not connected.')}
               </Notice>
             </>
           )}
           <Field
-            label="Food / meal name"
+            label={t('Food / meal name')}
             value={food.name}
             required
             maxLength={120}
             onChange={(e) => setFood({ ...food, name: e.target.value })}
           />
           <Field
-            label="Portion"
+            label={t('Portion')}
             maxLength={120}
             value={food.portion}
             onChange={(e) => setFood({ ...food, portion: e.target.value })}
           />
-          <Field label="Meal">
+          <Field label={t('Meal')}>
             <select
               value={food.meal}
               onChange={(e) => setFood({ ...food, meal: e.target.value })}
@@ -732,7 +732,7 @@ export function FoodLogger({ date, onClose, initialTab = 'Search' }) {
                 label={label}
                 type="number"
                 required={key === "kcal"}
-                placeholder={key === "kcal" ? "Enter calories" : "Optional"}
+                placeholder={key === "kcal" ? t('Enter calories') : t('Optional')}
                 min="0"
                 max="10000"
                 step="1"
@@ -752,7 +752,7 @@ export function FoodLogger({ date, onClose, initialTab = 'Search' }) {
             </p>
           )}
           <Button type="submit" disabled={busy}>
-            {busy ? "Saving photo…" : "Add to diary"} <Check size={16} />
+            {busy ? t('Saving photo…') : t('Add to diary')} <Check size={16} />
           </Button>
         </form>
       )}
@@ -789,8 +789,7 @@ export function Habits() {
   return (
     <>
       <p className="muted intro-copy">
-        Small actions, repeated. Your coach sets the targets; you make them
-        happen.
+        {t('Small actions, repeated. Your coach sets the targets; you make them happen.')}
       </p>
       {client.habits.some(h => h.id === 'water') && <Hydration/>}
       <div className="habit-grid">
@@ -802,7 +801,7 @@ export function Habits() {
                 (values[h.id] || 0) >= h.target ? (
                   <CheckCircle2 className="green" size={19} />
                 ) : (
-                  <span className="muted">Daily</span>
+                  <span className="muted">{t('Daily')}</span>
                 )
               }
             />
@@ -819,7 +818,7 @@ export function Habits() {
             />
             <div className="stepper">
               <button
-                aria-label={`Decrease ${h.name}`}
+                aria-label={t('Decrease {name}', { name: h.name })}
                 onClick={() => change(h, Math.max(0, (values[h.id] || 0) - h.step))}
               >
                 −
@@ -844,7 +843,7 @@ export function Habits() {
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); change(h, e.currentTarget.value); } }}
               />
               <button
-                aria-label={`Increase ${h.name}`}
+                aria-label={t('Increase {name}', { name: h.name })}
                 onClick={() => change(h, (values[h.id] || 0) + h.step)}
               >
                 +
@@ -884,8 +883,8 @@ export function Progress({ clientOverride, startTab = "Overview" }) {
     <>
       {!clientOverride && (
         <Heading
-          title="Progress"
-          subtitle="The work you put in. The change you can see."
+          title={t('Progress')}
+          subtitle={t('The work you put in. The change you can see.')}
         />
       )}
       <Tabs
@@ -897,25 +896,25 @@ export function Progress({ clientOverride, startTab = "Overview" }) {
       {(tab === "Body" || tab === "Overview" && /body|weight|fat/i.test(client.goal) && !/strength/i.test(client.goal)) && (
         <section className="card">
           <SectionHead
-            title="Body Weight"
+            title={t('Body Weight')}
             action={
               <button className="text-link" onClick={() => setMeasure(true)}>
-                <Plus size={14} /> Log
+                <Plus size={14} /> {t('Log')}
               </button>
             }
           />
           <div className="weight-summary">
             <div>
               <strong>
-                {delta !== null ? `${delta > 0 ? "+" : ""}${delta} kg` : "—"}
+                {delta !== null ? t('{value}{delta} kg', { value: delta > 0 ? "+" : "", delta }) : "—"}
               </strong>
-              <small>{coachView ? 'since first log' : 'since your first log'}</small>
+              <small>{coachView ? t('since first log') : t('since your first log')}</small>
             </div>
             <div>
               <b>
                 {last || "—"} <small>kg</small>
               </b>
-              <span className="green">{m.weights.length} measurements</span>
+              <span className="green">{t('{length} measurements', { length: m.weights.length })}</span>
             </div>
           </div>
           <LineChart records={m.weights} />
@@ -923,20 +922,20 @@ export function Progress({ clientOverride, startTab = "Overview" }) {
       )}
       {tab === "Overview" && (
         <>
-          <section className="progress-snapshot" aria-label="Your progress snapshot"><button onClick={() => change('Strength')}><small>Training · 28 days</small><b>{m.sessions.length}<em> {sessionWord}</em></b><span>{coachView ? 'View lifts' : 'View your lifts'} <ChevronRight size={13}/></span></button><button onClick={() => change('Body')}><small>Latest weight</small><b>{m.lastWeight ?? '—'}<em> kg</em></b><span>{m.weights.at(-1) ? shortDate(m.weights.at(-1).date) : 'Add a measurement'} <ChevronRight size={13}/></span></button></section>
-          <section className="progress-focus"><span className="eyebrow">{coachView ? 'FOCUS' : 'YOUR FOCUS'}</span><h2>{client.goal}</h2><p>{m.sessions.length ? `${m.sessions.length} ${sessionWord} in the last 28 days. ${coachView ? 'Open Strength to review how lifts are progressing.' : 'Explore Strength to see how your lifts are progressing.'}` : coachView ? 'No sessions logged in the last 28 days.' : 'Start with your next session. Your progress will build here.'}</p><Button secondary small onClick={() => change(/body|weight|fat/i.test(client.goal) && !/strength/i.test(client.goal) ? 'Body' : 'Strength')}>{coachView ? 'Explore progress' : 'Explore your progress'} <ArrowRight size={16}/></Button></section>
+          <section className="progress-snapshot" aria-label={t('Your progress snapshot')}><button onClick={() => change('Strength')}><small>{t('Training · 28 days')}</small><b>{m.sessions.length}<em> {sessionWord}</em></b><span>{coachView ? t('View lifts') : t('View your lifts')} <ChevronRight size={13}/></span></button><button onClick={() => change('Body')}><small>{t('Latest weight')}</small><b>{m.lastWeight ?? '—'}<em> kg</em></b><span>{m.weights.at(-1) ? shortDate(m.weights.at(-1).date) : t('Add a measurement')} <ChevronRight size={13}/></span></button></section>
+          <section className="progress-focus"><span className="eyebrow">{coachView ? t('FOCUS') : t('YOUR FOCUS')}</span><h2>{client.goal}</h2><p>{m.sessions.length ? `${t('{count} sessions in the last 28 days.', { count: m.sessions.length })} ${coachView ? t('Open Strength to review how lifts are progressing.') : t('Explore Strength to see how your lifts are progressing.')}` : coachView ? t('No sessions logged in the last 28 days.') : t('Start with your next session. Your progress will build here.')}</p><Button secondary small onClick={() => change(/body|weight|fat/i.test(client.goal) && !/strength/i.test(client.goal) ? 'Body' : 'Strength')}>{coachView ? t('Explore progress') : t('Explore your progress')} <ArrowRight size={16}/></Button></section>
           <div className="two-stats">
             <Stat
-              label="Training adherence"
+              label={t('Training adherence')}
               value={m.training === null ? "—" : `${m.training}%`}
-              note="Scheduled sessions · last 28 days"
+              note={t('Scheduled sessions · last 28 days')}
             >
               <Bars values={sessions.slice(0, 7).map((s) => s.sets.length)} />
             </Stat>
             <Stat
-              label="Nutrition adherence"
+              label={t('Nutrition adherence')}
               value={m.nutrition === null ? "—" : `${m.nutrition}%`}
-              note={`${m.nutritionDays} completed days · within 15% of saved targets`}
+              note={t('{nutritionDays} completed days · within 15% of saved targets', { nutritionDays: m.nutritionDays })}
             >
               <Bars
                 tone="blue"
@@ -954,14 +953,14 @@ export function Progress({ clientOverride, startTab = "Overview" }) {
           </div>
           <Photos clientId={client.id} compact onAll={() => change("Photos")} />
           <SectionHead
-            title="Recent sessions"
+            title={t('Recent sessions')}
             action={
               <button
                 className="text-link"
                 disabled={!sessions.length}
                 onClick={() => openShare({ story: true, clientId: client.id })}
               >
-                Progress story <Share2 size={14} />
+                {t('Progress story')} <Share2 size={14} />
               </button>
             }
           />
@@ -976,11 +975,11 @@ export function Progress({ clientOverride, startTab = "Overview" }) {
                   <Check size={16} />
                 </span>
                 <span>
-                  <b>{s.title}</b>
+                  <b>{t(s.title)}</b>
                   <small>
                     {shortDate(s.date)} ·{" "}
-                    {s.sets.filter((x) => !x.skipped).length} sets ·{" "}
-                    {Math.round(s.duration / 60)} min
+                    {s.sets.filter((x) => !x.skipped).length} {t('sets ·')}{" "}
+                    {Math.round(s.duration / 60)} {t('min')}
                   </small>
                 </span>
                 <Share2 size={16} />
@@ -988,8 +987,8 @@ export function Progress({ clientOverride, startTab = "Overview" }) {
             ))}
             {!sessions.length && (
               <Empty
-                title="Your first session awaits"
-                detail="Completed workouts and shareable results will appear here."
+                title={t('Your first session awaits')}
+                detail={t('Completed workouts and shareable results will appear here.')}
               />
             )}
           </div>
@@ -1017,21 +1016,21 @@ export function Progress({ clientOverride, startTab = "Overview" }) {
                 <section className="card" key={name}>
                   <SectionHead
                     title={name}
-                    action={<span className="green">{round(value)} kg</span>}
+                    action={<span className="green">{t('{round} kg', { round: round(value) })}</span>}
                   />
-                  <p className="muted">Estimated one-rep max · Epley formula</p>
+                  <p className="muted">{t('Estimated one-rep max · Epley formula')}</p>
                   <LineChart records={records} />
                   <div className="strength-actions">
                     <button className="text-link" onClick={() => openExercise(name)}>
-                      Exercise details <ChevronRight size={14} />
+                      {t('Exercise details')} <ChevronRight size={14} />
                     </button>
                     <button
                       className="text-link"
                       onClick={() =>
-                        ask(`${name} · estimated 1RM ${round(value)} kg`, "", client.id)
+                        ask(t('{name} · estimated 1RM {value} kg', { name, value: round(value) }), "", client.id)
                       }
                     >
-                      {clientOverride ? "Message client" : "Ask coach"} <MessageCircle size={14} />
+                      {clientOverride ? t('Message client') : t('Ask coach')} <MessageCircle size={14} />
                     </button>
                   </div>
                 </section>
@@ -1040,8 +1039,8 @@ export function Progress({ clientOverride, startTab = "Overview" }) {
           ) : (
             <Empty
               icon={Dumbbell}
-              title="Build your strength history"
-              detail="Log a weighted workout to start tracking your lifts."
+              title={t('Build your strength history')}
+              detail={t('Log a weighted workout to start tracking your lifts.')}
             />
           )}
         </div>
@@ -1057,7 +1056,7 @@ export function Progress({ clientOverride, startTab = "Overview" }) {
               <Stat
                 key={key}
                 label={label}
-                value={`${latestMeasurement(bodyRecords, key)?.[key] ?? "—"} ${unit}`} note={latestMeasurement(bodyRecords, key) ? shortDate(latestMeasurement(bodyRecords, key).date) : "Not recorded"}
+                value={`${latestMeasurement(bodyRecords, key)?.[key] ?? "—"} ${unit}`} note={latestMeasurement(bodyRecords, key) ? shortDate(latestMeasurement(bodyRecords, key).date) : t('Not recorded')}
               />
             ))}
           </div>
@@ -1086,7 +1085,7 @@ function MeasurementForm({ client, onClose }) {
   const saveLock = useRef(false);
   const existing = records.find(record => record.date === form.date);
   return (
-    <Modal title="Log measurements" onClose={onClose} canClose={!saving}>
+    <Modal title={t('Log measurements')} onClose={onClose} canClose={!saving}>
       <form
         onSubmit={async (e) => {
           e.preventDefault();
@@ -1107,7 +1106,7 @@ function MeasurementForm({ client, onClose }) {
         }}
       >
         <Field
-          label="Date"
+          label={t('Date')}
           type="date"
           max={dayKey()}
           required
@@ -1132,10 +1131,10 @@ function MeasurementForm({ client, onClose }) {
             onChange={(e) => setForm({ ...form, [key]: e.target.value })}
           />
         ))}
-        {existing && <Notice>You’re updating this date’s entry. Blank optional fields keep the saved value.</Notice>}
+        {existing && <Notice>{t('You’re updating this date’s entry. Blank optional fields keep the saved value.')}</Notice>}
         {error && <p className="error" role="alert">{error}</p>}
         <Button type="submit" disabled={saving}>
-          {saving ? 'Saving…' : existing ? 'Update measurement' : 'Save measurement'} <Check size={16} />
+          {saving ? t('Saving…') : existing ? t('Update measurement') : t('Save measurement')} <Check size={16} />
         </Button>
       </form>
     </Modal>
@@ -1166,8 +1165,8 @@ export function Consistency({ client }) {
   }
   return (
     <section className="card">
-      <SectionHead title="Your consistency" />
-      <Field label="Show">
+      <SectionHead title={t('Your consistency')} />
+      <Field label={t('Show')}>
         <select value={mode} onChange={(e) => setMode(e.target.value)}>
           {["Training + nutrition", "Training", "Nutrition", "Habits"].map(
             (x) => (
@@ -1182,7 +1181,7 @@ export function Consistency({ client }) {
             key={date}
             className={state(date)}
             title={`${shortDate(date)}: ${state(date)}`}
-            aria-label={`View consistency for ${shortDate(date)}`}
+            aria-label={t('View consistency for {shortDate}', { shortDate: shortDate(date) })}
             onClick={() => setSelected(date)}
           />
         ))}
@@ -1190,34 +1189,34 @@ export function Consistency({ client }) {
       <div className="heatmap-key">
         <span>
           <i className="both" />
-          Targets hit
+          {t('Targets hit')}
         </span>
         <span>
           <i className="partial" />
-          Partial
+          {t('Partial')}
         </span>
         <span>
           <i className="nutrition" />
-          Nutrition only
+          {t('Nutrition only')}
         </span>
         <span>
           <i className="none" />
-          No log
+          {t('No log')}
         </span>
       </div>
       <p className="muted">
-        Last 12 weeks. Unlogged days are not treated as failure.
+        {t('Last 12 weeks. Unlogged days are not treated as failure.')}
       </p>
       {selected && (
         <Notice>
           {shortDate(selected)} ·{" "}
           {state(selected) === "both"
-            ? "Targets hit"
+            ? t('Targets hit')
             : state(selected) === "partial"
-              ? "Partially completed"
+              ? t('Partially completed')
               : state(selected) === "nutrition"
-                ? "Nutrition target hit"
-                : "Nothing logged"}
+                ? t('Nutrition target hit')
+                : t('Nothing logged')}
           .
         </Notice>
       )}
@@ -1249,7 +1248,7 @@ export function Photos({ clientId, compact = false, onAll }) {
       setError("");
     } catch (e) {
       setError(
-        e?.message || "Your photo could not be saved. Please try again.",
+        e?.message || t('Your photo could not be saved. Please try again.'),
       );
     } finally {
       setBusy(false);
@@ -1258,11 +1257,11 @@ export function Photos({ clientId, compact = false, onAll }) {
   return (
     <section className="card">
       <SectionHead
-        title="Progress photos"
+        title={t('Progress photos')}
         action={
           compact ? (
             <button className="text-link" onClick={onAll}>
-              See all
+              {t('See all')}
             </button>
           ) : (
             <button
@@ -1270,7 +1269,7 @@ export function Photos({ clientId, compact = false, onAll }) {
               disabled={photos.length < 2}
               onClick={() => setCompare(true)}
             >
-              Compare
+              {t('Compare')}
             </button>
           )
         }
@@ -1278,15 +1277,15 @@ export function Photos({ clientId, compact = false, onAll }) {
       <div className="photo-grid">
         {(compact ? photos.slice(-3) : photos).map((p) => (
           <div key={p.id}>
-            <Media fileId={p.file.id} alt={`Progress ${p.date}`} />
+            <Media fileId={p.file.id} alt={t('Progress {date}', { date: p.date })} />
             <small>{shortDate(p.date)}</small>
           </div>
         ))}
         <label className="photo-add">
           <Plus size={23} />
-          <span>{busy ? "Saving…" : "Add photo"}</span>
+          <span>{busy ? t('Saving…') : t('Add photo')}</span>
           <input
-            aria-label="Add photo"
+            aria-label={t('Add photo')}
             disabled={busy}
             type="file"
             accept="image/*"
@@ -1296,7 +1295,7 @@ export function Photos({ clientId, compact = false, onAll }) {
       </div>
       {!photos.length && (
         <p className="muted">
-          Your photos, your pace. Only photos you upload appear here.
+          {t('Your photos, your pace. Only photos you upload appear here.')}
         </p>
       )}
       {error && (
@@ -1306,30 +1305,30 @@ export function Photos({ clientId, compact = false, onAll }) {
       )}
       {compare && (
         <Modal
-          title="See how far you’ve come"
+          title={t('See how far you’ve come')}
           onClose={() => setCompare(false)}
         >
           <div className="form-grid">
-            <Field label="Before">
+            <Field label={t('Before')}>
               <select
                 value={left || photos[0].id}
                 onChange={(e) => setLeft(e.target.value)}
               >
                 {photos.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {shortDate(p.date)} · {p.file.name}
+                    {shortDate(p.date)} · {t(p.file.name)}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="After">
+            <Field label={t('After')}>
               <select
                 value={right || photos.at(-1).id}
                 onChange={(e) => setRight(e.target.value)}
               >
                 {photos.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {shortDate(p.date)} · {p.file.name}
+                    {shortDate(p.date)} · {t(p.file.name)}
                   </option>
                 ))}
               </select>
@@ -1340,7 +1339,7 @@ export function Photos({ clientId, compact = false, onAll }) {
               fileId={
                 (photos.find((p) => p.id === right) || photos.at(-1)).file.id
               }
-              alt="After"
+              alt={t('After')}
             />
             <div
               className="photo-before"
@@ -1350,16 +1349,16 @@ export function Photos({ clientId, compact = false, onAll }) {
                 fileId={
                   (photos.find((p) => p.id === left) || photos[0]).file.id
                 }
-                alt="Before"
+                alt={t('Before')}
               />
             </div>
             <div className="compare-divider" style={{ left: `${position}%` }} />
-            <span>Before</span>
-            <b>After</b>
+            <span>{t('Before')}</span>
+            <b>{t('After')}</b>
           </div>
           <input
             className="compare-range"
-            aria-label="Slide to compare photos"
+            aria-label={t('Slide to compare photos')}
             type="range"
             min="0"
             max="100"
@@ -1385,7 +1384,7 @@ function Milestones({ client }) {
   ];
   return (
     <section className="card">
-      <SectionHead title="Milestones" />
+      <SectionHead title={t('Milestones')} />
       {items.map(([title, done]) => (
         <div className="simple-row milestone-row" key={title}>
           <span className={done ? "green" : "muted"}>
@@ -1393,7 +1392,7 @@ function Milestones({ client }) {
           </span>
           <b>{title}</b>
           <span className={done ? "green" : "muted"}>
-            {done ? "Achieved" : "In progress"}
+            {done ? t('Achieved') : t('In progress')}
           </span>
         </div>
       ))}
@@ -1408,10 +1407,10 @@ export function InBodyPanel({ client }) {
     .sort((a, b) => a.date.localeCompare(b.date));
   return (
     <section className="card">
-      <SectionHead title="Body composition" />
+      <SectionHead title={t('Body composition')} />
       {records.length ? (
         <>
-          <p className="muted">Coach-verified values from your reports.</p>
+          <p className="muted">{t('Coach-verified values from your reports.')}</p>
           <LineChart records={records} field="bodyFat" unit="%" />
           <LineChart
             records={records}
@@ -1423,8 +1422,8 @@ export function InBodyPanel({ client }) {
       ) : (
         <Empty
           icon={FileText}
-          title="Your InBody timeline"
-          detail="Your coach can attach reports and enter verified values in your client profile."
+          title={t('Your InBody timeline')}
+          detail={t('Your coach can attach reports and enter verified values in your client profile.')}
         />
       )}
     </section>

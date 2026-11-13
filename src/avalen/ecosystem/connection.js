@@ -1,3 +1,4 @@
+import { t } from '../i18n.js';
 import { uid } from "../id.js";
 export const connectedMode = () => {
   const mode = new URLSearchParams(location.search).get("connected");
@@ -80,7 +81,8 @@ export async function request(
   }
   const result = await response.json();
   if (!response.ok)
-    throw Object.assign(new Error(result.error || "Please try again."), {
+    // Server messages are English; they are translated here for display.
+    throw Object.assign(new Error(t(result.error || "Please try again.")), {
       status: response.status,
     });
   return result;

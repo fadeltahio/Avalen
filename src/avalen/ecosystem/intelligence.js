@@ -1,6 +1,7 @@
 import { answerFor } from "../checkin-model.js";
 import { utcAdd, zonedDay } from "./time.js";
 import { equal, memory, newId, followUps } from "./memory.js";
+import { t } from '../i18n.js';
 const e1rm = (sets) =>
   Math.max(
     0,
@@ -99,12 +100,12 @@ export function analyzeClient(
           type: "checkin",
           recordId: x.row.id,
           date: x.row.date,
-          text: `Client-reported energy ${x.value}/5`,
+          text: t('Client-reported energy {value}/5', { value: x.value }),
         })),
         {
           type: "schedule",
           date: today,
-          text: `${logged.length} completed logs for ${planned.length} scheduled sessions · ${recentStart} to ${utcAdd(today, -1)}`,
+          text: t('{length} completed logs for {length2} scheduled sessions · {recentStart} to {utcAdd}', { length: logged.length, length2: planned.length, recentStart, utcAdd: utcAdd(today, -1) }),
         },
       ],
       ["conversation", "recovery", "schedule", "checkin"],
@@ -114,13 +115,13 @@ export function analyzeClient(
     add(
       "schedule-gaps",
       "The current schedule may need a review",
-      `${planned.length - logged.length} scheduled sessions have no completed log in the last 14 days.`,
+      t('{count} scheduled sessions have no completed log in the last 14 days.', { count: planned.length - logged.length }),
       planned
         .filter((p) => !logged.includes(p))
         .map((p) => ({
           type: "schedule",
           date: p.date,
-          text: `${client.program.days.find((d) => d.id === p.dayId)?.name || p.dayId} · no completed log`,
+          text: t('{value} · no completed log', { value: client.program.days.find((d) => d.id === p.dayId)?.name || p.dayId }),
         })),
       ["schedule", "conversation"],
       2,
@@ -162,11 +163,11 @@ export function analyzeClient(
     add(
       "nutrition-pattern",
       "A nutrition plan worth discussing",
-      `${outside.length}/${days.length} completed, fully quantified diary days were outside 15% of their saved calorie targets.`,
+      t('{outside}/{days} completed, fully quantified diary days were outside 15% of their saved calorie targets.', { outside: outside.length, days: days.length }),
       outside.map((x) => ({
         type: "nutrition",
         date: x.day.date,
-        text: `Logged ${Math.round(x.foods.reduce((n, f) => n + Number(f.kcal), 0))} kcal · saved target ${x.day.target.kcal} kcal`,
+        text: t('Logged {value} kcal · saved target {kcal} kcal', { value: Math.round(x.foods.reduce((n, f) => n + Number(f.kcal), 0)), kcal: x.day.target.kcal }),
       })),
       ["nutrition", "conversation", "checkin"],
       2,
@@ -198,7 +199,7 @@ export function analyzeClient(
         type: "measurement",
         recordId: w.id,
         date: w.date,
-        text: `${w.weight} kg`,
+        text: t('{weight} kg', { weight: w.weight }),
       })),
       ["conversation", "nutrition", "checkin"],
       3,
@@ -229,7 +230,7 @@ export function analyzeClient(
           type: "workout",
           recordId: x.session.id,
           date: x.session.date,
-          text: `Skipped sets: ${x.sets.filter((s) => s.skipped).length}`,
+          text: t('Skipped sets: {length}', { length: x.sets.filter((s) => s.skipped).length }),
         })),
         ["conversation", "technique", "training"],
         2,
@@ -248,7 +249,7 @@ export function analyzeClient(
         type: "workout",
         recordId: x.session.id,
         date: x.session.date,
-        text: `${ex.name} · estimated 1RM ${Math.round(values[i] * 10) / 10} kg from logged reps/load`,
+        text: t('{name} · estimated 1RM {value} kg from logged reps/load', { name: ex.name, value: Math.round(values[i] * 10) / 10 }),
       }));
     if (
       values.every((v) => v > 0) &&
@@ -256,7 +257,7 @@ export function analyzeClient(
     )
       add(
         `steady:${ex.name}`,
-        `${ex.name}: recorded strength is steady`,
+        t('{name}: recorded strength is steady', { name: ex.name }),
         "Estimated 1RM changed by less than 2% across the last three recorded sessions. Effort, technique and missing sessions limit this comparison.",
         evidence,
         ["training", "recovery", "technique", "conversation"],
@@ -329,7 +330,7 @@ export function analyzeClient(
         {
           type: "workout",
           date: today,
-          text: `Before: ${f.beforeCount} sessions, ${f.beforeVolume} kg volume. After: first 4 sessions, ${f.afterVolume} kg volume. No causal claim.`,
+          text: t('Before: {beforeCount} sessions, {beforeVolume} kg volume. After: first 4 sessions, {afterVolume} kg volume. No causal claim.', { beforeCount: f.beforeCount, beforeVolume: f.beforeVolume, afterVolume: f.afterVolume }),
         },
       ],
       ["memory", "conversation", "training"],
@@ -351,23 +352,23 @@ export function decideInsight(data, user, client, p) {
   );
   if (!insight)
     throw new Error(
-      "This observation is no longer supported by the current records. Refresh the page.",
+      t('This observation is no longer supported by the current records. Refresh the page.'),
     );
   const today = zonedDay(client.checkinPlan?.timezone || "UTC");
   if (
     !["dismiss", "snooze", "reject", "review", "approve"].includes(p.decision)
   )
-    throw new Error("Choose a valid decision.");
+    throw new Error(t('Choose a valid decision.'));
   if (p.decision === "approve") {
     if (p.fingerprint !== insight.fingerprint)
       throw new Error(
-        "The evidence changed. Review a fresh proposal before approving.",
+        t('The evidence changed. Review a fresh proposal before approving.'),
       );
     if (p.type === "training" || p.type === "recovery") {
       const ex = client.program.days
         .flatMap((d) => d.exercises)
         .find((e) => e.id === p.exerciseId);
-      if (!ex) throw new Error("Choose an exercise in the current programme.");
+      if (!ex) throw new Error(t('Choose an exercise in the current programme.'));
       const after = {
         sets: Number(p.values?.sets),
         reps: Number(p.values?.reps),
@@ -384,14 +385,14 @@ export function decideInsight(data, user, client, p) {
         after.weight < 0 ||
         after.weight > 1000
       )
-        throw new Error("Use 1–20 sets, 1–500 reps and 0–1,000 kg.");
+        throw new Error(t('Use 1–20 sets, 1–500 reps and 0–1,000 kg.'));
       const before = { sets: ex.sets, reps: ex.reps, weight: ex.weight };
       if (!equal(before, p.before))
         throw new Error(
-          "The prescription changed. Review the current programme.",
+          t('The prescription changed. Review the current programme.'),
         );
       if (equal(before, after))
-        throw new Error("No prescription changes were proposed.");
+        throw new Error(t('No prescription changes were proposed.'));
       Object.assign(ex, after);
     } else if (p.type === "nutrition") {
       const values = Object.fromEntries(
@@ -406,20 +407,20 @@ export function decideInsight(data, user, client, p) {
         ) ||
         !Number.isFinite(values.kcal)
       )
-        throw new Error("Enter a valid nutrition prescription.");
+        throw new Error(t('Enter a valid nutrition prescription.'));
       const before = Object.fromEntries(
         Object.keys(values).map((k) => [k, client.nutrition[k]]),
       );
       if (!equal(before, p.before))
         throw new Error(
-          "The nutrition plan changed. Review the current targets.",
+          t('The nutrition plan changed. Review the current targets.'),
         );
       if (equal(before, values))
-        throw new Error("No nutrition changes were proposed.");
+        throw new Error(t('No nutrition changes were proposed.'));
       Object.assign(client.nutrition, values);
     } else if (p.type === "conversation") {
       if (!String(p.message || "").trim())
-        throw new Error("Write the message before sending.");
+        throw new Error(t('Write the message before sending.'));
       data.messages.push({
         id: newId(),
         clientId: client.id,
@@ -430,7 +431,7 @@ export function decideInsight(data, user, client, p) {
         read: false,
       });
     } else
-      throw new Error("Open the relevant review flow to make this change.");
+      throw new Error(t('Open the relevant review flow to make this change.'));
   }
   const decision = {
     id: newId(),
@@ -462,7 +463,7 @@ export function decideInsight(data, user, client, p) {
       evidence: decision.evidence,
       explanation:
         p.decision === "approve" && p.type !== "conversation"
-          ? `Your coach reviewed your progress and updated your ${p.type === "nutrition" ? "nutrition targets" : "training prescription"}.`
+          ? t('Your coach reviewed your progress and updated your {value}.', { value: p.type === "nutrition" ? "nutrition targets" : "training prescription" })
           : null,
     },
   );

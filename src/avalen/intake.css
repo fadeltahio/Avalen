@@ -11,7 +11,7 @@
   animation: intake-in var(--motion-sheet) var(--ease-sheet) both;
 }
 .intake-flow > header { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; min-height: 44px; }
-.intake-back { display: grid; place-items: center; width: 44px; height: 44px; margin-left: -12px; color: var(--text); }
+.intake-back { display: grid; place-items: center; width: 44px; height: 44px; margin-inline-start: -12px; color: var(--text); }
 .intake-back:disabled { opacity: 0; }
 .intake-count { color: var(--muted); font-size: 13px; text-align: center; }
 .intake-skip { min-height: 44px; color: var(--muted); font-size: 13px; }
@@ -33,7 +33,7 @@
   color: var(--text);
   font-size: 16px;
   font-weight: 600;
-  text-align: left;
+  text-align: start;
   transition: background-color var(--motion-state) ease, color var(--motion-state) ease, border-color var(--motion-state) ease, transform var(--motion-press) var(--ease-precise);
   animation: intake-option 420ms var(--ease-precise) both;
   animation-delay: calc(var(--i) * 45ms + 90ms);
@@ -50,7 +50,7 @@
 .intake-flow.is-sent p { margin: 0 0 20px; color: var(--muted); }
 .intake-sent-mark { display: grid; place-items: center; width: 84px; height: 84px; border: 1px solid var(--green); border-radius: 50%; color: var(--green); animation: motion-check var(--motion-earned) var(--ease-settle) both; }
 
-.intake-prompt { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; margin: 0 0 16px; padding: 14px 16px; border: 1px solid var(--text); border-radius: 4px; background: none; color: var(--text); text-align: left; }
+.intake-prompt { display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; margin: 0 0 16px; padding: 14px 16px; border: 1px solid var(--text); border-radius: 4px; background: none; color: var(--text); text-align: start; }
 .intake-prompt b { display: block; font-size: 15px; }
 .intake-prompt small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
 

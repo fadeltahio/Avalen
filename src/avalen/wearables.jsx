@@ -9,6 +9,7 @@ import {
   ACCOUNT_PROVIDERS, DEVICE_PROVIDERS, METRICS, PROVIDERS, SHARE_GROUPS,
   cleanMetrics, formatMetric, hrvMethod, latestDay, sampleDays, shareFor, shiftDay, trend, visibleMetrics, wearableFlag,
 } from './wearables-model.js';
+import { formatDate, t } from './i18n.js';
 import './wearables.css';
 
 const ICONS = { whoop: HeartPulse, google: Watch, apple: Watch, healthconnect: Smartphone };
@@ -17,14 +18,14 @@ const role = () => connection()?.user?.role || null;
 export function ago(iso, now = Date.now()) {
   if (!iso) return '';
   const minutes = Math.max(0, Math.round((now - Date.parse(iso)) / 60000));
-  if (minutes < 2) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 2) return t('just now');
+  if (minutes < 60) return t('{count} min ago', { count: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return t('{count}h ago', { count: hours });
   const days = Math.round(hours / 24);
-  return days === 1 ? 'yesterday' : `${days} days ago`;
+  return days === 1 ? t('yesterday') : t('{count} days ago', { count: days });
 }
-const weekday = (date) => new Date(`${date}T12:00:00Z`).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
+const weekday = (date) => formatDate(date, { weekday: 'short', day: 'numeric', month: 'short' });
 
 // Readings stored on this device: manual entries in the preview, plus the demo's
 // generated sample history.
@@ -95,10 +96,10 @@ export function WearableLine({ entry }) {
   const day = entry?.latest;
   if (!day) return null;
   const m = day.metrics, parts = [];
-  if (m.recoveryScore != null) parts.push(`Recovery ${formatMetric('recoveryScore', m.recoveryScore)}`);
-  if (m.sleepMinutes != null) parts.push(`Sleep ${formatMetric('sleepMinutes', m.sleepMinutes)}`);
-  if (parts.length < 2 && m.hrvMs != null) parts.push(`HRV ${formatMetric('hrvMs', m.hrvMs)}`);
-  if (parts.length < 2 && m.steps != null) parts.push(`${formatMetric('steps', m.steps)} steps`);
+  if (m.recoveryScore != null) parts.push(t('Recovery {value}', { value: formatMetric('recoveryScore', m.recoveryScore) }));
+  if (m.sleepMinutes != null) parts.push(t('Sleep {value}', { value: formatMetric('sleepMinutes', m.sleepMinutes) }));
+  if (parts.length < 2 && m.hrvMs != null) parts.push(t('HRV {value}', { value: formatMetric('hrvMs', m.hrvMs) }));
+  if (parts.length < 2 && m.steps != null) parts.push(t('{value} steps', { value: formatMetric('steps', m.steps) }));
   const today = dayKey();
   const when = day.date === today ? '' : day.date === shiftDay(today, -1) ? ' · yesterday' : ` · ${weekday(day.date)}`;
   return <small className="client-wearable"><HeartPulse size={13} aria-hidden="true"/>{parts.join(' · ')}<em>{PROVIDERS[day.provider]?.name}{when}</em></small>;
@@ -111,12 +112,12 @@ const TILE_ORDER = [
   ['strain', 'steps', 'activeKcal'],
 ];
 const tileKeys = (m) => TILE_ORDER.map((keys) => keys.find((key) => m[key] != null)).filter(Boolean);
-const tileLabel = (key, provider) => (key === 'hrvMs' ? `HRV · ${hrvMethod(provider)}` : METRICS[key].label);
+const tileLabel = (key, provider) => (key === 'hrvMs' ? `${t('HRV')} · ${hrvMethod(provider)}` : t(METRICS[key].label));
 function WearableTiles({ day }) {
   const m = day.metrics;
   return <div className="wearable-tiles">{tileKeys(m).map((key) => <div key={key} className="wearable-tile"><small>{tileLabel(key, day.provider)}</small><b>{formatMetric(key, m[key])}</b>
-    {key === 'sleepMinutes' && (m.sleepScore != null || m.sleepEfficiency != null) && <em>{m.sleepScore != null ? `${formatMetric('sleepScore', m.sleepScore)} performance` : `${formatMetric('sleepEfficiency', m.sleepEfficiency)} efficiency`}</em>}
-    {key === 'strain' && <em>of 21</em>}
+    {key === 'sleepMinutes' && (m.sleepScore != null || m.sleepEfficiency != null) && <em>{m.sleepScore != null ? t('{value} performance', { value: formatMetric('sleepScore', m.sleepScore) }) : t('{value} efficiency', { value: formatMetric('sleepEfficiency', m.sleepEfficiency) })}</em>}
+    {key === 'strain' && <em>{t('of 21')}</em>}
   </div>)}</div>;
 }
 
@@ -127,12 +128,12 @@ export function ClientWearableHome() {
   const today = dayKey();
   const latest = latestDay((days || []).filter((d) => d.date >= shiftDay(today, -2)));
   if (loading) return null;
-  if (!latest) return <button className="wearable-home-connect" onClick={() => navigate('you')}><HeartPulse size={19}/><span><b>Connect your wearable</b><small>Sleep, recovery and activity, shared with your coach</small></span><ArrowRight size={18}/></button>;
-  const when = latest.date === today ? 'LAST NIGHT' : latest.date === shiftDay(today, -1) ? 'YESTERDAY' : weekday(latest.date).toUpperCase();
-  return <button type="button" className="card wearable-card wearable-home" aria-label={`Your wearable readings from ${PROVIDERS[latest.provider]?.name}`} onClick={() => navigate('you')}>
+  if (!latest) return <button className="wearable-home-connect" onClick={() => navigate('you')}><HeartPulse size={19}/><span><b>{t('Connect your wearable')}</b><small>{t('Sleep, recovery and activity, shared with your coach')}</small></span><ArrowRight size={18}/></button>;
+  const when = latest.date === today ? t('LAST NIGHT') : latest.date === shiftDay(today, -1) ? t('YESTERDAY') : weekday(latest.date).toUpperCase();
+  return <button type="button" className="card wearable-card wearable-home" aria-label={t('Your wearable readings from {source}', { source: PROVIDERS[latest.provider]?.name })} onClick={() => navigate('you')}>
     <div className="wearable-heading"><span>{when}</span><small>{PROVIDERS[latest.provider]?.name}</small></div>
     <WearableTiles day={latest}/>
-    <p className="wearable-source">{latest.sample ? 'Sample data · demo workspace' : `Shared with your coach · updated ${ago(latest.syncedAt)}`}</p>
+    <p className="wearable-source">{latest.sample ? t('Sample data · demo workspace') : t('Shared with your coach · updated {when}', { when: ago(latest.syncedAt) })}</p>
   </button>;
 }
 
@@ -143,18 +144,18 @@ export function ClientRecoveryWidget({ summary }) {
   const rows = data.clients.filter((c) => !c.paused).map((client) => ({ client, day: summary[client.id]?.latest })).filter((r) => r.day && r.day.date >= shiftDay(today, -1));
   // Lowest recovery first, then shortest sleep, so the clients to check are on top.
   rows.sort((a, b) => (a.day.metrics.recoveryScore ?? 101) - (b.day.metrics.recoveryScore ?? 101) || (a.day.metrics.sleepMinutes ?? 1e4) - (b.day.metrics.sleepMinutes ?? 1e4));
-  return <section className="card wearable-card coach-recovery-widget" aria-label="Client recovery">
-    <div className="wearable-heading"><span>CLIENT RECOVERY</span><small>{rows.length} {rows.length === 1 ? 'client' : 'clients'}</small></div>
+  return <section className="card wearable-card coach-recovery-widget" aria-label={t('Client recovery')}>
+    <div className="wearable-heading"><span>{t('CLIENT RECOVERY')}</span><small>{rows.length} {rows.length === 1 ? 'client' : 'clients'}</small></div>
     {rows.length ? <div className="coach-recovery-list">{rows.map(({ client, day }) => {
       const m = day.metrics, flag = wearableFlag(day, today);
       return <button key={client.id} className="coach-recovery-row" onClick={() => selectClient(client.id, 'Overview')}>
         <i className={flag ? `is-${flag.tone}` : ''} aria-hidden="true"/>
-        <span><b>{client.name}</b><small>{PROVIDERS[day.provider]?.name}{day.date === today ? '' : ' · yesterday'}</small></span>
-        <span className="coach-recovery-values">{m.recoveryScore != null && <em>{formatMetric('recoveryScore', m.recoveryScore)}<small>Recovery</small></em>}{m.sleepMinutes != null && <em>{formatMetric('sleepMinutes', m.sleepMinutes)}<small>Sleep</small></em>}</span>
+        <span><b>{t(client.name)}</b><small>{PROVIDERS[day.provider]?.name}{day.date === today ? '' : t(' · yesterday')}</small></span>
+        <span className="coach-recovery-values">{m.recoveryScore != null && <em>{formatMetric('recoveryScore', m.recoveryScore)}<small>{t('Recovery')}</small></em>}{m.sleepMinutes != null && <em>{formatMetric('sleepMinutes', m.sleepMinutes)}<small>{t('Sleep')}</small></em>}</span>
         <ChevronRight size={16}/>
       </button>;
-    })}</div> : <p className="wearable-empty">No wearable readings from the last two days. Clients connect a device from You → Connected devices.</p>}
-    {rows.some((r) => r.day.sample) && <p className="wearable-source">Sample data · demo workspace</p>}
+    })}</div> : <p className="wearable-empty">{t('No wearable readings from the last two days. Clients connect a device from You → Connected devices.')}</p>}
+    {rows.some((r) => r.day.sample) && <p className="wearable-source">{t('Sample data · demo workspace')}</p>}
   </section>;
 }
 
@@ -166,10 +167,10 @@ export function CoachWearableCard({ client, onPlan }) {
   const latest = latestDay(days || []);
   const flag = wearableFlag(latest, today);
   const hidden = SHARE_GROUPS.filter(([key]) => share && share[key] === false).map(([, label]) => label.toLowerCase());
-  const head = <div className="wearable-heading"><span>SLEEP & RECOVERY</span>{latest && <small>{PROVIDERS[latest.provider]?.name}</small>}</div>;
-  if (loading) return <section className="card wearable-card" aria-label="Sleep and recovery" aria-busy="true">{head}<p className="wearable-empty">Loading wearable readings…</p></section>;
-  if (!latest) return <section className="card wearable-card" aria-label="Sleep and recovery">{head}
-    <p className="wearable-empty">{failed ? 'Wearable readings couldn’t be loaded. Try again shortly.' : connected?.length ? `${PROVIDERS[connected[0].provider]?.name} is connected. Readings appear after the first sync.` : hidden.length === 3 ? `${first} has chosen not to share wearable readings.` : `No wearable readings yet. ${first} can connect WHOOP, Google Health or Apple Health from You → Connected devices.`}</p>
+  const head = <div className="wearable-heading"><span>{t('SLEEP & RECOVERY')}</span>{latest && <small>{PROVIDERS[latest.provider]?.name}</small>}</div>;
+  if (loading) return <section className="card wearable-card" aria-label={t('Sleep and recovery')} aria-busy="true">{head}<p className="wearable-empty">{t('Loading wearable readings…')}</p></section>;
+  if (!latest) return <section className="card wearable-card" aria-label={t('Sleep and recovery')}>{head}
+    <p className="wearable-empty">{failed ? t('Wearable readings couldn’t be loaded. Try again shortly.') : connected?.length ? t('{value} is connected. Readings appear after the first sync.', { value: PROVIDERS[connected[0].provider]?.name }) : hidden.length === 3 ? t('{first} has chosen not to share wearable readings.', { first }) : t('No wearable readings yet. {first} can connect WHOOP, Google Health or Apple Health from You → Connected devices.', { first })}</p>
   </section>;
   const m = latest.metrics, source = PROVIDERS[latest.provider]?.name;
   const tiles = tileKeys(m);
@@ -181,18 +182,18 @@ export function CoachWearableCard({ client, onPlan }) {
   const label = (key) => tileLabel(key, latest.provider);
   const dateLabel = latest.date === today ? 'Today' : latest.date === shiftDay(today, -1) ? 'Yesterday' : weekday(latest.date);
   const lastSync = connected?.find((c) => c.provider === latest.provider);
-  return <section className="card wearable-card" aria-label="Sleep and recovery">
+  return <section className="card wearable-card" aria-label={t('Sleep and recovery')}>
     {head}
     <p className="wearable-date">{dateLabel}</p>
-    {flag && <div className={`wearable-flag is-${flag.tone}`}><span><b>{flag.title}</b><small>{flag.detail}</small></span>{onPlan && <button className="text-link" onClick={onPlan}>Review plan <ArrowRight size={14}/></button>}</div>}
+    {flag && <div className={`wearable-flag is-${flag.tone}`}><span><b>{t(flag.title)}</b><small>{t(flag.detail)}</small></span>{onPlan && <button className="text-link" onClick={onPlan}>{t('Review plan')} <ArrowRight size={14}/></button>}</div>}
     <WearableTiles day={latest}/>
-    {!m.recoveryScore && !m.strain && latest.provider !== 'manual' && <p className="wearable-note">{source} doesn’t provide recovery or strain scores. Avalen shows its own readings only.</p>}
+    {!m.recoveryScore && !m.strain && latest.provider !== 'manual' && <p className="wearable-note">{t('{source} doesn’t provide recovery or strain scores. Avalen shows its own readings only.', { source })}</p>}
     {rest.length > 0 && <dl className="wearable-details">{rest.filter((key) => !(key === 'sleepScore' && tiles.includes('sleepMinutes')) && !(key === 'sleepEfficiency' && tiles.includes('sleepMinutes') && m.sleepScore == null)).map((key) => <div key={key}><dt>{label(key)}</dt><dd>{formatMetric(key, m[key])}</dd></div>)}</dl>}
-    {trendKey && <div className="wearable-trend" role="img" aria-label={`${METRICS[trendKey].label}, last 7 days`}>
-      <small>{METRICS[trendKey].label} · 7 days</small>
+    {trendKey && <div className="wearable-trend" role="img" aria-label={t('{label}, last 7 days', { label: METRICS[trendKey].label })}>
+      <small>{t('{label} · 7 days', { label: METRICS[trendKey].label })}</small>
       <div>{points.map(({ date, day }) => { const v = day?.metrics[trendKey]; const low = trendKey === 'recoveryScore' && v != null && v < 34; return <span key={date} className={low ? 'is-low' : ''}><i style={{ '--h': v == null ? 0 : Math.max(0.06, v / max) }} className={v == null ? 'is-empty' : ''}/><em>{new Date(`${date}T12:00:00Z`).toLocaleDateString(undefined, { weekday: 'narrow', timeZone: 'UTC' })}</em></span>; })}</div>
     </div>}
-    <p className="wearable-source">{latest.sample ? 'Sample data · demo workspace' : `${source}${lastSync?.lastSyncAt ? ` · synced ${ago(lastSync.lastSyncAt)}` : latest.syncedAt ? ` · updated ${ago(latest.syncedAt)}` : ''}`}{lastSync?.error === 'reconnect' ? ' · connection expired' : ''}{hidden.length ? ` · ${first} isn’t sharing ${hidden.join(' or ')}` : ''}</p>
+    <p className="wearable-source">{latest.sample ? t('Sample data · demo workspace') : `${source}${lastSync?.lastSyncAt ? ` · synced ${ago(lastSync.lastSyncAt)}` : latest.syncedAt ? ` · updated ${ago(latest.syncedAt)}` : ''}`}{lastSync?.error === 'reconnect' ? t(' · connection expired') : ''}{hidden.length ? t(' · {first} isn’t sharing {value}', { first, value: hidden.join(' or ') }) : ''}</p>
   </section>;
 }
 
@@ -236,48 +237,48 @@ export function WearableConnections() {
   async function syncNow(provider) {
     if (busy) return;
     setBusy(provider); setMessage('');
-    try { await request('/wearables/sync', { method: 'POST', body: { provider } }); await loadStatus(); refresh(); setMessage(`${PROVIDERS[provider].name} is up to date.`); }
+    try { await request('/wearables/sync', { method: 'POST', body: { provider } }); await loadStatus(); refresh(); setMessage(t('{name} is up to date.', { name: PROVIDERS[provider].name })); }
     catch (e) { setMessage(e.message); }
     finally { setBusy(''); }
   }
 
   const latest = latestDay(days || []);
   return <section className="card connected-devices wearable-connections">
-    <SectionHead title="Connected devices" action={<span className="pill">Private by choice</span>}/>
-    <p>Your sleep, recovery and activity, sent to your coach every day. You decide what they see.</p>
+    <SectionHead title={t('Connected devices')} action={<span className="pill">{t('Private by choice')}</span>}/>
+    <p>{t('Your sleep, recovery and activity, sent to your coach every day. You decide what they see.')}</p>
     {returned && RETURN_TEXT[returned.result] && <Notice>{RETURN_TEXT[returned.result](PROVIDERS[returned.provider].name)}</Notice>}
     <div className="device-list">
       {ACCOUNT_PROVIDERS.map((id) => {
         const s = status?.[id], Icon = ICONS[id];
-        const state = !live ? 'Available in your private coaching workspace'
-          : !status ? 'Checking…'
-          : s?.connected ? (s.error === 'reconnect' ? 'Connection expired · connect again' : `Connected${s.lastSyncAt ? ` · synced ${ago(s.lastSyncAt)}` : ''}`)
-          : s?.available ? 'Not connected' : !s?.configured ? 'Not set up on this Avalen server yet' : 'Needs the server’s public address';
+        const state = !live ? t('Available in your private coaching workspace')
+          : !status ? t('Checking…')
+          : s?.connected ? (s.error === 'reconnect' ? t('Connection expired · connect again') : s.lastSyncAt ? t('Connected · synced {when}', { when: ago(s.lastSyncAt) }) : t('Connected'))
+          : s?.available ? t('Not connected') : !s?.configured ? t('Not set up on this Avalen server yet') : t('Needs the server’s public address');
         const action = live && s?.connected && s.error !== 'reconnect'
-          ? <Button small secondary onClick={() => setManage(id)}>Manage</Button>
-          : live && s?.available ? <Button small disabled={Boolean(busy)} onClick={() => connect(id)}>{busy === id ? 'Opening…' : s?.connected ? 'Reconnect' : 'Connect'}</Button> : null;
-        return <div className="device-row" key={id}><span className={`device-symbol ${id}`}><Icon size={24}/></span><span><b>{PROVIDERS[id].name}</b><small>{PROVIDERS[id].devices}</small><em>{state}</em></span>{action}</div>;
+          ? <Button small secondary onClick={() => setManage(id)}>{t('Manage')}</Button>
+          : live && s?.available ? <Button small disabled={Boolean(busy)} onClick={() => connect(id)}>{busy === id ? t('Opening…') : s?.connected ? t('Reconnect') : t('Connect')}</Button> : null;
+        return <div className="device-row" key={id}><span className={`device-symbol ${id}`}><Icon size={24}/></span><span><b>{t(PROVIDERS[id].name)}</b><small>{PROVIDERS[id].devices}</small><em>{state}</em></span>{action}</div>;
       })}
       {DEVICE_PROVIDERS.map((id) => {
         const Icon = ICONS[id], last = status?.[id]?.lastUploadAt;
-        return <div className="device-row" key={id}><span className={`device-symbol ${id}`}><Icon size={24}/></span><span><b>{PROVIDERS[id].name}</b><small>{PROVIDERS[id].devices}</small><em>{last ? `Last update ${ago(last)}` : `Syncs automatically from the Avalen ${PROVIDERS[id].platform === 'ios' ? 'iPhone' : 'Android'} app`}</em></span></div>;
+        return <div className="device-row" key={id}><span className={`device-symbol ${id}`}><Icon size={24}/></span><span><b>{t(PROVIDERS[id].name)}</b><small>{PROVIDERS[id].devices}</small><em>{last ? t('Last update {ago}', { ago: ago(last) }) : t('Syncs automatically from the Avalen {value} app', { value: PROVIDERS[id].platform === 'ios' ? 'iPhone' : 'Android' })}</em></span></div>;
       })}
     </div>
     {message && <p className={/up to date/.test(message) ? 'muted' : 'error'} role="status">{message}</p>}
     {latest && <div className="device-readings wearable-mine">
-      {['sleepMinutes', latest.metrics.recoveryScore != null ? 'recoveryScore' : 'hrvMs', 'steps', latest.metrics.activeKcal != null ? 'activeKcal' : 'totalKcal'].filter((key) => latest.metrics[key] != null).map((key) => <div key={key}><span><small>{key === 'hrvMs' ? `HRV · ${hrvMethod(latest.provider)}` : METRICS[key].label}</small><b>{formatMetric(key, latest.metrics[key])}</b></span></div>)}
+      {['sleepMinutes', latest.metrics.recoveryScore != null ? 'recoveryScore' : 'hrvMs', 'steps', latest.metrics.activeKcal != null ? 'activeKcal' : 'totalKcal'].filter((key) => latest.metrics[key] != null).map((key) => <div key={key}><span><small>{key === 'hrvMs' ? t('HRV · {hrvMethod}', { hrvMethod: hrvMethod(latest.provider) }) : METRICS[key].label}</small><b>{formatMetric(key, latest.metrics[key])}</b></span></div>)}
     </div>}
-    {latest && <small className="muted">{latest.sample ? 'Sample data · demo workspace' : `${PROVIDERS[latest.provider].name} · ${latest.date === dayKey() ? 'today' : weekday(latest.date)}`}</small>}
+    {latest && <small className="muted">{latest.sample ? t('Sample data · demo workspace') : `${PROVIDERS[latest.provider].name} · ${latest.date === dayKey() ? 'today' : weekday(latest.date)}`}</small>}
     <div className="wearable-share">
-      <b>What your coach sees</b>
+      <b>{t('What your coach sees')}</b>
       {SHARE_GROUPS.map(([key, label, detail]) => <label key={key} className="wearable-share-row"><span><b>{label}</b><small>{detail}</small></span>
         <input type="checkbox" checked={share[key]} disabled={saving} onChange={(e) => save((d) => { const c = d.clients.find((x) => x.id === client.id); c.wearables = { ...(c.wearables || {}), share: { ...shareFor(c), [key]: e.target.checked } }; })}/></label>)}
       {error && <p className="error" role="alert">{error}</p>}
     </div>
-    <button className="text-link" onClick={() => setEntry(true)}>Enter readings manually <ArrowRight size={14}/></button>
-    <div className="privacy-footnote"><ShieldCheck size={17}/><p>Nothing is read from a device or account until you connect it. You can disconnect at any time. Wearable scores are estimates from your device, not medical measurements, and never change your plan automatically.</p></div>
+    <button className="text-link" onClick={() => setEntry(true)}>{t('Enter readings manually')} <ArrowRight size={14}/></button>
+    <div className="privacy-footnote"><ShieldCheck size={17}/><p>{t('Nothing is read from a device or account until you connect it. You can disconnect at any time. Wearable scores are estimates from your device, not medical measurements, and never change your plan automatically.')}</p></div>
     {manage && <ManageConnection provider={manage} status={status?.[manage]} busy={busy} onSync={() => syncNow(manage)} onClose={() => setManage(null)} onDone={() => { setManage(null); loadStatus(); refresh(); }}/>}
-    {entry && <ManualEntry onClose={() => setEntry(false)} onSaved={() => { setEntry(false); refresh(); setMessage('Your readings are saved.'); }}/>}
+    {entry && <ManualEntry onClose={() => setEntry(false)} onSaved={() => { setEntry(false); refresh(); setMessage(t('Your readings are saved.')); }}/>}
   </section>;
 }
 
@@ -292,16 +293,16 @@ function ManageConnection({ provider, status, busy, onSync, onClose, onDone }) {
     catch (e) { setError(e.message); setWorking(false); }
   }
   return <Modal title={name} onClose={onClose} canClose={!working}>
-    <div className="device-intro"><span className={`device-symbol ${provider}`}><Link2 size={26}/></span><h3>Connected{status?.connectedAt ? ` since ${new Date(status.connectedAt).toLocaleDateString()}` : ''}</h3></div>
-    <p className="muted">{status?.lastSyncAt ? `Last synced ${ago(status.lastSyncAt)}.` : 'Waiting for the first sync.'} Avalen checks for new readings automatically{provider === 'whoop' ? ' and as soon as WHOOP reports a new sleep or recovery' : ' every few hours'}.</p>
-    <Button secondary disabled={Boolean(busy) || working} onClick={onSync}><RefreshCw size={16}/>{busy === provider ? 'Syncing…' : 'Sync now'}</Button>
+    <div className="device-intro"><span className={`device-symbol ${provider}`}><Link2 size={26}/></span><h3>{t('Connected')}{status?.connectedAt ? t(' since {value}', { value: new Date(status.connectedAt).toLocaleDateString() }) : ''}</h3></div>
+    <p className="muted">{status?.lastSyncAt ? t('Last synced {ago}.', { ago: ago(status.lastSyncAt) }) : t('Waiting for the first sync.')} {t('Avalen checks for new readings automatically')}{provider === 'whoop' ? t(' and as soon as WHOOP reports a new sleep or recovery') : t(' every few hours')}.</p>
+    <Button secondary disabled={Boolean(busy) || working} onClick={onSync}><RefreshCw size={16}/>{busy === provider ? t('Syncing…') : t('Sync now')}</Button>
     <fieldset className="wearable-history" disabled={working}>
-      <legend>When you disconnect</legend>
-      <label><input type="radio" name="history" checked={history === 'keep'} onChange={() => setHistory('keep')}/> Keep past readings for my coach</label>
-      <label><input type="radio" name="history" checked={history === 'delete'} onChange={() => setHistory('delete')}/> Delete past {name} readings from Avalen</label>
+      <legend>{t('When you disconnect')}</legend>
+      <label><input type="radio" name="history" checked={history === 'keep'} onChange={() => setHistory('keep')}/> {t('Keep past readings for my coach')}</label>
+      <label><input type="radio" name="history" checked={history === 'delete'} onChange={() => setHistory('delete')}/> {t('Delete past')} {name} {t('readings from Avalen')}</label>
     </fieldset>
     {error && <p className="error" role="alert">{error}</p>}
-    <button className="text-link pay-disconnect" disabled={working} onClick={disconnect}>{working ? 'Disconnecting…' : `Disconnect ${name}`}</button>
+    <button className="text-link pay-disconnect" disabled={working} onClick={disconnect}>{working ? t('Disconnecting…') : t('Disconnect {name}', { name })}</button>
   </Modal>;
 }
 
@@ -340,23 +341,23 @@ function ManualEntry({ onClose, onSaved }) {
         }
       });
       if (ok) onSaved();
-      else setError(live ? 'Your readings are saved, but your daily steps habit couldn’t be updated.' : 'Your readings couldn’t be saved. Try again.');
+      else setError(live ? t('Your readings are saved, but your daily steps habit couldn’t be updated.') : t('Your readings couldn’t be saved. Try again.'));
     } catch (err) { setError(err.message); }
     finally { setSending(false); }
   }
   const busy = sending || saving;
-  return <Modal title="Enter readings" onClose={onClose} canClose={!busy}>
-    <p className="muted">Copy the numbers from your device’s app, such as Apple Health. These stay labelled as manual entries.</p>
+  return <Modal title={t('Enter readings')} onClose={onClose} canClose={!busy}>
+    <p className="muted">{t('Copy the numbers from your device’s app, such as Apple Health. These stay labelled as manual entries.')}</p>
     <form onSubmit={submit}><fieldset className="save-fields" disabled={busy}>
-      <Field label="Date" type="date" max={today} min={shiftDay(today, -30)} value={form.date} onChange={set('date')} required/>
-      <Field label="Sleep (hours)" type="number" min="0" max="24" step="0.25" inputMode="decimal" value={form.sleepHours} onChange={set('sleepHours')} placeholder="7.5"/>
-      <Field label="HRV (ms)" type="number" min="1" max="300" step="1" inputMode="numeric" value={form.hrvMs} onChange={set('hrvMs')}/>
-      <Field label="Resting heart rate (bpm)" type="number" min="20" max="200" step="1" inputMode="numeric" value={form.restingHr} onChange={set('restingHr')}/>
-      <Field label="Steps" type="number" min="0" max="200000" step="1" inputMode="numeric" value={form.steps} onChange={set('steps')}/>
-      <Field label="Active calories (kcal)" type="number" min="0" max="20000" step="1" inputMode="numeric" value={form.activeKcal} onChange={set('activeKcal')}/>
-      <Notice>Apple Health shows HRV as SDNN; WHOOP and Fitbit use RMSSD. Your coach sees the number you enter, labelled as manual.</Notice>
+      <Field label={t('Date')} type="date" max={today} min={shiftDay(today, -30)} value={form.date} onChange={set('date')} required/>
+      <Field label={t('Sleep (hours)')} type="number" min="0" max="24" step="0.25" inputMode="decimal" value={form.sleepHours} onChange={set('sleepHours')} placeholder="7.5"/>
+      <Field label={t('HRV (ms)')} type="number" min="1" max="300" step="1" inputMode="numeric" value={form.hrvMs} onChange={set('hrvMs')}/>
+      <Field label={t('Resting heart rate (bpm)')} type="number" min="20" max="200" step="1" inputMode="numeric" value={form.restingHr} onChange={set('restingHr')}/>
+      <Field label={t('Steps')} type="number" min="0" max="200000" step="1" inputMode="numeric" value={form.steps} onChange={set('steps')}/>
+      <Field label={t('Active calories (kcal)')} type="number" min="0" max="20000" step="1" inputMode="numeric" value={form.activeKcal} onChange={set('activeKcal')}/>
+      <Notice>{t('Apple Health shows HRV as SDNN; WHOOP and Fitbit use RMSSD. Your coach sees the number you enter, labelled as manual.')}</Notice>
       {error && <p className="error" role="alert">{error}</p>}
-      <Button type="submit">{busy ? 'Saving…' : 'Save readings'}</Button>
+      <Button type="submit">{busy ? t('Saving…') : t('Save readings')}</Button>
     </fieldset></form>
   </Modal>;
 }

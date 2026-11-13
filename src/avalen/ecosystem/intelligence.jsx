@@ -5,6 +5,7 @@ import { useApp } from "../context.js";
 import { Button, Empty, Field, Modal, Notice, SectionHead } from "../ui.jsx";
 import { analyzeClient } from "./intelligence.js";
 import { connection, request } from "./connection.js";
+import { t } from '../i18n.js';
 const actionNames = {
   conversation: "Start a conversation",
   training: "Review training prescription",
@@ -90,8 +91,8 @@ export function Intelligence({ client = null, compact = false }) {
       done?.();
       notify?.(
         decision === "approve"
-          ? "Reviewed action saved"
-          : `Observation ${decision === "snooze" ? "snoozed until tomorrow" : decision === "dismiss" ? "dismissed" : decision === "reject" ? "declined" : "recorded for review"}`,
+          ? t('Reviewed action saved')
+          : t('Observation {value}', { value: decision === "snooze" ? "snoozed until tomorrow" : decision === "dismiss" ? "dismissed" : decision === "reject" ? "declined" : "recorded for review" }),
       );
     } catch (e) {
       setError(e.message);
@@ -128,7 +129,7 @@ export function Intelligence({ client = null, compact = false }) {
   return (
     <section className="ecosystem-stack intelligence-section">
       <SectionHead
-        title="Avalen Intelligence"
+        title={t('Avalen Intelligence')}
         action={
           compact ? (
             <button
@@ -138,20 +139,20 @@ export function Intelligence({ client = null, compact = false }) {
                   selectClient(display[0].clientId, "Intelligence");
               }}
             >
-              Explore observations <ArrowRight size={14} />
+              {t('Explore observations')} <ArrowRight size={14} />
             </button>
           ) : (
             <button
               className="text-link"
               onClick={() => setShowHistory((s) => !s)}
             >
-              {showHistory ? "Active observations" : "Decision history"}
+              {showHistory ? t('Active observations') : t('Decision history')}
             </button>
           )
         }
       />
       <p className="muted">
-        Grounded in recorded progress. Reviewed by the coach.
+        {t('Grounded in recorded progress. Reviewed by the coach.')}
       </p>
       {showHistory ? (
         <div className="ecosystem-stack">
@@ -165,9 +166,9 @@ export function Intelligence({ client = null, compact = false }) {
                   {new Date(d.at).toLocaleString()} · {d.decision}
                 </small>
                 <h3>{d.key}</h3>
-                <p>{d.reason || "No additional reason recorded."}</p>
+                <p>{d.reason || t('No additional reason recorded.')}</p>
                 <MotionDetails>
-                  <summary>Evidence at decision time</summary>
+                  <summary>{t('Evidence at decision time')}</summary>
                   <ul className="evidence-list">
                     {d.evidence.map((e, i) => (
                       <li key={i}>
@@ -184,17 +185,15 @@ export function Intelligence({ client = null, compact = false }) {
           {display.map((item) => (
             <article className="card insight-card" key={item.id}>
               <div className="ecosystem-card-header">
-                <span className="ecosystem-badge">{item.client.name}</span>
+                <span className="ecosystem-badge">{t(item.client.name)}</span>
                 <small>
                   {item.start} – {item.end}
                 </small>
               </div>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
+              <h3>{t(item.title)}</h3>
+              <p>{t(item.detail)}</p>
               <MotionDetails>
-                <summary>
-                  Evidence · {item.evidence.length} recorded sources
-                </summary>
+                <summary>{t('Evidence · {length} recorded sources', { length: item.evidence.length })}</summary>
                 <ul className="evidence-list">
                   {item.evidence.map((e, i) => (
                     <li key={i}>
@@ -206,28 +205,28 @@ export function Intelligence({ client = null, compact = false }) {
               </MotionDetails>
               {item.context.length > 0 && (
                 <p className="fine-print muted">
-                  Recent coaching context:{" "}
+                  {t('Recent coaching context:')}{" "}
                   {item.context.map((c) => `${c.title} (${c.date})`).join("; ")}
-                  . Consider the intent of these changes first.
+                  {t('. Consider the intent of these changes first.')}
                 </p>
               )}
               <div className="button-row">
                 <Button small onClick={() => open(item)}>
-                  Review next step <ArrowRight size={14} />
+                  {t('Review next step')} <ArrowRight size={14} />
                 </Button>
                 <button
                   disabled={busy}
                   className="text-link muted"
                   onClick={() => decide(item, "snooze")}
                 >
-                  Snooze
+                  {t('Snooze')}
                 </button>
                 <button
                   disabled={busy}
                   className="text-link muted"
                   onClick={() => decide(item, "dismiss")}
                 >
-                  Dismiss
+                  {t('Dismiss')}
                 </button>
               </div>
             </article>
@@ -236,8 +235,8 @@ export function Intelligence({ client = null, compact = false }) {
       )}
       {!all.length && !showHistory && (
         <Empty
-          title="Nothing needs an automatic flag"
-          detail="Observations appear only when stored records support them. Sparse data is not treated as poor adherence."
+          title={t('Nothing needs an automatic flag')}
+          detail={t('Observations appear only when stored records support them. Sparse data is not treated as poor adherence.')}
         />
       )}
       {error && !selected && (
@@ -251,7 +250,7 @@ export function Intelligence({ client = null, compact = false }) {
           wide
           onClose={() => !busy && setSelected(null)}
         >
-          <p>{selected.detail}</p>
+          <p>{t(selected.detail)}</p>
           <ul className="evidence-list">
             {selected.evidence.map((e, i) => (
               <li key={i}>
@@ -260,7 +259,7 @@ export function Intelligence({ client = null, compact = false }) {
             ))}
           </ul>
           <Notice>{selected.limitations.join(" ")}</Notice>
-          <Field label="Coach’s next step">
+          <Field label={t('Coach’s next step')}>
             <select value={action} onChange={(e) => chooseType(e.target.value)}>
               {selected.actions.map((a) => (
                 <option key={a} value={a}>
@@ -271,7 +270,7 @@ export function Intelligence({ client = null, compact = false }) {
           </Field>
           {["training", "recovery"].includes(action) && (
             <>
-              <Field label="Exercise to review">
+              <Field label={t('Exercise to review')}>
                 <select
                   value={exerciseId}
                   onChange={(e) => {
@@ -292,7 +291,7 @@ export function Intelligence({ client = null, compact = false }) {
                     <optgroup key={d.id} label={d.name}>
                       {d.exercises.map((ex) => (
                         <option key={ex.id} value={ex.id}>
-                          {ex.name}
+                          {t(ex.name)}
                         </option>
                       ))}
                     </optgroup>
@@ -316,34 +315,32 @@ export function Intelligence({ client = null, compact = false }) {
             />
           )}{" "}
           {action === "conversation" && (
-            <Field label="Message · review before sending">
+            <Field label={t('Message · review before sending')}>
               <textarea
                 required
                 maxLength={4000}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="Start with what the client reported, then ask an open question…"
+                placeholder={t('Start with what the client reported, then ask an open question…')}
               />
             </Field>
           )}
-          <Field label="Reason / coaching context (optional)">
+          <Field label={t('Reason / coaching context (optional)')}>
             <textarea
               maxLength={2000}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Why this next step makes sense for this client…"
+              placeholder={t('Why this next step makes sense for this client…')}
             />
           </Field>
           {connection() && (
             <MotionDetails>
-              <summary>Optional AI-assisted explanation</summary>
+              <summary>{t('Optional AI-assisted explanation')}</summary>
               <p className="fine-print muted">
                 {!selected.client.externalAIConsent?.enabled
-                  ? "The client has not opted into external AI explanations. Deterministic evidence remains available. "
+                  ? t('The client has not opted into external AI explanations. Deterministic evidence remains available. ')
                   : ""}
-                The configured provider receives the evidence shown above and
-                recent coaching context. Its explanation is labelled as
-                interpretation and cannot change a plan.
+                {t('The configured provider receives the evidence shown above and recent coaching context. Its explanation is labelled as interpretation and cannot change a plan.')}
               </p>
               <label className="checkbox-row">
                 <input
@@ -351,7 +348,7 @@ export function Intelligence({ client = null, compact = false }) {
                   checked={aiConsent}
                   onChange={(e) => setAIConsent(e.target.checked)}
                 />
-                Allow this evidence to be sent to the configured AI provider
+                {t('Allow this evidence to be sent to the configured AI provider')}
               </label>
               <Button
                 secondary
@@ -363,11 +360,11 @@ export function Intelligence({ client = null, compact = false }) {
                 }
                 onClick={requestAI}
               >
-                Prepare explanation
+                {t('Prepare explanation')}
               </Button>
               {ai && (
                 <Notice>
-                  <b>AI interpretation · coach review required</b>
+                  <b>{t('AI interpretation · coach review required')}</b>
                   <p>{ai.summary}</p>
                   <ul>
                     {ai.considerations.map((c, i) => (
@@ -394,9 +391,7 @@ export function Intelligence({ client = null, compact = false }) {
                     selectClient(id, routeFor[action]);
                   })
                 }
-              >
-                Open {actionNames[action].toLowerCase()}
-              </Button>
+              >{t('Open {value}', { value: actionNames[action].toLowerCase() })}</Button>
             ) : (
               <Button
                 disabled={
@@ -407,10 +402,10 @@ export function Intelligence({ client = null, compact = false }) {
                 }
               >
                 {busy
-                  ? "Saving…"
+                  ? t('Saving…')
                   : action === "conversation"
-                    ? "Send reviewed message"
-                    : "Approve these changes"}
+                    ? t('Send reviewed message')
+                    : t('Approve these changes')}
               </Button>
             )}
             <Button
@@ -420,7 +415,7 @@ export function Intelligence({ client = null, compact = false }) {
                 decide(selected, "reject", () => setSelected(null))
               }
             >
-              Reject suggestion
+              {t('Reject suggestion')}
             </Button>
           </div>
         </Modal>
@@ -444,7 +439,7 @@ function ProposalFields({ keys, values, before, setValues }) {
         {keys.map((k) => (
           <Field
             key={k}
-            label={`${labels[k]} · currently ${before[k]}`}
+            label={t('{value} · currently {value2}', { value: labels[k], value2: before[k] })}
             type="number"
             min="0"
             step={k === "weight" ? "any" : "1"}
@@ -454,12 +449,12 @@ function ProposalFields({ keys, values, before, setValues }) {
         ))}
       </div>
       <table className="schedule-comparison">
-        <caption>Review before approving</caption>
+        <caption>{t('Review before approving')}</caption>
         <thead>
           <tr>
-            <th>Prescription</th>
-            <th>Before</th>
-            <th>Proposed</th>
+            <th>{t('Prescription')}</th>
+            <th>{t('Before')}</th>
+            <th>{t('Proposed')}</th>
           </tr>
         </thead>
         <tbody>

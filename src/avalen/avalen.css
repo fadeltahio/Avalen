@@ -383,7 +383,7 @@ button:active:not(:disabled) {
   inset: 0 auto 0 max(0px, calc((100vw - 1600px) / 2));
   width: 230px;
   padding: 35px 22px;
-  border-right: 1px solid var(--line);
+  border-inline-end: 1px solid var(--line);
   background: var(--surface-inset);
   display: flex;
   flex-direction: column;
@@ -416,7 +416,7 @@ button:active:not(:disabled) {
   border: 1px solid transparent;
   border-radius: 9px;
   color: var(--muted);
-  text-align: left;
+  text-align: start;
   font-size: 13px;
 }
 .desktop-sidebar nav button.active {
@@ -425,7 +425,7 @@ button:active:not(:disabled) {
   color: var(--text);
 }
 .desktop-sidebar nav i {
-  margin-left: auto;
+  margin-inline-start: auto;
   background: #7fc9a1;
   color: var(--on-primary);
   font-size: 9px;
@@ -460,7 +460,7 @@ button:active:not(:disabled) {
   color: var(--muted);
 }
 .app-content {
-  margin-left: 230px;
+  margin-inline-start: 230px;
   padding: 0 52px;
   min-width: 0;
 }
@@ -523,7 +523,7 @@ button:active:not(:disabled) {
 .notification-dot {
   position: absolute;
   top: 9px;
-  right: 9px;
+  inset-inline-end: 9px;
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -672,7 +672,7 @@ button:active:not(:disabled) {
   width: 100%;
   align-items: center;
   gap: 13px;
-  text-align: left;
+  text-align: start;
   padding: 17px 0;
   border-bottom: 1px solid var(--surface-raised);
   min-width: 0;
@@ -694,9 +694,9 @@ button:active:not(:disabled) {
   font-size: 10px;
 }
 .simple-row > b {
-  text-align: right;
+  text-align: end;
   font-size: 12px;
-  margin-left: auto;
+  margin-inline-start: auto;
   white-space: nowrap;
 }
 .simple-row > span > b {
@@ -704,7 +704,7 @@ button:active:not(:disabled) {
 }
 .simple-row > span + span:last-child {
   font-size: 10px;
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 .list {
   padding-top: 4px;
@@ -881,7 +881,7 @@ button:active:not(:disabled) {
   gap: 9px;
 }
 .habit-tile {
-  text-align: left;
+  text-align: start;
   padding: 16px 12px;
   min-height: 168px;
   display: flex;
@@ -992,7 +992,7 @@ button:active:not(:disabled) {
   align-items: center;
   width: 100%;
   gap: 16px;
-  text-align: left;
+  text-align: start;
   border-bottom: 1px solid var(--line);
   padding: 20px 0;
 }
@@ -1113,7 +1113,7 @@ button:active:not(:disabled) {
 }
 .food-option > button:first-child {
   flex: 1;
-  text-align: left;
+  text-align: start;
   padding: 15px 0;
 }
 .food-option b {
@@ -1155,7 +1155,7 @@ button:active:not(:disabled) {
   letter-spacing: -0.7px;
 }
 .weight-summary > div:last-child {
-  text-align: right;
+  text-align: end;
   padding-top: 7px;
 }
 .weight-summary b {
@@ -1344,10 +1344,10 @@ button:active:not(:disabled) {
   font-size: 10px;
 }
 .photo-compare > span {
-  left: 12px;
+  inset-inline-start: 12px;
 }
 .photo-compare > b {
-  right: 12px;
+  inset-inline-end: 12px;
 }
 .compare-range {
   margin-top: 20px;
@@ -1771,7 +1771,7 @@ button:active:not(:disabled) {
 }
 .message blockquote {
   margin: 0 0 10px;
-  border-left: 2px solid #8bc5a4;
+  border-inline-start: 2px solid #8bc5a4;
   padding: 7px 10px;
   font-size: 10px;
   color: var(--muted);
@@ -1817,7 +1817,7 @@ button:active:not(:disabled) {
   width: 100%;
   align-items: center;
   gap: 15px;
-  text-align: left;
+  text-align: start;
   padding: 18px;
 }
 .checkin-summary > span:nth-child(2) {
@@ -1930,7 +1930,7 @@ button:active:not(:disabled) {
   align-items: center;
   gap: 12px;
   width: 100%;
-  text-align: left;
+  text-align: start;
   padding: 15px 0;
   border-top: 1px solid var(--line);
 }
@@ -1953,7 +1953,7 @@ button:active:not(:disabled) {
 }
 .dashboard-stats > button {
   padding: 0;
-  text-align: left;
+  text-align: start;
   min-width: 0;
 }
 .dashboard-stats .stat {
@@ -1980,7 +1980,7 @@ button:active:not(:disabled) {
 }
 .client-card {
   margin: 0;
-  text-align: left;
+  text-align: start;
   padding: 20px;
   width: 100%;
 }
@@ -2038,7 +2038,7 @@ button:active:not(:disabled) {
 }
 .flag-detail > p {
   font-size: 12px;
-  padding-left: 44px;
+  padding-inline-start: 44px;
 }
 .flag-detail .button-row {
   margin-bottom: 0;
@@ -2066,7 +2066,7 @@ button:active:not(:disabled) {
 }
 .exercise-editor summary:after {
   content: "+";
-  margin-left: auto;
+  margin-inline-start: auto;
   color: var(--muted);
 }
 .exercise-editor[open] summary:after {
@@ -2085,14 +2085,17 @@ button:active:not(:disabled) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  max-height: 220px;
+  max-height: 300px;
   overflow: auto;
 }
+.exercise-library-count { margin: 8px 0 6px; font-size: 11px; }
+.exercise-library button > span { display: grid; gap: 2px; min-width: 0; }
+.exercise-library button small { font-size: 10px; opacity: .65; }
 .exercise-library button {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  text-align: left;
+  text-align: start;
   border: 1px solid #ffffff10;
   border-radius: 8px;
   min-height: 43px;
@@ -2330,7 +2333,7 @@ button:active:not(:disabled) {
     padding: 30px 15px;
   }
   .app-content {
-    margin-left: 190px;
+    margin-inline-start: 190px;
     padding: 0 30px;
   }
   .today-layout,
@@ -2439,8 +2442,8 @@ button:active:not(:disabled) {
     position: fixed;
     z-index: 8;
     bottom: 0;
-    left: 0;
-    right: 0;
+    inset-inline-start: 0;
+    inset-inline-end: 0;
     padding: 11px 10px max(15px, env(safe-area-inset-bottom));
     min-height: 73px;
     display: flex;
@@ -2813,7 +2816,7 @@ button:active:not(:disabled) {
     font-size: 11px;
   }
   .flag-detail > p {
-    padding-left: 0;
+    padding-inline-start: 0;
   }
   .simple-row {
     gap: 11px;

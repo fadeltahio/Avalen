@@ -7,8 +7,8 @@
 .wearable-empty, .wearable-note { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
 .wearable-note { margin-top: 10px; }
 
-.wearable-flag { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 10px 12px; border-left: 2px solid var(--amber); background: var(--surface-soft); }
-.wearable-flag.is-red { border-left-color: var(--red); }
+.wearable-flag { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 10px 12px; border-inline-start: 2px solid var(--amber); background: var(--surface-soft); }
+.wearable-flag.is-red { border-inline-start-color: var(--red); }
 .wearable-flag b, .wearable-flag small { display: block; }
 .wearable-flag b { font-size: 14px; }
 .wearable-flag small { margin-top: 2px; color: var(--muted); font-size: 12px; }
@@ -16,7 +16,7 @@
 
 .wearable-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .wearable-tile { min-width: 0; padding: 12px 10px 12px 0; }
-.wearable-tile + .wearable-tile { padding-left: 12px; border-left: 1px solid var(--line); }
+.wearable-tile + .wearable-tile { padding-inline-start: 12px; border-inline-start: 1px solid var(--line); }
 .wearable-tile small, .wearable-tile b, .wearable-tile em { display: block; }
 .wearable-tile small { overflow: hidden; color: var(--muted); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
 .wearable-tile b { margin-top: 4px; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
@@ -58,17 +58,17 @@
 @media (prefers-reduced-motion: reduce) { .wearable-trend i { animation: none; } }
 [data-reduced-motion="true"] .wearable-trend i { animation: none; }
 
-.wearable-home { display: block; width: 100%; color: var(--text); text-align: left; cursor: pointer; }
+.wearable-home { display: block; width: 100%; color: var(--text); text-align: start; cursor: pointer; }
 .wearable-home .wearable-tiles { border-bottom: 0; }
 .wearable-home .wearable-source { margin-top: 10px; }
-.wearable-home-connect { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--line); background: transparent; color: var(--text); text-align: left; }
+.wearable-home-connect { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--line); background: transparent; color: var(--text); text-align: start; }
 .wearable-home-connect > span { flex: 1; min-width: 0; }
 .wearable-home-connect b, .wearable-home-connect small { display: block; }
 .wearable-home-connect small { margin-top: 2px; color: var(--muted); font-size: 12px; }
 
 .coach-recovery-widget { margin-top: 18px; }
 .coach-recovery-list { display: grid; }
-.coach-recovery-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 16px; gap: 12px; align-items: center; width: 100%; min-height: 56px; padding: 8px 0; border-top: 1px solid var(--line); background: none; color: var(--text); text-align: left; }
+.coach-recovery-row { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto 16px; gap: 12px; align-items: center; width: 100%; min-height: 56px; padding: 8px 0; border-top: 1px solid var(--line); background: none; color: var(--text); text-align: start; }
 .coach-recovery-row > i { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
 .coach-recovery-row > i.is-red { background: var(--red); }
 .coach-recovery-row > i.is-amber { background: var(--amber); }
@@ -76,7 +76,7 @@
 .coach-recovery-row span > small { margin-top: 2px; color: var(--muted); font-size: var(--text-xs); }
 .coach-recovery-row > svg { color: var(--muted); }
 .coach-recovery-values { display: flex; gap: 14px; }
-.coach-recovery-values em { font-style: normal; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.coach-recovery-values em { font-style: normal; font-weight: 600; font-variant-numeric: tabular-nums; text-align: end; }
 .coach-recovery-values em small { display: block; color: var(--muted); font-size: 10px; font-weight: 400; }
 
 .home-edit-button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin: 24px 0 8px; padding: 14px; border: 1px dashed var(--line); background: transparent; color: var(--muted); font-size: 14px; }

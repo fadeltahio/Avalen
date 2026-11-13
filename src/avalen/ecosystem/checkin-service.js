@@ -9,6 +9,7 @@ import {
 } from "../checkin-model.js";
 import { memory, newId } from "./memory.js";
 import { zonedDay, utcAdd, validTimezone } from "./time.js";
+import { t } from '../i18n.js';
 export function checkinSummary(data, row) {
   const client = data.clients.find((c) => c.id === row.clientId),
     interval = Number(checkinPlanFor(client).intervalDays),
@@ -31,7 +32,7 @@ export function checkinSummary(data, row) {
         ),
     )
     .map(
-      (f) => `${f.label}: ${answerFor(row, f)}${f.unit ? " " + f.unit : ""}`,
+      (f) => `${t(f.label)}: ${answerFor(row, f)}${f.unit ? " " + t(f.unit) : ""}`,
     );
   if (row.updateText?.trim())
     reported.push(`Client update: ${row.updateText.trim()}`);
@@ -62,10 +63,10 @@ export function submitCheckin(data, user, client, p, media) {
   const today = zonedDay(client.checkinPlan?.timezone || "UTC"),
     existing = data.checkins.find((r) => r.id === p.id);
   if (existing && existing.clientId !== client.id)
-    throw Object.assign(new Error("Check-in not found."), { status: 404 });
+    throw Object.assign(new Error(t('Check-in not found.')), { status: 404 });
   if (existing && existing.date !== today)
     throw Object.assign(
-      new Error("Past submissions stay unchanged. Send a new update instead."),
+      new Error(t('Past submissions stay unchanged. Send a new update instead.')),
       { status: 409 },
     );
   const plan = checkinPlanFor(client),
@@ -87,7 +88,7 @@ export function submitCheckin(data, user, client, p, media) {
   )
     throw Object.assign(
       new Error(
-        "This check-in period already has a submission. Open today’s check-in to correct it.",
+        t('This check-in period already has a submission. Open today’s check-in to correct it.'),
       ),
       { status: 409 },
     );
@@ -99,7 +100,7 @@ export function submitCheckin(data, user, client, p, media) {
         file.client_id !== client.id ||
         file.duration > 61)
     )
-      throw Object.assign(new Error("Choose this client’s voice recording."), {
+      throw Object.assign(new Error(t('Choose this client’s voice recording.')), {
         status: 400,
       });
   }
@@ -113,7 +114,7 @@ export function submitCheckin(data, user, client, p, media) {
   for (const f of schema.filter((f) => f.type === "photos")) {
     const files = p.answers?.[f.id] || [];
     if (!Array.isArray(files) || files.length > 4)
-      throw Object.assign(new Error("Choose up to four photos."), {
+      throw Object.assign(new Error(t('Choose up to four photos.')), {
         status: 400,
       });
     for (const file of files) {
@@ -123,7 +124,7 @@ export function submitCheckin(data, user, client, p, media) {
         (record.client_id !== client.id || !record.type.startsWith("image/"))
       )
         throw Object.assign(
-          new Error("Choose this client’s progress photos."),
+          new Error(t('Choose this client’s progress photos.')),
           { status: 400 },
         );
     }
@@ -165,7 +166,7 @@ export function reviewCheckin(data, user, client, p, media) {
     (r) => r.id === p.id && r.clientId === client.id,
   );
   if (!row)
-    throw Object.assign(new Error("Check-in not found."), { status: 404 });
+    throw Object.assign(new Error(t('Check-in not found.')), { status: 404 });
   if (p.audio) {
     const file = media(user, p.audio.id);
     if (
@@ -175,7 +176,7 @@ export function reviewCheckin(data, user, client, p, media) {
         file.duration > 61)
     )
       throw Object.assign(
-        new Error("Choose this client’s feedback recording."),
+        new Error(t('Choose this client’s feedback recording.')),
         { status: 400 },
       );
   }
@@ -197,7 +198,7 @@ export function reviewCheckin(data, user, client, p, media) {
     {
       actorId: user.id,
       recordId: row.id,
-      explanation: row.response || "Your coach reviewed your check-in.",
+      explanation: row.response || t('Your coach reviewed your check-in.'),
     },
   );
   if (row.response || row.responseAudio)
@@ -205,7 +206,7 @@ export function reviewCheckin(data, user, client, p, media) {
       id: newId(),
       clientId: client.id,
       from: "coach",
-      text: row.response || "Voice feedback on your check-in",
+      text: row.response || t('Voice feedback on your check-in'),
       audio: row.responseAudio,
       context: `Check-in · ${row.date}`,
       at: new Date().toISOString(),

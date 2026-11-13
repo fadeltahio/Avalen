@@ -4,6 +4,7 @@ import { useApp } from "./context.js";
 import { byUrgency, planPressure, recoveryMap, statusLine } from "./recovery.js";
 import "./recovery.css";
 
+import { t } from './i18n.js';
 // Each muscle is its own shape so it can carry its own recovery state. Paths describe
 // the left half of the figure and are mirrored at render.
 const MIRROR = "matrix(-1 0 0 1 200 0)";
@@ -79,18 +80,18 @@ function Segments({ label, items, value, onChange }) {
 const Row = ({ muscle, selected, onClick, index }) => (
   <button type="button" className={`recovery-row is-${muscle.state} ${selected ? "is-selected" : ""}`} style={{ "--i": index }} aria-pressed={selected} onClick={onClick}>
     <i aria-hidden="true" />
-    <span><b>{muscle.label}</b><small>{statusLine(muscle)}</small></span>
+    <span><b>{t(muscle.label)}</b><small>{statusLine(muscle)}</small></span>
   </button>
 );
 
 const Legend = () => (
   <div className="recovery-legend" aria-hidden="true">
-    <span className="is-hot"><i />Hot</span><span className="is-recovering"><i />Recovering</span><span className="is-ready"><i />Ready</span><span className="is-idle"><i />Not lately</span>
+    <span className="is-hot"><i />{t('Hot')}</span><span className="is-recovering"><i />{t('Recovering')}</span><span className="is-ready"><i />{t('Ready')}</span><span className="is-idle"><i />{t('Not lately')}</span>
   </div>
 );
 
 const Pressure = ({ day, muscles }) => muscles.length > 0 && (
-  <p className="recovery-pressure">Today’s {day.name} hits <b>{muscles.slice(0, 2).map((muscle) => muscle.label).join(" and ")}</b>, still recovering.</p>
+  <p className="recovery-pressure">{t('Today’s')} {t(day.name)} {t('hits')} <b>{muscles.slice(0, 2).map((muscle) => muscle.label).join(" and ")}</b>{t(', still recovering.')}</p>
 );
 
 export function RecoveryMap({ clientId, compact = false, coach = false, day = null, onOpen }) {
@@ -101,15 +102,15 @@ export function RecoveryMap({ clientId, compact = false, coach = false, day = nu
   const pressure = planPressure(map, day);
   const focus = map.muscles.find((muscle) => muscle.id === selected);
   const chooseSide = (next) => { setSide(next); setSelected(null); };
-  const heading = <div className="recovery-heading"><span>LIVE RECOVERY</span>{compact && <ChevronRight size={18} />}</div>;
+  const heading = <div className="recovery-heading"><span>{t('LIVE RECOVERY')}</span>{compact && <ChevronRight size={18} />}</div>;
 
   if (compact) return (
-    <button type="button" className="recovery-card is-compact" aria-label="Open live recovery" onClick={onOpen}>
+    <button type="button" className="recovery-card is-compact" aria-label={t('Open live recovery')} onClick={onOpen}>
       {heading}
       <div className="recovery-compact">
         <div className="recovery-bodies"><Body side="front" states={states} /><Body side="back" states={states} /></div>
         <div className="recovery-list">
-          {map.logged ? byUrgency(map.muscles).slice(0, 3).map((muscle, index) => <span key={muscle.id} className={`recovery-row is-${muscle.state}`} style={{ "--i": index }}><i aria-hidden="true" /><span><b>{muscle.label}</b><small>{statusLine(muscle)}</small></span></span>) : <p className="recovery-empty">{coach ? "Muscles light up as this client logs workouts." : "Log a workout and your muscles light up here."}</p>}
+          {map.logged ? byUrgency(map.muscles).slice(0, 3).map((muscle, index) => <span key={muscle.id} className={`recovery-row is-${muscle.state}`} style={{ "--i": index }}><i aria-hidden="true" /><span><b>{t(muscle.label)}</b><small>{statusLine(muscle)}</small></span></span>) : <p className="recovery-empty">{coach ? t('Muscles light up as this client logs workouts.') : t('Log a workout and your muscles light up here.')}</p>}
         </div>
       </div>
       <Pressure day={day} muscles={pressure} />
@@ -117,7 +118,7 @@ export function RecoveryMap({ clientId, compact = false, coach = false, day = nu
   );
 
   return (
-    <section className="recovery-card" aria-label="Live recovery">
+    <section className="recovery-card" aria-label={t('Live recovery')}>
       {heading}
       <Pressure day={day} muscles={ahead ? [] : pressure} />
       <div className="recovery-main">
@@ -126,20 +127,20 @@ export function RecoveryMap({ clientId, compact = false, coach = false, day = nu
             <div className="body-face"><Body side="front" states={states} selected={selected} onSelect={setSelected} /></div>
             <div className="body-face is-back"><Body side="back" states={states} selected={selected} onSelect={setSelected} /></div>
           </div>
-          <Segments label="Body side" items={[["front", "Front"], ["back", "Back"]]} value={side} onChange={chooseSide} />
+          <Segments label={t('Body side')} items={[["front", "Front"], ["back", "Back"]]} value={side} onChange={chooseSide} />
         </div>
         <div className="recovery-list" key={side}>
           {byUrgency(map.muscles.filter((muscle) => muscle.side === side)).map((muscle, index) => <Row key={muscle.id} muscle={muscle} index={index} selected={selected === muscle.id} onClick={() => setSelected(selected === muscle.id ? null : muscle.id)} />)}
         </div>
       </div>
       {focus && <div className="recovery-detail" key={focus.id}>
-        <b>{focus.label}</b>
-        {focus.lastAt ? <p>{focus.sets} {focus.sets === 1 ? "set" : "sets"} in {focus.session}. {focus.exercises.join(", ")}.</p> : <p>{coach ? "No logged sets in the last two weeks." : "No logged sets in the last two weeks. A good one to bring up with your coach."}</p>}
+        <b>{t(focus.label)}</b>
+        {focus.lastAt ? <p>{focus.sets} {focus.sets === 1 ? "set" : "sets"} {t('in')} {focus.session}. {focus.exercises.join(", ")}.</p> : <p>{coach ? t('No logged sets in the last two weeks.') : t('No logged sets in the last two weeks. A good one to bring up with your coach.')}</p>}
       </div>}
-      <Segments label="Preview recovery" items={AHEAD} value={ahead} onChange={setAhead} />
+      <Segments label={t('Preview recovery')} items={AHEAD} value={ahead} onChange={setAhead} />
       <Legend />
-      {!map.logged && <p className="recovery-empty">{coach ? "Muscles light up as this client logs workouts." : "Log a workout and your muscles light up here."}</p>}
-      <p className="recovery-note">Estimated from logged sets, not measured. How you feel comes first.</p>
+      {!map.logged && <p className="recovery-empty">{coach ? t('Muscles light up as this client logs workouts.') : t('Log a workout and your muscles light up here.')}</p>}
+      <p className="recovery-note">{t('Estimated from logged sets, not measured. How you feel comes first.')}</p>
     </section>
   );
 }

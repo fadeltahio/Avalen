@@ -1,3 +1,4 @@
+import { t } from './i18n.js';
 // Avalen assistant: answers built only from records saved in Avalen.
 // Nothing here guesses. When the data is missing, the answer says so.
 import { attentionFor, dayKey, metrics, offsetDay, round, scheduleDay, shortDate } from './store.js';
@@ -54,12 +55,12 @@ function week(data, client, today) {
   const done = planned.filter(p => sessions.some(s => s.date === p.date)).length;
   const foodDays = new Set(data.foodLogs.filter(f => f.clientId === client.id && f.date >= start && f.date <= today).map(f => f.date)).size;
   const volume = sessions.reduce((n, s) => n + loggedSets(s).reduce((m, x) => m + (x.kind === 'Duration' ? 0 : x.weight * x.reps), 0), 0);
-  if (!sessions.length && !planned.length && !foodDays) return { text: 'Nothing is logged for the last 7 days yet. Log a workout or a meal and your week builds here.' };
+  if (!sessions.length && !planned.length && !foodDays) return { text: t('Nothing is logged for the last 7 days yet. Log a workout or a meal and your week builds here.') };
   return {
-    text: planned.length ? `You completed ${done} of ${planned.length} planned ${planned.length === 1 ? 'workout' : 'workouts'} in the last 7 days.` : `You logged ${sessions.length} ${sessions.length === 1 ? 'workout' : 'workouts'} in the last 7 days.`,
+    text: planned.length ? t('You completed {done} of {count} planned workouts in the last 7 days.', { done, count: planned.length }) : t('You logged {count} workouts in the last 7 days.', { count: sessions.length }),
     points: [
       ['Workouts logged', String(sessions.length)],
-      ['Volume lifted', `${Math.round(volume).toLocaleString()} kg`],
+      [t('Volume lifted'), `${Math.round(volume).toLocaleString()} ${t('kg')}`],
       ['Days with food logged', `${foodDays} of 7`],
     ],
   };
@@ -76,15 +77,15 @@ function next(data, client, today) {
       text: `${when}: ${day.name}.`,
       points: day.exercises.slice(0, 4).map(e => [e.name, `${e.sets} × ${e.reps}${e.kind === 'Duration' ? ' sec' : ''}`]),
       more: day.exercises.length > 4 ? `+ ${day.exercises.length - 4} more` : null,
-      action: { label: 'Open training', screen: 'plan', tab: 'Training' },
+      action: { label: t('Open training'), screen: 'plan', tab: 'Training' },
     };
   }
-  return { text: 'No upcoming workout is scheduled yet. Your coach adds sessions to your plan.' };
+  return { text: t('No upcoming workout is scheduled yet. Your coach adds sessions to your plan.') };
 }
 
 function protein(data, client, today) {
   const target = Number(client.nutrition?.p) || 0;
-  if (!target) return { text: 'Your coach hasn’t set a protein target yet.' };
+  if (!target) return { text: t('Your coach hasn’t set a protein target yet.') };
   const logs = data.foodLogs.filter(f => f.clientId === client.id);
   const eaten = round(logs.filter(f => f.date === today).reduce((n, f) => n + Number(f.p || 0), 0));
   const start = offsetDay(-6, today);
@@ -94,9 +95,9 @@ function protein(data, client, today) {
   const average = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : null;
   const left = Math.max(0, round(target - eaten));
   return {
-    text: eaten >= target ? `Yes. You’ve logged ${eaten} g of your ${target} g protein today.` : eaten ? `You’ve logged ${eaten} g of ${target} g today. ${left} g to go.` : `No protein logged today yet. Your target is ${target} g.`,
+    text: eaten >= target ? t('Yes. You’ve logged {eaten} g of your {target} g protein today.', { eaten, target }) : eaten ? t('You’ve logged {eaten} g of {target} g today. {left} g to go.', { eaten, target, left }) : t('No protein logged today yet. Your target is {target} g.', { target }),
     points: [['Today', `${eaten} / ${target} g`], ...(average !== null ? [[`Daily average · ${values.length} logged ${values.length === 1 ? 'day' : 'days'}`, `${average} g`]] : [])],
-    action: { label: 'Open nutrition', screen: 'nutrition' },
+    action: { label: t('Open nutrition'), screen: 'nutrition' },
   };
 }
 
@@ -106,19 +107,19 @@ function lifts(data, client) {
     if (!best[x.name] || estimate(x) > estimate(best[x.name].set)) best[x.name] = { set: x, date: s.date };
   }));
   const top = Object.entries(best).sort((a, b) => estimate(b[1].set) - estimate(a[1].set)).slice(0, 3);
-  if (!top.length) return { text: 'No weighted sets are logged yet. Your best lifts appear here after your first workout.' };
+  if (!top.length) return { text: t('No weighted sets are logged yet. Your best lifts appear here after your first workout.') };
   return {
-    text: 'Your strongest logged sets, by estimated one-rep max:',
-    points: top.map(([name, { set, date }]) => [name, `${round(set.weight)} kg × ${set.reps} · ${shortDate(date)}`]),
-    action: { label: 'Open progress', screen: 'progress' },
+    text: t('Your strongest logged sets, by estimated one-rep max:'),
+    points: top.map(([name, { set, date }]) => [t(name), `${round(set.weight)} ${t('kg')} × ${set.reps} · ${shortDate(date)}`]),
+    action: { label: t('Open progress'), screen: 'progress' },
   };
 }
 
 function focus(data, client) {
   let found = [];
   try { found = analyzeClient(data, client).sort((a, b) => a.priority - b.priority).slice(0, 3); } catch { found = []; }
-  if (!found.length) return { text: 'Nothing stands out in your recent records. Keep logging so your coach sees the full picture.' };
-  return { text: 'From your last four weeks of records:', points: found.map(i => [i.title, '']), note: 'These are observations from saved data, not a diagnosis. Talk them through with your coach.' };
+  if (!found.length) return { text: t('Nothing stands out in your recent records. Keep logging so your coach sees the full picture.') };
+  return { text: t('From your last four weeks of records:'), points: found.map(i => [i.title, '']), note: t('These are observations from saved data, not a diagnosis. Talk them through with your coach.') };
 }
 
 const activeClients = data => data.clients.filter(c => !c.paused);
@@ -128,9 +129,9 @@ function flagged(data, key) {
 
 function attention(data) {
   const rows = activeClients(data).map(c => ({ client: c, flags: attentionFor(data, c) })).filter(r => r.flags.length).sort((a, b) => b.flags.length - a.flags.length);
-  if (!rows.length) return { text: 'No client needs attention right now. Every active client is on track in their saved records.' };
+  if (!rows.length) return { text: t('No client needs attention right now. Every active client is on track in their saved records.') };
   return {
-    text: `${rows.length} ${rows.length === 1 ? 'client needs' : 'clients need'} attention:`,
+    text: t('{count} clients need attention:', { count: rows.length }),
     points: rows.slice(0, 5).map(r => [r.client.name, r.flags[0].title + (r.flags.length > 1 ? ` · +${r.flags.length - 1} more` : ''), r.client.id]),
   };
 }
@@ -145,15 +146,15 @@ function summary(data, selectedId, today) {
   const client = data.clients.find(c => c.id === selectedId);
   if (!client) {
     const active = activeClients(data), needs = active.filter(c => attentionFor(data, c).length).length;
-    return { text: `You coach ${active.length} active ${active.length === 1 ? 'client' : 'clients'}. ${needs} ${needs === 1 ? 'needs' : 'need'} attention. Open a client and ask again for a full summary.` };
+    return { text: t('You coach {count} active clients. {needs} need attention. Open a client and ask again for a full summary.', { count: active.length, needs }) };
   }
   const m = metrics(data, client.id, today, 28);
   return {
-    text: `${client.name}, last 28 days:`,
+    text: t('{name}, last 28 days:', { name: client.name }),
     points: [
       ['Training completed', m.training === null ? 'No sessions planned' : `${m.training}%`],
       ['Nutrition on target', m.nutrition === null ? 'Not enough logged days' : `${m.nutrition}% of ${m.nutritionDays} days`],
-      ['Weight change', m.change === null ? 'Not enough weigh-ins' : `${m.change > 0 ? '+' : ''}${m.change} kg`],
+      [t('Weight change'), m.change === null ? t('Not enough weigh-ins') : `${m.change > 0 ? '+' : ''}${m.change} ${t('kg')}`],
       ['Last check-in', m.lastCheckin ? shortDate(m.lastCheckin.date) : 'None yet'],
     ],
     clientId: client.id,
@@ -169,8 +170,8 @@ export function answer(intent, { data, client, role, selectedClientId, today = d
     if (intent === 'billing') {
       const overdue = (data.payments || []).filter(p => paymentState(p, today) === 'overdue');
       if (data.payments?.length) {
-        if (!overdue.length) return { text: 'No payments are overdue.', action: { label: 'Open payments', screen: 'business', tab: 'Payments' } };
-        return { text: `${overdue.length} ${overdue.length === 1 ? 'payment is' : 'payments are'} overdue:`, points: overdue.slice(0, 6).map(p => [data.clients.find(c => c.id === p.clientId)?.name || 'Client', `${formatMoney(p.amount, p.currency)} · due ${shortDate(p.dueDate)}`, p.clientId]), action: { label: 'Open payments', screen: 'business', tab: 'Payments' } };
+        if (!overdue.length) return { text: t('No payments are overdue.'), action: { label: t('Open payments'), screen: 'business', tab: 'Payments' } };
+        return { text: t('{count} payments overdue:', { count: overdue.length }), points: overdue.slice(0, 6).map(p => [data.clients.find(c => c.id === p.clientId)?.name || 'Client', `${formatMoney(p.amount, p.currency)} · due ${shortDate(p.dueDate)}`, p.clientId]), action: { label: t('Open payments'), screen: 'business', tab: 'Payments' } };
       }
       return byFlag(data, 'billing', 'No payments are overdue.', n => `${n} ${n === 1 ? 'payment is' : 'payments are'} overdue:`);
     }
@@ -184,8 +185,8 @@ export function answer(intent, { data, client, role, selectedClientId, today = d
   }
   return {
     text: role === 'coach'
-      ? 'I can answer from your saved Avalen records, like the questions above. Open-ended answers need Avalen AI to be connected, and it isn’t set up yet.'
-      : 'I can answer from your saved Avalen records, like the questions above. For anything else, message your coach. Open-ended answers need Avalen AI to be connected, and it isn’t set up yet.',
+      ? t('I can answer from your saved Avalen records, like the questions above. Open-ended answers need Avalen AI to be connected, and it isn’t set up yet.')
+      : t('I can answer from your saved Avalen records, like the questions above. For anything else, message your coach. Open-ended answers need Avalen AI to be connected, and it isn’t set up yet.'),
     fallback: true,
   };
 }

@@ -3,6 +3,7 @@ import { ArrowLeft, ScanBarcode } from 'lucide-react';
 import { Button } from './ui.jsx';
 import { lookupBarcode, validBarcode } from './food-library.js';
 
+import { t } from './i18n.js';
 const canScan = () => typeof window !== 'undefined' && 'BarcodeDetector' in window && Boolean(navigator.mediaDevices?.getUserMedia);
 
 // Scan a packaged food's barcode, or type its number, then review the label values.
@@ -43,7 +44,7 @@ export function BarcodeScan({ onFound, onManual, onCancel }) {
       scan();
     } catch {
       stopCamera();
-      if (live.current) { setStatus('typing'); setMessage('The camera isn’t available. Type the number under the barcode instead.'); }
+      if (live.current) { setStatus('typing'); setMessage(t('The camera isn’t available. Type the number under the barcode instead.')); }
     }
   }
 
@@ -59,28 +60,28 @@ export function BarcodeScan({ onFound, onManual, onCancel }) {
       const food = await lookupBarcode(clean, { signal: controller.signal });
       if (!live.current) return;
       if (food) onFound(food);
-      else { setStatus('missing'); setMessage('This product isn’t in the food database yet. Add it from the label. It takes a minute.'); }
+      else { setStatus('missing'); setMessage(t('This product isn’t in the food database yet. Add it from the label. It takes a minute.')); }
     } catch (error) {
       if (!live.current) return;
       setStatus('typing');
-      setMessage(error.name === 'AbortError' ? 'The lookup took too long. Check your connection and try again.' : error.message || 'The lookup failed. Try again.');
+      setMessage(error.name === 'AbortError' ? t('The lookup took too long. Check your connection and try again.') : error.message || t('The lookup failed. Try again.'));
     } finally { clearTimeout(timeout); }
   }
 
   return <div className="barcode-scan">
     {(status === 'starting' || status === 'camera') && <div className="barcode-viewfinder">
-      <video ref={video} muted playsInline aria-label="Camera view for barcode scanning"/>
+      <video ref={video} muted playsInline aria-label={t('Camera view for barcode scanning')}/>
       <i className="barcode-frame" aria-hidden="true"/><i className="barcode-laser" aria-hidden="true"/>
-      <p>{status === 'starting' ? 'Starting camera…' : 'Point at the barcode'}</p>
+      <p>{status === 'starting' ? t('Starting camera…') : t('Point at the barcode')}</p>
     </div>}
     <form className="barcode-entry" onSubmit={event => { event.preventDefault(); stopCamera(); find(); }}>
-      <label><span>Barcode number</span><input value={code} inputMode="numeric" autoComplete="off" maxLength={14} placeholder="e.g. 6221007012345" aria-label="Barcode number" onChange={event => setCode(event.target.value.replace(/\D/g, ''))}/></label>
-      <Button type="submit" disabled={!validBarcode(code) || status === 'looking'}><ScanBarcode size={17}/>{status === 'looking' ? 'Looking up…' : 'Look up'}</Button>
+      <label><span>{t('Barcode number')}</span><input value={code} inputMode="numeric" autoComplete="off" maxLength={14} placeholder={t('e.g. 6221007012345')} aria-label={t('Barcode number')} onChange={event => setCode(event.target.value.replace(/\D/g, ''))}/></label>
+      <Button type="submit" disabled={!validBarcode(code) || status === 'looking'}><ScanBarcode size={17}/>{status === 'looking' ? t('Looking up…') : t('Look up')}</Button>
     </form>
-    {status === 'looking' && <p className="barcode-status" role="status"><i/>Finding {code} in the food database…</p>}
+    {status === 'looking' && <p className="barcode-status" role="status"><i/>{t('Finding')} {code} {t('in the food database…')}</p>}
     {message && <p className={status === 'missing' ? 'barcode-status' : 'error'} role="alert">{message}</p>}
-    {status === 'missing' && <Button secondary onClick={() => onManual(code)}>Add it manually</Button>}
-    <p className="muted barcode-note">Packaged foods come from Open Food Facts, a free public database. Always check the values against the label.</p>
-    <button type="button" className="text-link barcode-back" onClick={onCancel}><ArrowLeft size={15}/>Back to search</button>
+    {status === 'missing' && <Button secondary onClick={() => onManual(code)}>{t('Add it manually')}</Button>}
+    <p className="muted barcode-note">{t('Packaged foods come from Open Food Facts, a free public database. Always check the values against the label.')}</p>
+    <button type="button" className="text-link barcode-back" onClick={onCancel}><ArrowLeft size={15}/>{t('Back to search')}</button>
   </div>;
 }

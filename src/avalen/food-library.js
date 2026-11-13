@@ -2,6 +2,7 @@
 // Values are typical, home-style estimates per stated portion. Packaged
 // supermarket products come from their barcode instead (Open Food Facts).
 import { FOODS } from './seed.js';
+import { translateExact } from './i18n.js';
 
 const egypt = (name, ar, portion, kcal, p, c, f, tags = '') => ({ name, ar, portion, kcal, p, c, f, tags, source: 'Typical values' });
 
@@ -18,14 +19,14 @@ export const EGYPT_FOODS = [
   egypt('Macarona béchamel', 'مكرونة بشاميل', '1 slice · 200 g', 420, 18, 38, 21, 'macaroni bechamel pasta'),
   egypt('Lentil soup', 'شوربة عدس', '1 bowl · 250 g', 180, 10, 28, 3, 'shorbet ads'),
   egypt('Grilled kofta', 'كفتة مشوية', '4 pieces · 120 g', 300, 22, 3, 22, 'kofta kebab'),
-  egypt('Shish tawook', 'شيش طاووق', '200 g', 330, 50, 4, 12, 'chicken skewers'),
-  egypt('Chicken shawarma sandwich', 'ساندوتش شاورما فراخ', '1 sandwich', 450, 25, 45, 18, 'shawerma'),
-  egypt('Hawawshi', 'حواوشي', '1 loaf', 600, 28, 50, 32, 'hawawshy'),
-  egypt('Alexandrian liver sandwich', 'ساندوتش كبدة', '1 sandwich', 380, 20, 40, 15, 'kebda'),
-  egypt('Fried eggplant', 'بتنجان مقلي', '100 g', 180, 2, 9, 16, 'betengan aubergine'),
+  egypt('Shish tawook', 'شيش طاووق', '2 skewers · 200 g', 330, 50, 4, 12, 'chicken skewers'),
+  egypt('Chicken shawarma sandwich', 'ساندوتش شاورما فراخ', '1 sandwich · 200 g', 450, 25, 45, 18, 'shawerma'),
+  egypt('Hawawshi', 'حواوشي', '1 loaf · 250 g', 600, 28, 50, 32, 'hawawshy'),
+  egypt('Alexandrian liver sandwich', 'ساندوتش كبدة', '1 sandwich · 150 g', 380, 20, 40, 15, 'kebda'),
+  egypt('Fried eggplant', 'بتنجان مقلي', '3 slices · 100 g', 180, 2, 9, 16, 'betengan aubergine'),
   egypt('Feteer meshaltet', 'فطير مشلتت', '1 slice · 100 g', 400, 7, 40, 24, 'fetir'),
-  egypt('White cheese (Domiati)', 'جبنة بيضاء', '30 g', 80, 4, 1, 6, 'gebna domty feta'),
-  egypt('Roumi cheese', 'جبنة رومي', '30 g', 115, 8, 0, 9, 'gebna romy'),
+  egypt('White cheese (Domiati)', 'جبنة بيضاء', '2 tbsp · 30 g', 80, 4, 1, 6, 'gebna domty feta'),
+  egypt('Roumi cheese', 'جبنة رومي', '1 slice · 30 g', 115, 8, 0, 9, 'gebna romy'),
   egypt('Labneh', 'لبنة', '2 tbsp · 30 g', 50, 2, 1, 4.5, 'labna'),
   egypt('Plain yogurt', 'زبادي', '1 cup · 105 g', 65, 4, 5, 3, 'zabadi'),
   egypt('Full-fat milk', 'لبن كامل الدسم', '1 cup · 240 ml', 150, 8, 12, 8, 'laban'),
@@ -33,15 +34,15 @@ export const EGYPT_FOODS = [
   egypt('Tahini', 'طحينة', '1 tbsp · 15 g', 89, 2.5, 3, 8, 'tahina'),
   egypt('Hummus', 'حمص', '2 tbsp · 30 g', 50, 2.4, 4, 3, 'homos'),
   egypt('Baba ghanoush', 'بابا غنوج', '2 tbsp · 60 g', 80, 1.5, 5, 6, 'baba ghanough'),
-  egypt('Halawa tahiniya', 'حلاوة طحينية', '30 g', 160, 4, 15, 9.5, 'halva halawa'),
+  egypt('Halawa tahiniya', 'حلاوة طحينية', '2 tbsp · 30 g', 160, 4, 15, 9.5, 'halva halawa'),
   egypt('Canned tuna in water', 'تونة مياه', '1 can drained · 120 g', 130, 29, 0, 1, 'tuna'),
   egypt('Canned tuna in oil', 'تونة زيت', '1 can drained · 120 g', 240, 30, 0, 13, 'tuna'),
   egypt('Dates', 'بلح', '3 dates · 24 g', 70, 0.6, 18, 0, 'balah tamr'),
-  egypt('Guava', 'جوافة', '1 medium · 100 g', 68, 2.6, 14, 1, 'gawafa'),
+  egypt('Guava', 'جوافة', '1 piece · 100 g', 68, 2.6, 14, 1, 'gawafa'),
   egypt('Mango', 'مانجو', '1 cup · 165 g', 99, 1.4, 25, 0.6, 'manga'),
   egypt('Sugarcane juice', 'عصير قصب', '1 glass · 250 ml', 180, 0, 45, 0, 'asab'),
   egypt('Sahlab', 'سحلب', '1 cup · 250 ml', 230, 8, 35, 7, 'sahlep'),
-  egypt('Tea with sugar', 'شاي بسكر', '1 cup · 2 tsp sugar', 32, 0, 8, 0, 'shai chai'),
+  egypt('Tea with sugar', 'شاي بسكر', '1 cup · 240 ml', 32, 0, 8, 0, 'shai chai'),
   egypt('Basbousa', 'بسبوسة', '1 piece · 60 g', 230, 3, 35, 9, 'basbosa'),
   egypt('Konafa', 'كنافة', '1 piece · 80 g', 300, 4, 38, 15, 'kunafa kanafeh'),
   egypt('Om Ali', 'أم علي', '1 bowl · 200 g', 450, 10, 50, 23, 'umm ali'),
@@ -56,7 +57,7 @@ export function searchFoods(list, query) {
   const words = plain(query).split(/\s+/).filter(Boolean);
   if (!words.length) return list;
   return list.filter(food => {
-    const text = plain(`${food.name} ${food.ar || ''} ${food.tags || ''}`);
+    const text = plain(`${food.name} ${food.ar || translateExact(food.name) || ''} ${food.tags || ''}`);
     return words.every(word => text.includes(word));
   });
 }

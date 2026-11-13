@@ -13,6 +13,7 @@ import {
 } from "./store.js";
 import { Button, Empty, Field, Modal, Notice, SectionHead } from "./ui.jsx";
 
+import { t } from './i18n.js';
 export function ClientChanges({ client }) {
   const { data, update } = useApp();
   const [hadPrevious] = useState(Boolean(client.lastViewedAt));
@@ -41,30 +42,25 @@ export function ClientChanges({ client }) {
       <SectionHead
         title={
           hadPrevious
-            ? "Since your last review"
-            : "Your first review · last 7 days"
+            ? t('Since your last review')
+            : t('Your first review · last 7 days')
         }
       />
       <div className="changes-grid">
         <span>
-          <b>{sessions.length}</b>completed workouts
+          <b>{sessions.length}</b>{t('completed workouts')}
         </span>
         <span>
-          <b>{messages.length}</b>client messages
+          <b>{messages.length}</b>{t('client messages')}
         </span>
         <span>
-          <b>{checkins.length}</b>check-ins submitted
+          <b>{checkins.length}</b>{t('check-ins submitted')}
         </span>
       </div>
       {weights.length > 1 && (
-        <p className="muted">
-          Weight trend: {weights[0].weight} → {weights.at(-1).weight} kg (
-          {round(weights.at(-1).weight - weights[0].weight)} kg).
-        </p>
+        <p className="muted">{t('Weight trend: {weight} → {weight2} kg ({round} kg).', { weight: weights[0].weight, weight2: weights.at(-1).weight, round: round(weights.at(-1).weight - weights[0].weight) })}</p>
       )}
-      <small className="muted">
-        Review window began {new Date(since).toLocaleDateString()}.
-      </small>
+      <small className="muted">{t('Review window began {value}.', { value: new Date(since).toLocaleDateString() })}</small>
     </section>
   );
 }
@@ -116,20 +112,18 @@ export function ProgressionSuggestions({ client }) {
   return (
     <section className="card">
       <SectionHead
-        title="A possible next step"
+        title={t('A possible next step')}
         action={<TrendingUp size={18} className="green" />}
       />
       <p className="muted">
-        Simple rules, not automatic coaching. Review readiness and technique
-        before increasing load.
+        {t('Simple rules, not automatic coaching. Review readiness and technique before increasing load.')}
       </p>
       {suggestions.map((item) => (
         <div className="suggestion" key={item.ex.id}>
-          <h3>{item.ex.name}</h3>
+          <h3>{t(item.ex.name)}</h3>
           <p>
-            {item.ex.sets} prescribed sets reached {item.ex.reps} reps at{" "}
-            {item.ex.weight} kg or more. Consider {item.ex.weight + 2.5} kg next
-            session.
+            {item.ex.sets} {t('prescribed sets reached')} {item.ex.reps} {t('reps at')}{" "}
+            {item.ex.weight} {t('kg or more. Consider')} {item.ex.weight + 2.5} {t('kg next session.')}
           </p>
           <div className="button-row">
             <Button
@@ -137,7 +131,7 @@ export function ProgressionSuggestions({ client }) {
               secondary
               onClick={() => apply(item, item.ex.weight + 2.5)}
             >
-              Accept +2.5 kg
+              {t('Accept +2.5 kg')}
             </Button>
             <button
               className="text-link"
@@ -146,7 +140,7 @@ export function ProgressionSuggestions({ client }) {
                 setWeight(item.ex.weight + 2.5);
               }}
             >
-              Edit
+              {t('Edit')}
             </button>
             <button
               className="text-link muted"
@@ -166,13 +160,13 @@ export function ProgressionSuggestions({ client }) {
                 })
               }
             >
-              Keep current
+              {t('Keep current')}
             </button>
           </div>
         </div>
       ))}
       {edit && (
-        <Modal title="Adjust the suggested load" onClose={() => setEdit(null)}>
+        <Modal title={t('Adjust the suggested load')} onClose={() => setEdit(null)}>
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -180,7 +174,7 @@ export function ProgressionSuggestions({ client }) {
             }}
           >
             <Field
-              label="Next load (kg)"
+              label={t('Next load (kg)')}
               type="number"
               required
               min="0"
@@ -189,7 +183,7 @@ export function ProgressionSuggestions({ client }) {
               value={weight}
               onChange={(e) => setWeight(Number(e.target.value))}
             />
-            <Button type="submit">Approve adjustment</Button>
+            <Button type="submit">{t('Approve adjustment')}</Button>
           </form>
         </Modal>
       )}
@@ -210,9 +204,9 @@ export function HabitEditor({ client }) {
   }
   return (
     <section className="card">
-      <SectionHead title="Daily foundations" />
+      <SectionHead title={t('Daily foundations')} />
       <p className="muted">
-        Set practical targets. These appear in the client’s Plan → Habits.
+        {t('Set practical targets. These appear in the client’s Plan → Habits.')}
       </p>
       <form
         onSubmit={async (e) => {
@@ -234,14 +228,14 @@ export function HabitEditor({ client }) {
         {form.map((h, i) => (
           <div className="habit-editor" key={h.id}>
             <Field
-              label="Habit"
+              label={t('Habit')}
               required
               value={h.name}
               onChange={(e) => change(i, "name", e.target.value)}
             />
             <div className="form-grid">
               <Field
-                label="Daily target"
+                label={t('Daily target')}
                 type="number"
                 min="0.1"
                 step="0.1"
@@ -251,7 +245,7 @@ export function HabitEditor({ client }) {
                 onChange={(e) => change(i, "target", Number(e.target.value))}
               />
               <Field
-                label="Unit"
+                label={t('Unit')}
                 required
                 value={h.unit}
                 onChange={(e) => change(i, "unit", e.target.value)}
@@ -277,11 +271,11 @@ export function HabitEditor({ client }) {
           }}
         >
           <Plus size={15} />
-          Add custom habit
+          {t('Add custom habit')}
         </button>
         {saveError && <p className="error" role="alert">{saveError}</p>}
-        <Button type="submit">{saving ? 'Saving targets…' : 'Save habit targets'}</Button>
-        {saved && <Notice>Habit targets updated.</Notice>}
+        <Button type="submit">{saving ? t('Saving targets…') : t('Save habit targets')}</Button>
+        {saved && <Notice>{t('Habit targets updated.')}</Notice>}
         </fieldset>
       </form>
     </section>
@@ -296,11 +290,11 @@ export function CustomExercise({ onAdded }) {
     <>
       <button className="text-link" onClick={() => setOpen(true)}>
         <Plus size={15} />
-        Create a custom exercise
+        {t('Create a custom exercise')}
       </button>
       {open && (
         <Modal
-          title="Add to your exercise library"
+          title={t('Add to your exercise library')}
           onClose={() => setOpen(false)}
           canClose={!saving}
         >
@@ -328,13 +322,13 @@ export function CustomExercise({ onAdded }) {
             }}
           >
             <fieldset className="save-fields" disabled={saving}>
-            <Field label="Exercise name" name="name" required maxLength={80} />
-            <Field label="Muscle group" name="group" required maxLength={40} />
-            <Field label="Technique cues">
+            <Field label={t('Exercise name')} name="name" required maxLength={80} />
+            <Field label={t('Muscle group')} name="group" required maxLength={40} />
+            <Field label={t('Technique cues')}>
               <textarea name="notes" maxLength={1000} />
             </Field>
             {saveError && <p className="error" role="alert">{saveError}</p>}
-            <Button type="submit">{saving ? 'Creating exercise…' : 'Create exercise'}</Button>
+            <Button type="submit">{saving ? t('Creating exercise…') : t('Create exercise')}</Button>
             </fieldset>
           </form>
         </Modal>

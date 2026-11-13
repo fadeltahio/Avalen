@@ -1,3 +1,5 @@
+import { t } from "./i18n.js";
+import { catalogueExercise } from "./exercise-catalogue.js";
 // Turns a client's logged sets into the numbers on the exercise page. Nothing here is estimated.
 const dayNumber = (key) => Date.parse(`${key}T00:00:00Z`);
 
@@ -5,7 +7,7 @@ export function findExercise(data, client, name) {
   if (!name) return null;
   const planned = client.program?.days.flatMap((day) => day.exercises).find((item) => item.name === name);
   if (planned) return planned;
-  const listed = data.library.find((item) => item.name === name);
+  const listed = data.library.find((item) => item.name === name) || catalogueExercise(name);
   if (listed) return listed;
   const logged = data.sessions.some((session) => session.clientId === client.id && session.sets.some((set) => set.name === name));
   return logged ? { name, group: "" } : null;
@@ -58,10 +60,11 @@ export function exerciseRecords(entries, metric, limit = 3) {
     .slice(0, limit);
 }
 
+const counted = (key, reps) => (reps === "" || reps == null || !Number.isFinite(Number(reps)) ? t(key.replace("{count}", "{reps}"), { reps }) : t(key, { count: Number(reps) }));
 export function setLabel(set, metric) {
-  if (metric.key === "time") return `${set.reps} sec`;
-  if (metric.key === "reps") return `${set.reps} reps`;
-  return set.kind === "Duration" ? `${set.reps} sec` : `${set.weight} kg × ${set.reps}`;
+  if (metric.key === "time") return counted("{count} sec", set.reps);
+  if (metric.key === "reps") return counted("{count} reps", set.reps);
+  return set.kind === "Duration" ? counted("{count} sec", set.reps) : t("{weight} kg × {reps}", { weight: set.weight, reps: set.reps });
 }
 
 export const entriesBetween = (entries, start, end) => entries.filter((entry) => entry.date >= start && entry.date <= end);

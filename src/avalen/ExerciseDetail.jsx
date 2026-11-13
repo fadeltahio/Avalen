@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import { useApp } from './context.js';
-import { ExerciseMedia, exerciseImage } from './ExerciseMedia.jsx';
+import { ExerciseMedia, exerciseFrames, exerciseImage } from './ExerciseMedia.jsx';
 import { averageValue, chartTop, datePosition, entriesBetween, entryValue, exerciseEntries, exerciseMetric, exerciseRecords, setLabel } from './exercise-stats.js';
 import { motionReduced } from './motion.jsx';
 import { dayKey, offsetDay, shortDate, useFile } from './store.js';
 import { IconButton } from './ui.jsx';
 
+import { language, t } from './i18n.js';
+import { groupLabel } from './exercise-catalogue.js';
 const SECTIONS = ['Progress', 'History', 'Instructions'];
 const RANGES = [['M', 'Month', -29], ['6M', 'Six months', -181]];
 
@@ -24,7 +26,7 @@ function VolumeBars({ entries, metric, start, end, picked, onPick }) {
       onPointerDown={event => { const id = nearest(event); press.current = id === picked ? id : null; onPick(id); }}
       onPointerMove={event => { if (event.buttons) { press.current = null; onPick(nearest(event)); } }}
       onPointerUp={() => { if (press.current) onPick(null); press.current = null; }}>
-      {bars.map(({ entry, value, at }, index) => <button key={entry.id} type="button" className={entry.id === picked ? 'is-picked' : ''} style={{ '--at': at, '--bar': index, height: `${value / top * 100}%` }} aria-pressed={entry.id === picked} aria-label={`${shortDate(entry.date)}: ${Math.round(value).toLocaleString()} ${metric.unit}`} onClick={event => { if (!event.detail) onPick(entry.id === picked ? null : entry.id); }}/>)}
+      {bars.map(({ entry, value, at }, index) => <button key={entry.id} type="button" className={entry.id === picked ? 'is-picked' : ''} style={{ '--at': at, '--bar': index, height: `${value / top * 100}%` }} aria-pressed={entry.id === picked} aria-label={`${shortDate(entry.date)}: ${Math.round(value).toLocaleString()} ${t(metric.unit)}`} onClick={event => { if (!event.detail) onPick(entry.id === picked ? null : entry.id); }}/>)}
     </div>
     <div className="volume-dates" aria-hidden="true"><span>{shortDate(start)}</span><span>{shortDate(end)}</span></div>
   </div>;
@@ -63,46 +65,47 @@ export function ExerciseDetail({ exercise, client, coachView, onBack }) {
     setRange(key);
     setPicked(null);
   }
-  const section = name => ({ ref: node => { if (node) sections.current[name] = node; else delete sections.current[name]; }, 'data-section': name, className: 'exercise-section', 'aria-label': name });
+  const section = name => ({ ref: node => { if (node) sections.current[name] = node; else delete sections.current[name]; }, 'data-section': name, className: 'exercise-section', 'aria-label': t(name) });
 
   return <article className="exercise-detail">
     <div className="exercise-hero"><img className={photo ? '' : 'is-stock'} src={photo || exerciseImage(exercise)} alt=""/></div>
-    <div className={`exercise-bar ${stuck ? 'is-stuck' : ''}`}><IconButton label="Back" onClick={onBack}><ArrowLeft size={24}/></IconButton><span>Exercise details</span></div>
+    <div className={`exercise-bar ${stuck ? 'is-stuck' : ''}`}><IconButton label={t('Back')} onClick={onBack}><ArrowLeft size={24}/></IconButton><span>{t('Exercise details')}</span></div>
     <i className="exercise-sentinel" ref={sentinel}/>
     <div className="exercise-heading">
-      <h1>{exercise.name}</h1>
-      <nav aria-label="Exercise sections">{SECTIONS.map(name => <button key={name} type="button" className={active === name ? 'is-active' : ''} aria-current={active === name ? 'true' : undefined} onClick={() => jump(name)}>{name}</button>)}</nav>
+      <h1>{t(exercise.name)}</h1>
+      {t(exercise.name) !== exercise.name && <p className="exercise-original-name" lang="en" data-no-translate>{exercise.name}</p>}
+      <nav aria-label={t('Exercise sections')}>{SECTIONS.map(name => <button key={name} type="button" className={active === name ? 'is-active' : ''} aria-current={active === name ? 'true' : undefined} onClick={() => jump(name)}>{t(name)}</button>)}</nav>
     </div>
 
     <section {...section('Progress')}>
       {entries.length ? <>
         <div className="exercise-summary">
-          <div className="exercise-readout" aria-live="polite"><small>{pickedEntry ? shortDate(pickedEntry.date) : metric.label}</small><b>{pickedEntry ? Math.round(entryValue(pickedEntry, metric)).toLocaleString() : average === null ? '—' : average.toLocaleString()}<em> {metric.unit}</em></b></div>
-          <div className="exercise-range" role="group" aria-label="Chart range">{RANGES.map(([key, label]) => <button key={key} type="button" aria-label={label} aria-pressed={range === key} onClick={() => changeRange(key)}>{key}</button>)}</div>
+          <div className="exercise-readout" aria-live="polite"><small>{pickedEntry ? shortDate(pickedEntry.date) : t(metric.label)}</small><b>{pickedEntry ? Math.round(entryValue(pickedEntry, metric)).toLocaleString() : average === null ? '—' : average.toLocaleString()}<em> {t(metric.unit)}</em></b></div>
+          <div className="exercise-range" role="group" aria-label={t('Chart range')}>{RANGES.map(([key, label]) => <button key={key} type="button" aria-label={t(label)} aria-pressed={range === key} onClick={() => changeRange(key)}>{language() === 'en' ? key : t(label)}</button>)}</div>
         </div>
-        {visible.length ? <VolumeBars key={range} entries={visible} metric={metric} start={start} end={end} picked={pickedEntry?.id} onPick={setPicked}/> : <p className="exercise-quiet">No sessions in this range.</p>}
-        <h2>Personal records</h2>
+        {visible.length ? <VolumeBars key={range} entries={visible} metric={metric} start={start} end={end} picked={pickedEntry?.id} onPick={setPicked}/> : <p className="exercise-quiet">{t('No sessions in this range.')}</p>}
+        <h2>{t('Personal records')}</h2>
         <ol className="exercise-records">{records.map((record, index) => <li key={`${record.weight}:${record.reps}`}><span>{index + 1}</span><b>{setLabel(record, metric)}</b><small>{shortDate(record.date)}</small></li>)}</ol>
-      </> : <p className="exercise-quiet">{coachView ? `${client.name} has not logged this exercise yet.` : 'No sets logged yet. Log this exercise in a workout and your progress, records and history build here.'}</p>}
+      </> : <p className="exercise-quiet">{coachView ? t('{name} has not logged this exercise yet.', { name: client.name }) : t('No sets logged yet. Log this exercise in a workout and your progress, records and history build here.')}</p>}
     </section>
 
     <section {...section('History')}>
-      <h2>History</h2>
+      <h2>{t('History')}</h2>
       {entries.length ? <div className="exercise-history">{[...entries].reverse().map(entry => <details key={entry.id}>
         <summary><b>{setLabel(exerciseRecords([entry], metric, 1)[0] || entry.sets[0], metric)}</b><small>{shortDate(entry.date)}</small><ChevronDown size={16}/></summary>
-        <ol>{entry.sets.map((set, index) => <li key={set.id || index}><span>Set {index + 1}</span><span>{setLabel({ ...set, weight: Number(set.weight || 0) }, metric)}</span></li>)}</ol>
-      </details>)}</div> : <p className="exercise-quiet">Each logged session will appear here.</p>}
+        <ol>{entry.sets.map((set, index) => <li key={set.id || index}><span>{t('Set')} {index + 1}</span><span>{setLabel({ ...set, weight: Number(set.weight || 0) }, metric)}</span></li>)}</ol>
+      </details>)}</div> : <p className="exercise-quiet">{t('Each logged session will appear here.')}</p>}
     </section>
 
     <section {...section('Instructions')}>
-      <h2>Instructions</h2>
-      {exercise.videoFile && <ExerciseMedia exercise={exercise} live className="exercise-demo"/>}
-      <p className={exercise.notes ? 'exercise-notes' : 'exercise-quiet'}>{exercise.notes || (coachView ? 'No coaching notes on this exercise yet.' : 'Your coach has not added notes for this exercise yet.')}</p>
+      <h2>{t('Instructions')}</h2>
+      {(exercise.videoFile || exerciseFrames(exercise)) && <ExerciseMedia exercise={exercise} live className="exercise-demo"/>}
+      <p className={exercise.notes ? 'exercise-notes' : 'exercise-quiet'}>{exercise.notes || (coachView ? t('No coaching notes on this exercise yet.') : t('Your coach has not added notes for this exercise yet.'))}</p>
       <dl className="exercise-facts">
-        {exercise.group && <div><dt>Muscle group</dt><dd>{exercise.group}</dd></div>}
-        {exercise.sets && <div><dt>Target</dt><dd>{exercise.sets} × {exercise.reps}{exercise.kind === 'Duration' ? ' sec' : ' reps'}</dd></div>}
-        {exercise.rest && <div><dt>Rest</dt><dd>{exercise.rest}s</dd></div>}
-        {exercise.tempo && <div><dt>Tempo</dt><dd>{exercise.tempo}</dd></div>}
+        {exercise.group && <div><dt>{t('Muscle group')}</dt><dd>{groupLabel(exercise.group)}</dd></div>}
+        {exercise.sets && <div><dt>{t('Target')}</dt><dd>{t(exercise.kind === 'Duration' ? '{sets} × {reps} sec' : '{sets} × {reps} reps', { sets: exercise.sets, reps: exercise.reps })}</dd></div>}
+        {exercise.rest && <div><dt>{t('Rest')}</dt><dd>{t('{rest}s', { rest: exercise.rest })}</dd></div>}
+        {exercise.tempo && <div><dt>{t('Tempo')}</dt><dd>{exercise.tempo}</dd></div>}
       </dl>
     </section>
   </article>;

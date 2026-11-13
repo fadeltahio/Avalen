@@ -1,7 +1,7 @@
 // Pure route helpers: reading and writing the URL, and how one route leads to the next.
 const screens = {
   client: ["today", "plan", "nutrition", "progress", "you", "coach"],
-  coach: ["dashboard", "clients", "programs", "inbox", "business"],
+  coach: ["dashboard", "clients", "programs", "inbox", "business", "more"],
 };
 const validDate = (value) =>
   /^\d{4}-\d{2}-\d{2}$/.test(value || "") &&

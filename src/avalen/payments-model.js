@@ -1,13 +1,14 @@
+import { t, locale } from './i18n.js';
 // Coach payments: shared by the app and the server, so both apply the same rules.
 // Money goes from the client to the coach's own Paymob account. Avalen only keeps
 // the record, and only Paymob's signed confirmation can mark a payment verified.
 import { uid } from './id.js';
 
 export const REGIONS = {
-  egypt: { label: 'Egypt', host: 'https://accept.paymob.com', currency: 'EGP' },
-  ksa: { label: 'Saudi Arabia', host: 'https://ksa.paymob.com', currency: 'SAR' },
-  uae: { label: 'United Arab Emirates', host: 'https://uae.paymob.com', currency: 'AED' },
-  oman: { label: 'Oman', host: 'https://oman.paymob.com', currency: 'OMR' },
+  egypt: { label: t('Egypt'), host: 'https://accept.paymob.com', currency: 'EGP' },
+  ksa: { label: t('Saudi Arabia'), host: 'https://ksa.paymob.com', currency: 'SAR' },
+  uae: { label: t('United Arab Emirates'), host: 'https://uae.paymob.com', currency: 'AED' },
+  oman: { label: t('Oman'), host: 'https://oman.paymob.com', currency: 'OMR' },
 };
 // Minor units per major unit (Paymob amounts are sent in minor units).
 export const CURRENCIES = { EGP: 100, SAR: 100, AED: 100, OMR: 1000 };
@@ -19,7 +20,7 @@ export const toMinor = (amount, currency) => Math.round(Number(amount) * (CURREN
 export const fromMinor = (minor, currency) => Number(minor) / (CURRENCIES[currency] || 100);
 export const periodOf = (day) => String(day).slice(0, 7);
 export function periodLabel(period, style = 'long') {
-  return new Date(`${period}-01T12:00:00`).toLocaleDateString('en', { month: style, year: 'numeric' });
+  return new Date(`${period}-01T12:00:00`).toLocaleDateString(locale(), { month: style, year: 'numeric' });
 }
 export function shiftPeriod(period, months) {
   const [year, month] = period.split('-').map(Number);
@@ -30,7 +31,7 @@ export const lastPeriods = (period, count = 6) => Array.from({ length: count }, 
 export function formatMoney(amount, currency) {
   const digits = CURRENCIES[currency] === 1000 ? 3 : 2;
   const value = Number(amount || 0);
-  return `${value.toLocaleString('en', { minimumFractionDigits: Number.isInteger(value) ? 0 : digits, maximumFractionDigits: digits })} ${currency}`;
+  return `${value.toLocaleString(locale(), { minimumFractionDigits: Number.isInteger(value) ? 0 : digits, maximumFractionDigits: digits })} ${currency}`;
 }
 
 const day = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(new Date(`${value}T12:00:00`).getTime());
@@ -42,20 +43,20 @@ export function paymentState(payment, today) {
 
 // One record's own shape. Returns a sentence a coach can act on, or null.
 export function paymentError(p) {
-  if (!p || typeof p !== 'object') return 'Invalid payment.';
-  if (typeof p.id !== 'string' || !p.id || p.id.length > 100) return 'Invalid payment.';
-  if (typeof p.clientId !== 'string' || !p.clientId) return 'Choose a client.';
-  if (!CURRENCIES[p.currency]) return 'Choose a supported currency.';
+  if (!p || typeof p !== 'object') return t('Invalid payment.');
+  if (typeof p.id !== 'string' || !p.id || p.id.length > 100) return t('Invalid payment.');
+  if (typeof p.clientId !== 'string' || !p.clientId) return t('Choose a client.');
+  if (!CURRENCIES[p.currency]) return t('Choose a supported currency.');
   const amount = Number(p.amount);
-  if (!Number.isFinite(amount) || amount <= 0 || amount > 10_000_000) return 'Enter an amount above zero.';
-  if (Math.abs(toMinor(amount, p.currency) - amount * CURRENCIES[p.currency]) > 1e-6) return 'That amount has too many decimal places.';
-  if (typeof p.label !== 'string' || !p.label.trim() || p.label.length > 120) return 'Add a short description (up to 120 characters).';
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(p.period || '')) return 'Choose the month this payment is for.';
-  if (p.dueDate != null && !day(p.dueDate)) return 'Choose a valid due date.';
-  if (!STATUSES.includes(p.status)) return 'Invalid payment status.';
-  if (p.method != null && !METHODS[p.method]) return 'Choose how it was paid.';
-  if (p.status === 'paid' && (!p.method || !p.paidAt || !Number.isFinite(Date.parse(p.paidAt)))) return 'A paid record needs a method and a date.';
-  if (p.note != null && (typeof p.note !== 'string' || p.note.length > 500)) return 'Keep the note under 500 characters.';
+  if (!Number.isFinite(amount) || amount <= 0 || amount > 10_000_000) return t('Enter an amount above zero.');
+  if (Math.abs(toMinor(amount, p.currency) - amount * CURRENCIES[p.currency]) > 1e-6) return t('That amount has too many decimal places.');
+  if (typeof p.label !== 'string' || !p.label.trim() || p.label.length > 120) return t('Add a short description (up to 120 characters).');
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(p.period || '')) return t('Choose the month this payment is for.');
+  if (p.dueDate != null && !day(p.dueDate)) return t('Choose a valid due date.');
+  if (!STATUSES.includes(p.status)) return t('Invalid payment status.');
+  if (p.method != null && !METHODS[p.method]) return t('Choose how it was paid.');
+  if (p.status === 'paid' && (!p.method || !p.paidAt || !Number.isFinite(Date.parse(p.paidAt)))) return t('A paid record needs a method and a date.');
+  if (p.note != null && (typeof p.note !== 'string' || p.note.length > 500)) return t('Keep the note under 500 characters.');
   return null;
 }
 
@@ -68,40 +69,40 @@ const without = (p, keys) => Object.fromEntries(Object.entries(p).filter(([k]) =
 // and server-written Paymob details are untouchable. Returns an error or null.
 export function paymentChangeError(previous = [], next, role) {
   if (same(previous, next)) return null;
-  if (role !== 'coach') return 'Payments are managed by your coach and Paymob.';
-  if (!Array.isArray(next) || next.length > 20000) return 'Invalid payments.';
+  if (role !== 'coach') return t('Payments are managed by your coach and Paymob.');
+  if (!Array.isArray(next) || next.length > 20000) return t('Invalid payments.');
   const ids = new Set();
   for (const row of next) {
-    if (ids.has(row?.id)) return 'Duplicate payment.';
+    if (ids.has(row?.id)) return t('Duplicate payment.');
     ids.add(row?.id);
   }
-  if (previous.some((row) => !ids.has(row.id))) return 'Void a payment instead of deleting it.';
+  if (previous.some((row) => !ids.has(row.id))) return t('Void a payment instead of deleting it.');
   for (const row of next) {
     const old = previous.find((p) => p.id === row.id);
     if (old && same(old, row)) continue;
-    if (old && frozen(old)) return 'Paymob-confirmed payments cannot be changed.';
+    if (old && frozen(old)) return t('Paymob-confirmed payments cannot be changed.');
     const issue = paymentError(row);
     if (issue) return issue;
-    if (row.verified) return 'Only Paymob can confirm a payment.';
+    if (row.verified) return t('Only Paymob can confirm a payment.');
     if (!old) {
-      if (row.paymob?.transactionId || row.paymob?.attempts?.length) return 'Only Paymob can confirm a payment.';
-      if (row.status === 'void') return 'Invalid payment status.';
-      if (row.status === 'paid' && !MANUAL_METHODS.includes(row.method)) return 'Record how it was paid: cash, InstaPay, bank, wallet or other.';
+      if (row.paymob?.transactionId || row.paymob?.attempts?.length) return t('Only Paymob can confirm a payment.');
+      if (row.status === 'void') return t('Invalid payment status.');
+      if (row.status === 'paid' && !MANUAL_METHODS.includes(row.method)) return t('Record how it was paid: cash, InstaPay, bank, wallet or other.');
       continue;
     }
-    if (frozen(old)) return 'Paymob-confirmed payments cannot be changed.';
-    if (old.status === 'void') return 'A voided payment cannot be changed.';
-    if (!same(old.paymob, row.paymob)) return 'Only Paymob can confirm a payment.';
-    for (const key of ['clientId', 'createdAt']) if (!same(old[key], row[key])) return 'This part of a payment cannot change.';
+    if (frozen(old)) return t('Paymob-confirmed payments cannot be changed.');
+    if (old.status === 'void') return t('A voided payment cannot be changed.');
+    if (!same(old.paymob, row.paymob)) return t('Only Paymob can confirm a payment.');
+    for (const key of ['clientId', 'createdAt']) if (!same(old[key], row[key])) return t('This part of a payment cannot change.');
     if (old.status === 'paid') {
       if (!same(without(old, ['status', 'note']), without(row, ['status', 'note'])) || !['paid', 'void'].includes(row.status))
-        return 'A recorded payment can only get a note or be voided.';
+        return t('A recorded payment can only get a note or be voided.');
       continue;
     }
     // old.status === 'due'
-    if (row.status === 'paid' && !MANUAL_METHODS.includes(row.method)) return 'Record how it was paid: cash, InstaPay, bank, wallet or other.';
+    if (row.status === 'paid' && !MANUAL_METHODS.includes(row.method)) return t('Record how it was paid: cash, InstaPay, bank, wallet or other.');
     if (old.paymob?.attempts?.length && (!same(old.amount, row.amount) || old.currency !== row.currency))
-      return 'The client has started paying this request. Void it and send a new one to change the amount.';
+      return t('The client has started paying this request. Void it and send a new one to change the amount.');
   }
   return null;
 }
@@ -127,13 +128,13 @@ export function recordPayment(d, { clientId, amount, currency, label, period, me
 }
 export function markPaid(d, id, method, paidOn) {
   const record = d.payments.find((p) => p.id === id);
-  if (!record || record.status !== 'due') throw new Error('This payment is no longer due.');
-  if (!MANUAL_METHODS.includes(method)) throw new Error('Choose how it was paid.');
+  if (!record || record.status !== 'due') throw new Error(t('This payment is no longer due.'));
+  if (!MANUAL_METHODS.includes(method)) throw new Error(t('Choose how it was paid.'));
   Object.assign(record, { status: 'paid', method, paidAt: new Date(`${paidOn}T12:00:00`).toISOString() });
 }
 export function voidPayment(d, id) {
   const record = d.payments.find((p) => p.id === id);
-  if (!record || frozen(record) || record.status === 'void') throw new Error('This payment cannot be voided.');
+  if (!record || frozen(record) || record.status === 'void') throw new Error(t('This payment cannot be voided.'));
   record.status = 'void';
 }
 

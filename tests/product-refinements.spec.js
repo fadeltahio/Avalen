@@ -35,7 +35,7 @@ test('quick meal review confirms above the fold; editing, completion and removal
  await expect(p.getByRole('heading',{name:'Food diary',exact:true})).toBeInViewport();
  await p.locator('.nutrition-plan-disclosure > summary').click(); await p.getByRole('button',{name:'Log planned Breakfast',exact:true}).click();
  await p.getByRole('button',{name:/0\.5×/}).click(); await expect(p.getByRole('button',{name:'Log meal',exact:true})).toBeInViewport(); await p.getByRole('button',{name:'Log meal',exact:true}).click();
- const logged=(await state(p)).foodLogs.at(-1); expect(logged.kcal).toBe(275); await p.getByRole('button',{name:'Dismiss notification'}).click();
+ const logged=(await state(p)).foodLogs.at(-1); expect(logged.kcal).toBe(240); await p.getByRole('button',{name:'Dismiss notification'}).click();
  await p.getByRole('button',{name:'Finish logging',exact:false}).click();
  await p.locator('.page-nutrition .card.list').getByRole('button').filter({hasText:logged.name}).click(); await p.getByRole('button',{name:'Edit entry',exact:true}).click();
  await p.locator('.meal-edit-details > summary').click(); await p.getByLabel('Calories (kcal)',{exact:true}).fill('300'); await p.getByRole('button',{name:'Save meal',exact:true}).click();

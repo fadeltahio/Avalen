@@ -8,6 +8,7 @@ import React, {
   useSyncExternalStore,
 } from "react";
 
+import { t } from './i18n.js';
 // One policy for CSS, Web Animations and visual-only number interpolation.
 const MotionScope = createContext("workspace");
 export const MotionProvider = MotionScope.Provider;
@@ -478,7 +479,7 @@ export function WeeklyProgress({ value, target, identity }) {
       <div
         className="weekly-track"
         role="meter"
-        aria-label="Weekly training goal"
+        aria-label={t('Weekly training goal')}
         aria-valuemin={0}
         aria-valuemax={target}
         aria-valuenow={Math.min(value, target)}
@@ -492,7 +493,7 @@ export function WeeklyProgress({ value, target, identity }) {
       </div>
       {complete && (
         <small className="weekly-complete" role="status">
-          Weekly training goal reached
+          {t('Weekly training goal reached')}
         </small>
       )}
     </div>
