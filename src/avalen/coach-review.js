@@ -1,4 +1,4 @@
-import {attentionFor, dayKey, shortDate} from './store.js';
+import {attentionFor, dayKey, decision, offsetDay, shortDate} from './store.js';
 import {wearableFlag} from './wearables-model.js';
 
 import { t } from './i18n.js';
@@ -23,3 +23,12 @@ export function reviewQueue(data, wearables = {}) {
 }
 export const reviewAction = flag => ({intake: 'Review intake', review: 'Review check-in', message: t('Read messages'), form: 'Review technique', recovery: 'View recovery', schedule: 'Review schedule', training: 'Review training', nutrition: 'Review nutrition', plateau: 'View trend', checkin: 'View check-ins', billing: 'View billing', ending: 'Review programme'})[flag.key] || 'Review client';
 export const matchesReview = (flag, category) => category === 'All' || (category === 'Check-ins' && ['review', 'checkin'].includes(flag.key)) || (category === 'Messages' && flag.key === 'message') || (category === 'Technique' && flag.key === 'form');
+
+// Snooze a review flag for a client: it stops appearing in the queue until the
+// given number of days have passed, and the reason is recorded on their timeline.
+// Used by every "snooze"/"hold" button a coach sees next to a flagged item.
+export function dismissFlag(d, clientId, key, { days = 7, title, detail } = {}) {
+  d.dismissed ||= [];
+  d.dismissed.push({ clientId, key, until: offsetDay(days) });
+  decision(d, clientId, title, detail);
+}

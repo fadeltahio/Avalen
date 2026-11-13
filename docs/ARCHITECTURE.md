@@ -1,0 +1,114 @@
+# How Avalen is organized
+
+This is a map of the codebase's structure and the reasoning behind it, written after
+a pass that split up the server and the biggest screen files. Read this before
+making a large structural change; it should also make day-to-day bug fixes faster,
+since it says where things live and why.
+
+## Server (`server/`)
+
+`server/app.js` is now a thin dispatcher: it builds the shared context, runs each
+request through the right group of route handlers in order, and serves the built
+web app for anything that isn't `/api/*`. All the actual route logic lives in
+`server/routes/*.js`, one file per topic:
+
+- `accounts.js` — sign up, sign in, coach codes, account deletion
+- `workspace.js` — reading/saving the workspace, the `commands` dispatch, invitations, import
+- `media.js` — uploading and serving private photos/videos/voice notes/PDFs
+- `payments.js` — Paymob: the coach's connection, a client paying, Paymob's own callbacks
+- `wearables.js` — WHOOP/Google Health connections and synced readings
+- `coaching.js` — AI insight explanations, transcription requests, background job status
+
+`server/context.js` builds the database connection, the payment and wearable
+services, and the handful of primitives every route needs (reading the signed-in
+user, committing a workspace change, finding a media file) into one object, passed
+into each route module. `server/http-utils.js` and `server/crypto-utils.js` hold
+low-level helpers (reading a request body, serving a static file, hashing a
+password) with no route logic in them.
+
+**Adding an endpoint:** add it to the route module for its topic (or create a new
+one for a genuinely new topic), and register its handler in the matching array in
+`app.js` (`publicRoutes` for anything reached before a session is known,
+`protectedRoutes` for everything else). Nothing else needs to change.
+
+## Client screens (`src/avalen/`)
+
+The two biggest screen files have been split one-screen-per-file, each named after
+the screen it holds:
+
+- `src/avalen/coach/*.jsx` — Dashboard, Clients, ClientDetail, ClientPlan,
+  ProgramEditor, Programs, NutritionEditor, ScheduleEditor, TravelPlan, Inbox,
+  Business, BillingEditor, Documents
+- `src/avalen/client/*.jsx` — Today (unused, see below), Plan, Nutrition, Habits, Progress
+- `src/avalen/more/*.jsx` — Welcome, FirstClient, CoachMore, You
+
+`src/avalen/coach.jsx` and `src/avalen/client.jsx` are now thin files that just
+re-export from those folders, so every existing `import … from "./coach.jsx"` (and
+the lazy-loaded coach bundle `main.jsx` builds with `React.lazy`) keeps working
+unchanged. Prefer importing directly from the specific screen file in new code —
+the barrels exist for backward compatibility, not as the primary way in.
+
+**Adding a screen:** add a new file next to the others in the right folder, export
+it, and re-export it from the barrel (`coach.jsx` / `client.jsx`) if something
+outside that folder needs it directly.
+
+**`src/avalen/client/Today.jsx`:** this screen is not rendered anywhere — the
+`today` route renders `EditorialHome` (in `editorial.jsx`) instead. It looks like
+an earlier design that was replaced. It was kept as-is (moved, not deleted) since
+removing code is a different kind of change from reorganizing it; it's a
+reasonable candidate to delete if nothing turns out to depend on it.
+
+**`src/main.jsx`** (at the project root, not `src/avalen/main.jsx`) is an old,
+disconnected prototype — nothing in the app loads it (confirm with `grep -r
+"src/main.jsx" index.html src/avalen`). It's not part of the active app; see
+`CLAUDE.md` before touching it.
+
+## Reusable domain actions
+
+Two patterns exist for changing the workspace, both reaching the same `update()` /
+`commit()` machinery underneath:
+
+1. **`command(data, user, { action, payload })`** in
+   `src/avalen/ecosystem/actions.js` — a single, named, tested function covering
+   check-ins, schedule proposals, form reviews, AI consent, coaching-memory notes
+   and notifications. The **same function runs on both the client (for the local
+   preview) and the server** (via `POST /api/commands`), so the rule for e.g. "what
+   happens when a check-in is submitted" exists in exactly one place.
+2. **Inline `update(d => { …mutate…; decision(d, …); })`** — written at the call
+   site, used for everything not yet covered by a named action. This is harder to
+   find, reuse or test than a named function, and the earlier version of this
+   codebase had this pattern duplicated verbatim in a few places (see
+   `dismissFlag` below for one that was fixed).
+
+**`dismissFlag(d, clientId, key, { days, title, detail })`**, in
+`src/avalen/coach-review.js`, replaced three copies of the same "snooze this
+review flag" logic (Dashboard's review queue, a client's attention-flag list, and
+the progression-suggestion "keep current load" button). It's a plain function, not
+routed through `command()`, since nothing about it needs replaying on the server —
+the server already re-validates every change through `mergeEdit` regardless of how
+the client produced it.
+
+### What's left
+
+Most one-off mutations (editing a programme, a schedule, a nutrition plan, a
+membership record, etc.) are still written inline at their call site. Converting
+all of them to named functions in one pass would be a much larger, logic-touching
+change; the remaining ones, roughly in order of value:
+
+1. **Nutrition** (`coach/NutritionEditor.jsx`, `client/Nutrition.jsx`) — saving a
+   plan, logging/removing a food entry, completing a day.
+2. **Schedule & travel** (`coach/ScheduleEditor.jsx`, `coach/TravelPlan.jsx`) —
+   moving a session, starting/ending travel mode.
+3. **Programme editing** (`coach/ProgramEditor.jsx`, `coach/Programs.jsx`) —
+   saving a programme, assigning a template.
+4. **Billing & documents** (`coach/BillingEditor.jsx`, `coach/Documents.jsx`,
+   `coach/ClientDetail.jsx` pause/resume).
+5. Smaller, lower-traffic ones: `WorkoutLogger.jsx`, `communication.jsx`,
+   `editorial.jsx`, `meal-photo.jsx`, `payments.jsx`, `ReferenceMotion.jsx`,
+   `more/You.jsx` (profile edit, data export, reset).
+
+Each of these should get the same treatment `dismissFlag` did: find the actual
+shape of the mutation, give it a name in a plain module near the data it touches
+(not necessarily through `command()` — that's for actions that need identical
+replay client- and server-side), add a unit test for it, then update the call
+site(s), verified against the existing test suite before and after.

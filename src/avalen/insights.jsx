@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ArrowRight, Check, Plus, TrendingUp } from "lucide-react";
 import { useApp } from "./context.js";
+import { dismissFlag } from "./coach-review.js";
 import { useWorkspaceSave } from "./workspace-save.js";
 import {
   dayKey,
@@ -145,19 +146,12 @@ export function ProgressionSuggestions({ client }) {
             <button
               className="text-link muted"
               onClick={() =>
-                update((d) => {
-                  d.dismissed.push({
-                    clientId: client.id,
-                    key: "load-" + item.ex.id,
-                    until: offsetDay(7),
-                  });
-                  decision(
-                    d,
-                    client.id,
-                    "Progression held",
-                    `${item.ex.name}: coach kept current load for now.`,
-                  );
-                })
+                update((d) =>
+                  dismissFlag(d, client.id, "load-" + item.ex.id, {
+                    title: "Progression held",
+                    detail: `${item.ex.name}: coach kept current load for now.`,
+                  }),
+                )
               }
             >
               {t('Keep current')}
