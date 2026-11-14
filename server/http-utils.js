@@ -41,11 +41,26 @@ export async function body(req, limit = 16 * 1024 * 1024, raw = false) {
 }
 
 // Everything that isn't under /api/: the built single-page app and its assets.
+// decodeURIComponent throws on malformed input such as "%E0%A4%A"; callers get the
+// fallback instead of an unexpected 500.
+export function safeDecode(value, fallback = "") {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return fallback;
+  }
+}
+
 export function serveStatic(url, res, dist) {
-  const file = resolve(
-    dist,
-    `.${decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname)}`,
-  );
+  let path;
+  try {
+    path = decodeURIComponent(url.pathname === "/" ? "/index.html" : url.pathname);
+  } catch {
+    res.writeHead(400);
+    res.end("Bad request");
+    return;
+  }
+  const file = resolve(dist, `.${path}`);
   if (!file.startsWith(dist + "/") || !existsSync(file) || !statSync(file).isFile()) {
     res.writeHead(404);
     res.end("Not found");

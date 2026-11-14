@@ -205,16 +205,45 @@ test("audit security: malformed input is refused cleanly and the server's files 
   }
 });
 
-// Open finding (audit 2026-11-14): workouts are refused for a client who isn't on the
-// coach's list, but other record areas (food logs, messages, ...) are accepted and stored
-// in the coach's own workspace, with a stray "ended" relationship for that client id.
-// Nothing reaches the other coach or the client; this is a data-integrity gap.
-test("audit security: a coach's save refuses records for a client not on their list", { todo: "open finding: only workouts check the client list" }, async () => {
+// Found by the audit on 2026-11-14 and fixed: workouts were refused for a client who
+// isn't on the coach's list, but other record types were stored in the coach's own
+// workspace with a stray relationship for that client id.
+test("audit security: a coach's save refuses records for a client not on their list", async () => {
   const { f, b, x } = await world();
   try {
-    const write = await patch(f, b, (d) => d.foodLogs.push({ id: "b-into-x", clientId: x.user.clientId, date: today, name: "Injected", kcal: 1 }));
-    assert.notEqual(write.status, 200);
-    assert.equal(await count(f, "SELECT COUNT(*) AS n FROM food_logs WHERE record_key='id:b-into-x'"), 0);
+    for (const [area, row] of [
+      ["foodLogs", { id: "b-into-x", clientId: x.user.clientId, date: today, name: "Injected", kcal: 1 }],
+      ["messages", { id: "b-msg", clientId: x.user.clientId, from: "coach", text: "Injected", at: new Date().toISOString(), read: false }],
+      ["measurements", { id: "b-m", clientId: "made-up-client", date: today, weight: 80 }],
+    ]) {
+      const write = await patch(f, b, (d) => d[area].push(row));
+      assert.equal(write.status, 404, `${area}: ${write.error}`);
+    }
+    for (const table of ["food_logs", "messages", "measurements"]) assert.equal(await count(f, `SELECT COUNT(*) AS n FROM ${table} WHERE record_key LIKE 'id:b-%'`), 0, `${table} holds nothing`);
+    const bWorkspace = (await f.db.get("SELECT workspace_id FROM users WHERE email='b@test.app'")).workspace_id;
+    assert.equal(await count(f, "SELECT COUNT(*) AS n FROM coaching_relationships WHERE workspace_id=$1", [bWorkspace]), 0, "no stray relationship");
+    assert.equal((await patch(f, b, (d) => d.foodLogs.push({ id: "b-own", clientId: undefined, date: today, name: "No client", kcal: 1 }))).status, 200, "rows without a client are unaffected");
+  } finally {
+    await f.close();
+  }
+});
+
+test("audit security: a coach can't add a departed client's own records, which would never be stored", async () => {
+  const { f, a, x } = await world();
+  try {
+    assert.equal((await f.call("/api/account/leave-coach", { method: "POST", account: x, body: { confirm: true } })).status, 200);
+    for (const [area, row] of [
+      ["foodLogs", { id: "after-left", clientId: x.user.clientId, date: today, name: "Coach-added", kcal: 1 }],
+      ["measurements", { id: "after-left-m", clientId: x.user.clientId, date: today, weight: 80 }],
+      ["sessions", { id: "after-left-w", clientId: x.user.clientId, date: today, dayId: "d", title: "T", sets: [{ name: "Row", set: 1, weight: 50, reps: 10, kind: "Standard", skipped: false }], startedAt: 1, finishedAt: "x", duration: 1, prs: [] }],
+    ]) {
+      const write = await patch(f, a, (d) => d[area].push(row));
+      assert.equal(write.status, 409, `${area}: ${write.error}`);
+      assert.match(write.error, /ended coaching/);
+    }
+    const message = await patch(f, a, (d) => d.messages.push({ id: "note-after-left", clientId: x.user.clientId, from: "coach", text: "Kept by the coach", at: new Date().toISOString(), read: false }));
+    assert.equal(message.status, 200, "the coach's own records for a former client still save");
+    assert.equal((await f.call("/api/workspace", { account: a })).data.messages.some((m) => m.id === "note-after-left"), true, "and are still there after reloading");
   } finally {
     await f.close();
   }

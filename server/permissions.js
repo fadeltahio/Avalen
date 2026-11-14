@@ -5,6 +5,7 @@ import { checkinPlanError } from "../src/avalen/checkin-model.js";
 import { policyError } from "../src/avalen/ecosystem/scheduling.js";
 import { equal, foundations } from "../src/avalen/ecosystem/memory.js";
 import { paymentChangeError } from "../src/avalen/payments-model.js";
+import { AREAS } from "./store/records.js";
 export function fail(status, message) {
   throw Object.assign(new Error(message), { status });
 }
@@ -103,6 +104,21 @@ const protectedRoots = new Set([
   "notifications",
   "clientPreferences",
 ]);
+// The record types that belong to the client and leave with them when coaching ends.
+const clientOwned = new Set(["sessions", ...AREAS.filter((a) => a.owner === "client").map((a) => a.collection)]);
+// A coach's save may only add or change records for clients on their own list, and not
+// the client's own records once that client has ended coaching (those are hidden from
+// the coach and would never be stored). Unchanged rows are left alone.
+function checkRecordClients(key, next, previous) {
+  const clients = new Map((Array.isArray(next.clients) ? next.clients : []).map((c) => [c?.id, c]));
+  const unchanged = new Set((Array.isArray(previous[key]) ? previous[key] : []).map((r) => JSON.stringify(r)));
+  for (const row of next[key]) {
+    if (!row || typeof row !== "object" || row.clientId == null || unchanged.has(JSON.stringify(row))) continue;
+    const client = clients.get(row.clientId);
+    if (!client) fail(404, "Client not found.");
+    if (client.leftAt && clientOwned.has(key)) fail(409, "This client has ended coaching, so their own records can no longer be added or changed.");
+  }
+}
 const clientRows = new Set([
   "foodLogs",
   "nutritionDays",
@@ -134,6 +150,7 @@ export function mergeEdit(source, next, user) {
       );
       for (const row of added) {
         const person = requireClient(user, source, row.clientId);
+        if (person.leftAt) fail(409, "This client has ended coaching, so their own records can no longer be added or changed.");
         if (
           !dateKey(row.date) ||
           // The workout date is the client's own calendar day, which can already be
@@ -226,6 +243,7 @@ export function mergeEdit(source, next, user) {
       )
         fail(409, "Archive clients instead of deleting their history.");
       if (key === "checkins") fail(403, "Use the check-in review flow.");
+      if (key !== "clients" && Array.isArray(next[key])) checkRecordClients(key, next, previous);
       if (key === "clients")
         for (const client of next.clients) {
           const old = source.clients.find((c) => c.id === client.id);

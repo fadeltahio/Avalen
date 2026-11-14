@@ -1,7 +1,17 @@
 import { startWorker } from "./jobs.js";
 import { command } from "../src/avalen/ecosystem/actions.js";
 import { createService } from "./app.js";
+import { assertProductionConfig } from "./config.js";
+import { log, errorFields } from "./log.js";
 
+// A production server with incomplete configuration stops here, before touching any
+// data, with a list of what is missing (names only, never values).
+try {
+  assertProductionConfig();
+} catch (error) {
+  console.error(error.message);
+  process.exit(1);
+}
 // On a host without a persistent disk the generated key file would be lost on every
 // deploy, making stored Paymob and wearable tokens unreadable. Require it as a secret.
 if (process.env.DATABASE_URL && !process.env.AVALEN_SECRETS_KEY) {
@@ -9,7 +19,22 @@ if (process.env.DATABASE_URL && !process.env.AVALEN_SECRETS_KEY) {
   process.exit(1);
 }
 
-const service = await createService();
+// Last-resort logging. A promise nobody handled is logged and the server carries on;
+// a thrown exception leaves the process in an unknown state, so it is logged and the
+// process exits for the host to restart it.
+process.on("unhandledRejection", (reason) => log("error", "unhandled promise rejection", errorFields(reason)));
+process.on("uncaughtException", (error) => {
+  log("error", "uncaught exception, exiting", errorFields(error));
+  process.exit(1);
+});
+
+let service;
+try {
+  service = await createService();
+} catch (error) {
+  log("error", "Avalen could not start", errorFields(error, { stack: false }));
+  process.exit(1);
+}
 service.setCommandHandler(command);
 const stopWorker = await startWorker(service);
 const port = Number(process.env.PORT || 5180),
@@ -23,6 +48,7 @@ service.server.listen(port, host, () => {
 // Hosts send SIGTERM before replacing the server: finish requests in flight, then close
 // the database so no save is cut off halfway.
 process.on("SIGTERM", () => {
+  log("info", "shutting down");
   stopWorker();
   service.server.close(async () => {
     await service.db.close();

@@ -29,6 +29,8 @@ export async function migrate(db) {
       await db.transaction(async () => {
         // Two servers starting together: the second waits here, then skips what the first applied.
         if (db.dialect === "postgres") {
+          // A migration may rewrite large tables; the request time limit doesn't apply.
+          await db.exec("SET LOCAL statement_timeout = 0");
           await db.get("SELECT pg_advisory_xact_lock(724301)");
           if (await db.get("SELECT version FROM schema_migrations WHERE version=$1", [file.version])) return;
         }

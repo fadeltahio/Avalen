@@ -8,7 +8,7 @@ import { writeFileSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { coachOnly, fail, requireClient } from "../permissions.js";
-import { NOT_HANDLED, body } from "../http-utils.js";
+import { NOT_HANDLED, body, safeDecode } from "../http-utils.js";
 
 const exec = promisify(execFile);
 
@@ -137,7 +137,7 @@ export function createMediaRoutes(ctx) {
           workspace_id: user.workspace_id,
           client_id: shared ? "workspace" : clientId,
           owner_id: user.id,
-          name: decodeURIComponent(String(req.headers["x-file-name"] || "Recording")).slice(0, 200),
+          name: safeDecode(String(req.headers["x-file-name"] || "Recording"), "Recording").slice(0, 200),
           type,
           size: bytes.length,
           duration,
@@ -192,7 +192,7 @@ export function createMediaRoutes(ctx) {
         return {
           id,
           thumbnail,
-          name: decodeURIComponent(String(req.headers["x-file-name"] || "Recording")).slice(0, 200),
+          name: safeDecode(String(req.headers["x-file-name"] || "Recording"), "Recording").slice(0, 200),
           type,
           size: bytes.length,
           duration,

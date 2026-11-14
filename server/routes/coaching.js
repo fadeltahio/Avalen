@@ -3,7 +3,7 @@
 import { explainInsight } from "../ai.js";
 import { queueTranscription, jobFor } from "../jobs.js";
 import { coachOnly, fail, requireClient } from "../permissions.js";
-import { NOT_HANDLED, body } from "../http-utils.js";
+import { NOT_HANDLED, body, safeDecode } from "../http-utils.js";
 
 export function createCoachingRoutes(ctx) {
   const { store, load, permittedMedia } = ctx;
@@ -32,7 +32,7 @@ export function createCoachingRoutes(ctx) {
     }
 
     if (url.pathname.startsWith("/api/jobs/") && req.method === "GET") {
-      const job = await jobFor({ store }, user, decodeURIComponent(url.pathname.slice(10)));
+      const job = await jobFor({ store }, user, safeDecode(url.pathname.slice(10)));
       if (!job) fail(404, "Task not found.");
       return job;
     }

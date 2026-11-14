@@ -6,7 +6,11 @@
 // route needs (the signed-in user, committing a workspace change, finding a media
 // file). See docs/ARCHITECTURE.md for how this fits together.
 import http from "node:http";
+import { randomUUID } from "node:crypto";
 import { fail } from "./permissions.js";
+import { healthCheck } from "./health.js";
+import { log, errorFields } from "./log.js";
+import { isUnavailable } from "./db/errors.js";
 import { createContext } from "./context.js";
 import { NOT_HANDLED, body, serveStatic } from "./http-utils.js";
 import { createOpenAccountRoutes, createAccountRoutes } from "./routes/accounts.js";
@@ -20,6 +24,10 @@ export { body };
 
 export async function createService(options = {}) {
   const ctx = await createContext(options);
+  const health = healthCheck(ctx);
+  // One log line per request in production (or with AVALEN_LOG_REQUESTS=true): method,
+  // path without its query, status and duration. No addresses, accounts or bodies.
+  const logRequests = options.logRequests ?? (process.env.AVALEN_LOG_REQUESTS ? process.env.AVALEN_LOG_REQUESTS === "true" : ctx.production);
 
   // Reached directly by an outside service (Paymob, a wearable provider), before any
   // Avalen session cookie or CSRF check applies to the request.
@@ -53,6 +61,14 @@ export async function createService(options = {}) {
     res.setHeader("Referrer-Policy", "same-origin");
     res.setHeader("X-Frame-Options", "DENY");
     res.setHeader("Cache-Control", "no-store");
+    // Cookies are HTTPS-only here, so browsers should never use plain HTTP for this host.
+    if (ctx.secure) res.setHeader("Strict-Transport-Security", "max-age=31536000");
+
+    if (url.pathname === "/api/health" && ["GET", "HEAD"].includes(req.method)) {
+      const result = await health({ deep: url.searchParams.get("deep") === "1" });
+      res.statusCode = result.status === "ok" ? 200 : 503;
+      return result;
+    }
 
     if (!url.pathname.startsWith("/api/")) return serveStatic(url, res, ctx.dist);
 
@@ -76,6 +92,13 @@ export async function createService(options = {}) {
   }
 
   const server = http.createServer((req, res) => {
+    const started = performance.now();
+    // The host's request id when it sends one, so a log line can be matched to its logs.
+    const requestId = String(req.headers["x-request-id"] || req.headers["rndr-id"] || randomUUID()).slice(0, 100);
+    res.setHeader("X-Request-Id", requestId);
+    const path = String(req.url || "").split("?")[0].slice(0, 300);
+    if (logRequests)
+      res.on("finish", () => log(res.statusCode >= 500 ? "warn" : "info", "request", { requestId, method: req.method, path, status: res.statusCode, ms: Math.round(performance.now() - started) }));
     route(req, res)
       .then((result) => {
         if (result !== undefined && !res.writableEnded) {
@@ -88,9 +111,18 @@ export async function createService(options = {}) {
           res.destroy();
           return;
         }
+        // The database couldn't be reached: nothing from this request was kept (its
+        // transaction never committed), the app keeps the person's input, and the next
+        // request gets a fresh connection.
+        if (!error.status && isUnavailable(error)) {
+          res.writeHead(503, { "Content-Type": "application/json", "Retry-After": "5" });
+          res.end(JSON.stringify({ error: "The service is briefly unavailable and nothing was saved. Try again in a moment." }));
+          log("warn", "database unavailable", { requestId, method: req.method, path, ...errorFields(error, { stack: false }) });
+          return;
+        }
         res.writeHead(error.status || 500, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: error.status ? error.message : "The service could not complete this request. Try again." }));
-        if (!error.status) console.error(error);
+        if (!error.status) log("error", "request failed", { requestId, method: req.method, path, ...errorFields(error) });
       });
   });
   server.keepAliveTimeout = 65000;
@@ -103,6 +135,8 @@ export async function createService(options = {}) {
     db: ctx.db,
     root: ctx.root,
     bootstrap: ctx.bootstrap,
+    production: ctx.production,
+    health,
     load: ctx.load,
     commit: ctx.commit,
     permittedMedia: ctx.permittedMedia,

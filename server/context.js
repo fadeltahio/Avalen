@@ -23,7 +23,10 @@ export async function createContext({
   root = resolve(process.env.AVALEN_DATA_DIR || ".avalen-data"),
   databaseUrl = process.env.DATABASE_URL,
   setupToken = process.env.AVALEN_SETUP_TOKEN,
-  secure = process.env.AVALEN_SECURE_COOKIE === "true",
+  // Production never falls back to SQLite or local files, and cookies are HTTPS-only.
+  production = process.env.NODE_ENV === "production",
+  secure = process.env.AVALEN_SECURE_COOKIE === "true" || (production && process.env.AVALEN_SECURE_COOKIE !== "false"),
+  poolMax = Number(process.env.AVALEN_DB_POOL_MAX) || undefined,
   dist = resolve("dist"),
   fetchImpl = globalThis.fetch,
   publicUrl = process.env.AVALEN_PUBLIC_URL,
@@ -35,9 +38,9 @@ export async function createContext({
   fileEnv = process.env,
 } = {}) {
   mkdirSync(root, { recursive: true, mode: 0o700 });
-  const store = await openStore(root, { databaseUrl }),
+  const store = await openStore(root, { databaseUrl, production, poolMax }),
     mediaRoot = join(root, "media"),
-    files = openFiles({ mediaRoot, env: fileEnv });
+    files = openFiles({ mediaRoot, env: fileEnv, production });
   const paymob = paymobService({ store, root, fetchImpl, publicUrl, secretsKey });
   const wearables = wearableService({ store, root, fetchImpl, publicUrl, secretsKey, env: wearableEnv });
   const bootstrap = setupToken || token(),
@@ -227,7 +230,7 @@ export async function createContext({
   }
 
   return {
-    store, db: store.db, files, root, mediaRoot, dist, paymob, wearables, codes, bootstrap, secure, coachSignup,
+    store, db: store.db, files, root, mediaRoot, dist, paymob, wearables, codes, bootstrap, secure, production, coachSignup,
     hash, token, passwordHash, checkPassword,
     account, limit, session, login, clearSessionCookie, authenticate,
     load, loadProjected, coachlessView, commit, permittedMedia, mediaLookup,

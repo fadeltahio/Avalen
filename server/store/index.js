@@ -23,10 +23,12 @@ export function createStore(db) {
   };
 }
 
-// PostgreSQL when a connection address is given (DATABASE_URL in production),
-// otherwise a SQLite file in the data folder.
-export async function openStore(root, { databaseUrl } = {}) {
-  const db = databaseUrl ? postgresDriver(databaseUrl) : sqliteDriver(join(root, "avalen.sqlite"));
+// PostgreSQL when a connection address is given (DATABASE_URL), otherwise a SQLite file
+// in the data folder. In production there is no fallback: a missing address stops the
+// server rather than quietly keeping records on a disk a redeploy can wipe.
+export async function openStore(root, { databaseUrl, production = false, poolMax } = {}) {
+  if (production && !databaseUrl) throw new Error("PostgreSQL is required in production: set DATABASE_URL.");
+  const db = databaseUrl ? postgresDriver(databaseUrl, poolMax ? { max: poolMax } : {}) : sqliteDriver(join(root, "avalen.sqlite"));
   await migrate(db);
   const store = createStore(db);
   await store.workspaces.moveInlineRecords();

@@ -5,7 +5,7 @@
 //   stream(id, start, end)    a readable stream of an inclusive byte range, or null
 //   remove(id)                delete it (no error if already gone)
 // Records about files (owner, type, size, who may see them) stay in the database.
-import { createReadStream, existsSync, readFileSync, unlinkSync, writeFileSync, mkdirSync } from "node:fs";
+import { accessSync, constants, createReadStream, existsSync, readFileSync, unlinkSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import { createHash } from "node:crypto";
@@ -16,6 +16,8 @@ export function localFiles(dir) {
   const path = (id) => join(dir, id);
   return {
     kind: "local",
+    // For the health check: the folder exists and the server can write to it.
+    check: async () => accessSync(dir, constants.W_OK),
     put: async (id, bytes) => writeFileSync(path(id), bytes, { mode: 0o600 }),
     read: async (id) => (existsSync(path(id)) ? readFileSync(path(id)) : null),
     stream: async (id, start, end) => (existsSync(path(id)) ? createReadStream(path(id), { start, end }) : null),
@@ -43,6 +45,18 @@ export function r2Files({ endpoint, bucket, accessKeyId, secretAccessKey, fetchI
   };
   return {
     kind: "r2",
+    // For the health check: a signed lookup of a key that never exists. 404 means the
+    // bucket is reachable and the credentials work; 403 means they don't.
+    async check() {
+      const request = await client.sign(url("avalen-health-check"), { method: "HEAD" });
+      let response;
+      try {
+        response = await fetchImpl(request, { signal: AbortSignal.timeout(3000) });
+      } catch (e) {
+        throw new Error(`File storage could not be reached: ${e.message}`);
+      }
+      if (response.status !== 404 && !response.ok) throw new Error(`File storage refused the check (${response.status}).`);
+    },
     async put(id, bytes) {
       // The content hash is part of the signature, so storage rejects bytes changed in transit.
       const hash = createHash("sha256").update(bytes).digest("hex");
@@ -68,9 +82,13 @@ export function r2Files({ endpoint, bucket, accessKeyId, secretAccessKey, fetchI
   };
 }
 
-// R2 when its bucket is configured, otherwise the data folder's media directory.
-export function openFiles({ mediaRoot, env = process.env }) {
-  if (!env.AVALEN_R2_BUCKET) return localFiles(mediaRoot);
+// R2 when its bucket is configured, otherwise the data folder's media directory. In
+// production there is no fallback to the local folder.
+export function openFiles({ mediaRoot, env = process.env, production = false }) {
+  if (!env.AVALEN_R2_BUCKET) {
+    if (production) throw new Error("Private file storage is required in production: set AVALEN_R2_BUCKET and its credentials.");
+    return localFiles(mediaRoot);
+  }
   for (const key of ["AVALEN_R2_ENDPOINT", "AVALEN_R2_ACCESS_KEY_ID", "AVALEN_R2_SECRET_ACCESS_KEY"])
     if (!env[key]) throw new Error(`${key} is required when AVALEN_R2_BUCKET is set.`);
   return r2Files({
