@@ -11,6 +11,7 @@ import {
 } from './payments-model.js';
 
 import { t } from './i18n.js';
+import { onlinePayments } from './features.js';
 const initials = (name) => name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase();
 const STATE_TEXT = { paid: 'Paid', due: 'Due', overdue: 'Overdue', none: 'No request yet' };
 const defaultDue = (period) => { const today = dayKey(); return period < periodOf(today) ? today : offsetDay(7, today > `${period}-01` ? today : `${period}-01`); };
@@ -98,7 +99,7 @@ export function CoachPayments() {
       {!month.rows.length && <p className="muted">{t('Add a client to start tracking payments.')}</p>}
     </div>
 
-    <PaymobCard connected={connected} account={account} onChange={setAccount}/>
+    {onlinePayments() && <PaymobCard connected={connected} account={account} onChange={setAccount}/>}
 
     {sheet && <ClientSheet {...sheet} period={period} account={account} onClose={() => setSheet(null)} onOpenClient={() => { setSheet(null); selectClient(sheet.client.id, 'Billing'); }}/>}
   </div>;
@@ -195,8 +196,8 @@ function PaymentForm({ client, period, account, payment, mode, onClose, onBack }
         <Field label={t('Date paid')}><input type="date" required max={dayKey()} value={values.paidOn} onChange={set('paidOn')}/></Field>
       </>}
       {mode === 'record' && <Field label={t('Note (optional)')}><input maxLength={500} value={values.note} onChange={set('note')} placeholder={t('e.g. Transfer reference')}/></Field>}
-      {mode === 'request' && <p className="pay-hint">{paymobReady ? t('{value} sees this in their app and can pay with Paymob.', { value: client.name.split(' ')[0] }) : t('{value} sees this in their app. Online payment needs Paymob connected for {currency}; until then, record what they pay you.', { value: client.name.split(' ')[0], currency: values.currency })}</p>}
-      {mode !== 'request' && <p className="pay-hint">{t('Counted in your earnings as “recorded by you”. Only Paymob can mark a payment as confirmed.')}</p>}
+      {mode === 'request' && <p className="pay-hint">{!onlinePayments() ? t('{value} sees this in their app. Record what they pay you when you receive it.', { value: client.name.split(' ')[0] }) : paymobReady ? t('{value} sees this in their app and can pay with Paymob.', { value: client.name.split(' ')[0] }) : t('{value} sees this in their app. Online payment needs Paymob connected for {currency}; until then, record what they pay you.', { value: client.name.split(' ')[0], currency: values.currency })}</p>}
+      {mode !== 'request' && <p className="pay-hint">{onlinePayments() ? t('Counted in your earnings as “recorded by you”. Only Paymob can mark a payment as confirmed.') : t('Counted in your earnings as “recorded by you”.')}</p>}
       {error && <p className="error" role="alert">{error}</p>}
       <Button type="submit" disabled={busy}>{busy ? t('Saving…') : mode === 'request' ? t('Send request') : t('Save payment')}</Button>
     </form>
@@ -293,7 +294,7 @@ function DuePayment({ payment, state }) {
   }
   return <article className={`client-pay-due is-${state}`}>
     <header><span><b>{t(payment.label)}</b><small>{state === 'overdue' ? t('Overdue · was due {shortDate}', { shortDate: shortDate(payment.dueDate) }) : t('Due {shortDate}', { shortDate: shortDate(payment.dueDate) })}</small></span><b>{formatMoney(payment.amount, payment.currency)}</b></header>
-    {live ? <form onSubmit={pay}>
+    {!onlinePayments() ? <p className="muted">{t('Pay your coach directly. They record your payment here.')}</p> : live ? <form onSubmit={pay}>
       {askPhone && <Field label={t('Mobile number')}><input type="tel" required autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+20 100 123 4567"/></Field>}
       <Button type="submit" disabled={busy}><CreditCard size={17}/>{busy ? t('Opening Paymob…') : t('Pay with Paymob')}</Button>
       <small className="muted">{t('Secure checkout by Paymob. Card or mobile wallet.')}</small>

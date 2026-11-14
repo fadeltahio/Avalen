@@ -26,3 +26,22 @@ on-device demo instead.
 Already set in the project: app icon and launch screen, camera / photo library / microphone
 messages in English and Arabic, iPhone only, portrait, and the export-compliance answer (no
 non-exempt encryption).
+
+## Pilot build: what the iPhone app hides
+The iPhone app (detected by Capacitor's `window.Capacitor.isNativePlatform()`) hides what
+it doesn't support yet; the code stays in place (`src/avalen/features.js`):
+- wearable connections and automatic sync (Apple Health, Health Connect, WHOOP, Google
+  Health) and the demo's sample readings from them. Readings entered by hand still work.
+- online payment with Paymob (the coach's Paymob card and the client's checkout).
+  Payment requests and payments recorded by the coach still work.
+
+Switch either back on for a later build with `VITE_AVALEN_WEARABLE_SYNC=on` or
+`VITE_AVALEN_ONLINE_PAYMENTS=on`. The web app is unchanged. `tests/ios-pilot.spec.js`
+checks both states.
+
+## Native HTTP and record comparison
+In the iPhone app, sign-in, saves and actions go through Capacitor's native HTTP layer,
+which returns JSON replies with object keys reordered (GET requests pass through
+unchanged). Record comparisons therefore compare data, not key order
+(`src/avalen/ecosystem/canonical.js`). `tests/native-ordering.test.js` replays replies the
+way iOS rebuilds them; keep it passing when changing how saves are compared.

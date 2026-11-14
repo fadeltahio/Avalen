@@ -177,4 +177,18 @@ export default {
   'Short sleep last night': 'نوم قصير الليلة الماضية',
   'Short sleep the night before': 'نوم قصير الليلة السابقة',
   'Slept {minutes}': 'مدة النوم {minutes}',
+  // The iPhone app during the pilot: no wearable connections or online payment yet.
+  'Sleep & recovery': 'النوم والتعافي',
+  'Readings you enter for your coach': 'قراءات تُدخلها لمدرّبك',
+  'Add your sleep, recovery and activity readings for your coach. You decide what they see.': 'أضف قراءات نومك وتعافيك ونشاطك لمدرّبك. أنت تقرّر ما يراه.',
+  'Add sleep & recovery': 'أضف النوم والتعافي',
+  'Enter last night’s readings for your coach': 'أدخل قراءات الليلة الماضية لمدرّبك',
+  'No readings from the last two days. Clients add them from You → Sleep & recovery.': 'لا قراءات خلال اليومين الماضيين. يضيفها المتدرّبون من أنت ← النوم والتعافي.',
+  'No readings yet. {first} can add them from You → Sleep & recovery.': 'لا قراءات بعد. يمكن لـ {first} إضافتها من أنت ← النوم والتعافي.',
+  'Avalen only shows what you enter here. Wearable scores are estimates from your device, not medical measurements, and never change your plan automatically.': 'لا يعرض Avalen إلا ما تُدخله هنا. درجات الأجهزة الذكية تقديرات من جهازك وليست قياسات طبية، ولا تغيّر خطتك تلقائيًا أبدًا.',
+  'Copy the numbers from your device’s app. These stay labelled as manual entries.': 'انسخ الأرقام من تطبيق جهازك. تبقى مُعلَّمة كإدخالات يدوية.',
+  'Devices measure HRV in different ways, so enter the number your device shows. Your coach sees it labelled as manual.': 'تقيس الأجهزة HRV بطرق مختلفة، لذا أدخل الرقم الذي يعرضه جهازك. يراه مدرّبك مُعلَّمًا كإدخال يدوي.',
+  '{value} sees this in their app. Record what they pay you when you receive it.': 'يرى {value} هذا في تطبيقه. سجّل ما يدفعه لك عند استلامه.',
+  'Counted in your earnings as “recorded by you”.': 'يُحتسب في أرباحك على أنه "مسجّل منك".',
+  'Pay your coach directly. They record your payment here.': 'ادفع لمدرّبك مباشرةً، وسيسجّل دفعتك هنا.',
 };

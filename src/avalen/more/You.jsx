@@ -14,6 +14,7 @@ import { CoachingMemory } from '../ecosystem/memory.jsx';
 import { AISharingPreference } from '../ecosystem/updates.jsx';
 import { Appearance, ConnectedDevices } from '../preferences.jsx';
 import { openDevicesOnReturn } from '../wearables.jsx';
+import { wearableSync } from '../features.js';
 import { LeaveCoachSection, SignOutSection } from '../ecosystem/accounts.jsx';
 
 export function You() {
@@ -46,7 +47,7 @@ export function You() {
       {connection() && <AISharingPreference/>}
       <Appearance />
       {!connection() && <MotionDetails className="settings-disclosure"><summary>{t('Account & connection')}<ChevronRight size={18}/></summary><a className="simple-row" href="/?connected=1">{t('Connect a private coaching workspace')} <ArrowRight size={18}/></a></MotionDetails>}
-      <MotionDetails className="settings-disclosure" open={openDevicesOnReturn() || undefined}><summary>{t('Connected devices')}<small>{t('Sleep, recovery and activity from your wearable')}</small><ChevronRight size={18}/></summary><ConnectedDevices /></MotionDetails>
+      <MotionDetails className="settings-disclosure" open={openDevicesOnReturn() || undefined}><summary>{wearableSync() ? t('Connected devices') : t('Sleep & recovery')}<small>{wearableSync() ? t('Sleep, recovery and activity from your wearable') : t('Readings you enter for your coach')}</small><ChevronRight size={18}/></summary><ConnectedDevices /></MotionDetails>
       <div className="card list">
         <button className="simple-row" onClick={() => setPrivacy(true)}>
           <Shield size={19} />
