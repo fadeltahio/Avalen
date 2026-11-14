@@ -1,0 +1,82 @@
+# Avalen staging on Render: one web service, its PostgreSQL database and a daily
+# off-site backup. Production will be a separate copy of this with its own database,
+# buckets and secrets. Read docs/DEPLOYMENT.md before applying this Blueprint; values
+# marked `sync: false` are entered in the Render dashboard and never committed.
+services:
+  - type: web
+    name: avalen-staging
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    region: frankfurt
+    plan: starter
+    # Exactly one instance: sign-in limits, wearable token refresh and job recovery are
+    # coordinated per process. Don't enable autoscaling until those move to the database.
+    numInstances: 1
+    # Answers 200 only when the database responds (docs/DEPLOYMENT.md, "Health").
+    healthCheckPath: /api/health
+    autoDeploy: false
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: avalen-staging-db
+          property: connectionString
+      # Encrypts stored payment and wearable tokens. Generated once; copy it somewhere
+      # safe, because backups are useless for those tokens without it.
+      - key: AVALEN_SECRETS_KEY
+        generateValue: true
+      - key: AVALEN_SETUP_TOKEN
+        generateValue: true
+      # Cloudflare sets this on every request to a public Render service and overwrites
+      # any value the caller sends. Confirm in staging (checklist, "Proxy").
+      - key: AVALEN_CLIENT_IP_HEADER
+        value: cf-connecting-ip
+      - key: AVALEN_DB_POOL_MAX
+        value: "10"
+      - key: AVALEN_COACH_SIGNUP
+        value: "on"
+      - key: AVALEN_PUBLIC_URL
+        sync: false
+      - key: AVALEN_R2_BUCKET
+        sync: false
+      - key: AVALEN_R2_ENDPOINT
+        sync: false
+      - key: AVALEN_R2_ACCESS_KEY_ID
+        sync: false
+      - key: AVALEN_R2_SECRET_ACCESS_KEY
+        sync: false
+
+  - type: cron
+    name: avalen-staging-backup
+    runtime: docker
+    dockerfilePath: ./Dockerfile.backup
+    region: frankfurt
+    plan: starter
+    # 02:00 UTC daily (04:00 in Cairo).
+    schedule: "0 2 * * *"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: avalen-staging-db
+          property: connectionString
+      - key: AVALEN_BACKUP_PREFIX
+        value: avalen-staging
+      # A separate bucket from the media bucket, with its own access key.
+      - key: AVALEN_BACKUP_R2_BUCKET
+        sync: false
+      - key: AVALEN_BACKUP_R2_ENDPOINT
+        sync: false
+      - key: AVALEN_BACKUP_R2_ACCESS_KEY_ID
+        sync: false
+      - key: AVALEN_BACKUP_R2_SECRET_ACCESS_KEY
+        sync: false
+
+databases:
+  - name: avalen-staging-db
+    region: frankfurt
+    plan: basic-256mb
+    postgresMajorVersion: "17"
+    databaseName: avalen
+    # No connections from outside Render's private network.
+    ipAllowList: []

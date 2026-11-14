@@ -98,6 +98,20 @@ not in the routes.
   an empty PostgreSQL database (`DATABASE_URL`) and compares every table afterwards;
   if anything differs, nothing is kept.
 
+### Running in production (`server/config.js`, `server/health.js`, `server/log.js`)
+
+With `NODE_ENV=production`, `server/index.js` checks the configuration first and exits
+with a list of missing settings (names only), and the store and file layers refuse to
+fall back to SQLite or local files. The PostgreSQL driver keeps running when the
+database closes connections: the pool and each checked-out connection have error
+listeners, a broken connection is discarded, and the request using it fails with a 503
+(`server/db/errors.js` decides what counts as "unavailable") while nothing is committed.
+Connections time out after 5 s, statements after 15 s (migrations are exempt).
+`/api/health` checks the database (`?deep=1` adds file storage). Logs are JSON lines
+without personal data. A coach's save may only add or change records for clients on
+their own list, and not a departed client's own records. Deployment, backups and
+recovery are in `docs/DEPLOYMENT.md`.
+
 ### Files (`server/files/`)
 
 The bytes of uploads live behind `files.put / read / stream / remove`: the data

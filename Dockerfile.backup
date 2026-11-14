@@ -1,0 +1,18 @@
+# The daily off-site backup job (tools/backup-database.mjs). pg_dump must be at least
+# the server's major version, so PostgreSQL 17 client tools come from the PostgreSQL
+# project's own package repository rather than Debian's older ones.
+FROM node:24-slim
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+  && install -d /usr/share/postgresql-common/pgdg \
+  && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+  && . /etc/os-release \
+  && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt ${VERSION_CODENAME}-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
+  && apt-get update && apt-get install -y --no-install-recommends postgresql-client-17 \
+  && apt-get purge -y curl gnupg && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@10.34.9 --activate
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --prod --frozen-lockfile
+COPY tools/backup-lib.mjs tools/backup-database.mjs tools/restore-backup.mjs ./tools/
+USER node
+CMD ["node", "tools/backup-database.mjs"]
