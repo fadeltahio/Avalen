@@ -1,4 +1,5 @@
 import test from "node:test";
+import { workspaceChanges } from "../src/avalen/ecosystem/changes.js";
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { fixture } from "./helpers/service.js";
@@ -105,14 +106,14 @@ test("server: coach connects Paymob, client pays, only a signed callback marks i
     const data = structuredClone(coachNow.data);
     const request = requestPayment(data, { clientId, amount: 2500, currency: "EGP", label: "November coaching", period: "2026-11", dueDate: "2026-11-25" });
     const other = requestPayment(data, { clientId, amount: 1000, currency: "EGP", label: "Extra session", period: "2026-11", dueDate: "2026-11-25" });
-    const saved = await f.call("/api/workspace", { method: "PATCH", account: f.coach, body: { revision: coachNow.revision, data } });
+    const saved = await f.call("/api/workspace", { method: "PATCH", account: f.coach, body: { revision: coachNow.revision, changes: workspaceChanges(coachNow.data, data) } });
     assert.equal(saved.status, 200);
 
     const clientNow = await f.call("/api/workspace", { account: client });
     assert.equal(clientNow.data.payments.length, 2);
     const forged = structuredClone(clientNow.data);
     Object.assign(forged.payments[0], { status: "paid", method: "cash", paidAt: new Date().toISOString() });
-    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: clientNow.revision, data: forged } })).status, 403);
+    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: clientNow.revision, changes: workspaceChanges(clientNow.data, forged) } })).status, 403);
 
     assert.equal((await f.call(`/api/payments/${request.id}/checkout`, { method: "POST", account: f.coach, body: {} })).status, 403);
     assert.equal((await f.call(`/api/payments/${request.id}/checkout`, { method: "POST", account: client, body: {} })).status, 400);
@@ -139,7 +140,7 @@ test("server: coach connects Paymob, client pays, only a signed callback marks i
 
     const tampered = structuredClone(after.data);
     tampered.payments.find((p) => p.id === request.id).status = "void";
-    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: f.coach, body: { revision: after.revision, data: tampered } })).status, 403);
+    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: f.coach, body: { revision: after.revision, changes: workspaceChanges(after.data, tampered) } })).status, 403);
     assert.equal((await f.call(`/api/payments/${request.id}/checkout`, { method: "POST", account: client, body: {} })).status, 409);
 
     await f.call(`/api/payments/${other.id}/checkout`, { method: "POST", account: client, body: {} });

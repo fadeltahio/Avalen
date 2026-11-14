@@ -1,4 +1,5 @@
 import test from "node:test";
+import { workspaceChanges } from "../src/avalen/ecosystem/changes.js";
 import assert from "node:assert/strict";
 import { createWorkspace } from "../src/avalen/seed.js";
 import { foundations } from "../src/avalen/ecosystem/memory.js";
@@ -21,7 +22,7 @@ test("workouts move out of the workspace document into their own tables and read
     const sets = demo.sessions.reduce((n, s) => n + s.sets.length, 0);
     const { id, text } = await legacyWorkspace(f, demo);
 
-    const report = await f.store.workspaces.moveInlineWorkouts();
+    const report = await f.store.workspaces.moveInlineRecords();
     assert.deepEqual(report.moved, [id]);
     assert.deepEqual(report.failed, []);
 
@@ -40,7 +41,7 @@ test("workouts move out of the workspace document into their own tables and read
     const squat = await f.db.get("SELECT exercise_name, weight_kg, reps FROM workout_sets WHERE session_id=$1 AND position=0", [demo.sessions[0].id]);
     assert.deepEqual({ ...squat }, { exercise_name: demo.sessions[0].sets[0].name, weight_kg: demo.sessions[0].sets[0].weight, reps: demo.sessions[0].sets[0].reps }, "sets are queryable rows");
 
-    assert.deepEqual((await f.store.workspaces.moveInlineWorkouts()).moved, [], "running it again changes nothing");
+    assert.deepEqual((await f.store.workspaces.moveInlineRecords()).moved, [], "running it again changes nothing");
   } finally {
     await f.close();
   }
@@ -52,7 +53,7 @@ test("a workspace that can't be rebuilt exactly is left as it was", async () => 
     const demo = foundations(createWorkspace());
     demo.sessions.push({ ...demo.sessions[0] }); // the same workout id twice can't be stored as two rows
     const { id, text } = await legacyWorkspace(f, demo);
-    const report = await f.store.workspaces.moveInlineWorkouts();
+    const report = await f.store.workspaces.moveInlineRecords();
     assert.equal(report.failed[0]?.id, id);
     assert.equal((await f.db.get("SELECT data FROM workspaces WHERE id=$1", [id])).data, text, "the document is untouched");
     assert.equal(JSON.stringify((await f.store.workspaces.get(id)).data), text, "and still reads the same");
@@ -79,7 +80,7 @@ test("a workout logged in the app is stored under the client's relationship, and
       startedAt: Date.now() - 1800000, finishedAt: new Date().toISOString(), duration: 1800, prs: [],
     };
     data.sessions.push(workout);
-    const saved = await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: current.revision, data } });
+    const saved = await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: current.revision, changes: workspaceChanges(current.data, data) } });
     assert.equal(saved.status, 200, saved.error);
 
     const row = await f.db.get("SELECT client_id, relationship_id, title, duration_s FROM workout_sessions WHERE id='workout-1'");
@@ -90,7 +91,7 @@ test("a workout logged in the app is stored under the client's relationship, and
 
     const rewrite = structuredClone(saved.data);
     rewrite.sessions.find((s) => s.id === "workout-1").sets[0].weight = 90;
-    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: saved.revision, data: rewrite } })).status, 409, "completed workouts still can't be rewritten");
+    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: saved.revision, changes: workspaceChanges(saved.data, rewrite) } })).status, 409, "completed workouts still can't be rewritten");
   } finally {
     await f.close();
   }
@@ -104,7 +105,7 @@ test("removing a client ends the relationship but keeps their workouts; deleting
     const current = await f.call("/api/workspace", { account: client });
     const data = structuredClone(current.data);
     data.sessions.push({ id: "kept", clientId: client.user.clientId, date: new Date().toISOString().slice(0, 10), dayId: data.clients[0].program.days[0].id, title: "Lower Body A", sets: [{ name: "Back squat", exerciseId: "squat", set: 1, weight: 80, reps: 5, kind: "Standard", skipped: false }], startedAt: Date.now(), finishedAt: new Date().toISOString(), duration: 600, prs: [] });
-    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: current.revision, data } })).status, 200);
+    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: current.revision, changes: workspaceChanges(current.data, data) } })).status, 200);
 
     const deleted = await f.call("/api/account/delete", { method: "POST", account: client, body: { confirm: "DELETE", password: "client-password-123" } });
     assert.equal(deleted.status, 200);

@@ -52,6 +52,31 @@ not in the routes.
   ends the relationship but keeps the workouts; deleting the client's account removes
   them. Profiles, programmes, nutrition, check-ins and messages still live in the
   workspace document until Phase 3.
+- **Every client-related list has its own table (Phase 3).** `server/store/records.js`
+  lists the 20 areas (client profiles, food logs, habits, measurements, check-ins,
+  messages, payments, history and so on). Each row keeps the record verbatim, its
+  position in the list, its client and relationship, and a few queryable columns
+  (calories, weights, payment status). The same rebuild-and-verify move covers them.
+- **Saves send only what changed.** `src/avalen/ecosystem/changes.js` (shared by the
+  app and the server) describes an edit record by record; the server applies it to
+  the latest workspace and refuses it only if one of those same records changed
+  meanwhile, then writes only the lists that changed (`changedAreas`). The earlier
+  format that sent the whole workspace has been retired and is refused with a request
+  to update the app.
+- **Not done yet: paged history.** The app still receives a coach's full history when
+  it opens. Screens such as personal bests, exercise stats and 90-day charts assume
+  the whole history is present, so paging needs those screens reworked; it matters
+  for coaches with many clients and long histories, not at pilot scale.
+- **Clients don't depend on a coach.** A client login can have no workspace. If the
+  client ends coaching (`/api/account/leave-coach`) or the coach deletes their
+  account, the relationship ends and the client keeps their login and their own
+  records (areas marked `owner: "client"`, plus workouts). Those rows stay where they
+  are but are hidden from the former coach (`relationships.departed()`), who keeps
+  payments, messages, documents and their own notes. A coach's deleted workspace stays
+  as an empty marker (`workspaces.deleted_at`) while former clients own records in it.
+  A client between coaches sees a coachless screen, can download everything
+  (`/api/account/export`) and join a new coach (`/api/account/join-coach`), who starts
+  fresh.
 - PostgreSQL runs requests truly in parallel, so anything that reads a workspace and
   writes it back does so in a transaction with `store.workspaces.getForUpdate()` (a
   row lock). A second save to the same workspace waits rather than overwriting.

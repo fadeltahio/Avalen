@@ -8,6 +8,7 @@ import { join, resolve } from "node:path";
 import { mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { openStore } from "./store/index.js";
+import { changedAreas } from "./store/workspaces.js";
 import { openFiles } from "./files/index.js";
 import { coachCodes } from "./coach-codes.js";
 import { fail, requireClient } from "./permissions.js";
@@ -66,14 +67,38 @@ export async function createContext({
   const emailTaken = (email) => store.users.emailTaken(email);
 
   const load = async (user, { lock = false } = {}) => {
+    if (!user.workspace_id) fail(409, "You’re not connected to a coach. Join one with their coach code.");
     const row = await (lock ? store.workspaces.getForUpdate : store.workspaces.get)(user.workspace_id);
     if (!row) fail(404, "Workspace not found.");
     return { data: foundations(row.data), revision: row.revision };
   };
   const loadProjected = async (user) => {
+    if (user.role === "client" && !user.workspace_id) return coachlessView(user);
     const state = await load(user);
     return { ...state, data: projection(state.data, user) };
   };
+  // A client between coaches: their profile as their last coach had it and how much
+  // history their account holds. The history itself comes from /api/account/export.
+  async function coachlessView(user) {
+    const past = await store.relationships.forPerson(user.id);
+    const last = past.at(-1);
+    const profile = last ? await store.records.clientRecord(last.workspace_id, last.client_id) : null;
+    const data = foundations(emptyWorkspace(""));
+    data.clients = profile ? [{ ...profile, paused: true }] : [];
+    data.activeClientId = profile?.id ?? null;
+    const own = await store.records.forPerson(user.id);
+    data.coachless = {
+      since: last?.ended_at ?? null,
+      kept: {
+        workouts: (await store.workouts.forPerson(user.id)).length,
+        foodLogs: own.foodLogs?.length ?? 0,
+        measurements: own.measurements?.length ?? 0,
+        checkins: own.checkins?.length ?? 0,
+        photos: own.photos?.length ?? 0,
+      },
+    };
+    return { data, revision: 0 };
+  }
   // Applies fn to the latest workspace inside one transaction. fn may be async; it also
   // receives a file lookup that answers without waiting, for code shared with the app.
   function commit(user, revision, fn, key) {
@@ -87,7 +112,7 @@ export async function createContext({
       const result = (await fn(current.data, files)) || current.data;
       recordChanges(before, result, { id: user.id, role: user.role });
       result.updatedAt = new Date().toISOString();
-      await store.workspaces.save(user.workspace_id, result);
+      await store.workspaces.save(user.workspace_id, result, { changed: changedAreas(before, result) });
       if (key) await store.requests.record(user.id, key, { revision: current.revision + 1 });
       return { data: projection(result, user), revision: current.revision + 1 };
     });
@@ -168,11 +193,22 @@ export async function createContext({
   // shared across the workspace, granted to this client, or about a client this user may see.
   function checkMedia(user, row, data, granted) {
     if (!row || Date.parse(row.expires_at) < Date.now()) fail(404, "This recording is no longer available.");
-    if (row.client_id !== "workspace" && !(user.role === "client" && granted))
+    if (row.client_id !== "workspace" && !(user.role === "client" && granted)) {
       requireClient(user, data, row.client_id);
+      // A client who left took what they uploaded; the former coach keeps only their own files.
+      if (user.role === "coach" && row.owner_id !== user.id && data.clients.find((c) => c.id === row.client_id)?.leftAt)
+        fail(404, "This recording is no longer available.");
+    }
     return row;
   }
   async function permittedMedia(user, id) {
+    // A client between coaches can still open the files that were theirs with earlier coaches.
+    if (!user.workspace_id) {
+      const row = user.role === "client" ? await store.media.get(id) : null;
+      const theirs = row && !row.deleted && (await store.relationships.forPerson(user.id)).some((r) => r.workspace_id === row.workspace_id && r.client_id === row.client_id);
+      if (!theirs || Date.parse(row.expires_at) < Date.now()) fail(404, "This recording is no longer available.");
+      return row;
+    }
     const row = await store.media.live(id, user.workspace_id);
     if (!row) return checkMedia(user, row);
     const granted = user.role === "client" && (await store.media.hasGrant(row.id, user.client_id));
@@ -194,7 +230,7 @@ export async function createContext({
     store, db: store.db, files, root, mediaRoot, dist, paymob, wearables, codes, bootstrap, secure, coachSignup,
     hash, token, passwordHash, checkPassword,
     account, limit, session, login, clearSessionCookie, authenticate,
-    load, loadProjected, commit, permittedMedia, mediaLookup,
+    load, loadProjected, coachlessView, commit, permittedMedia, mediaLookup,
     insertUser, emailTaken, freshClient, emptyWorkspace,
     randomUUID, transaction: store.transaction, memory, foundations,
     getCommandHandler: () => commandHandler,

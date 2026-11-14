@@ -1,5 +1,6 @@
 import { t } from '../i18n.js';
 import { uid } from "../id.js";
+import { workspaceChanges } from "./changes.js";
 // The Avalen server. On the web it is the same origin; the iPhone app is built with
 // VITE_AVALEN_API_URL (for example https://api.example.com) and always connects to it.
 export const API_BASE = (import.meta.env?.VITE_AVALEN_API_URL || "").replace(/\/+$/, "");
@@ -128,9 +129,12 @@ export function connectedUpdate(fn) {
       );
     const next = structuredClone(state.data);
     fn(next);
+    // Only what this edit changed is sent, so it can be applied to the latest workspace.
+    const changes = workspaceChanges(state.data, next);
+    if (!Object.keys(changes).length) return { data: state.data, revision: state.revision };
     return sendRetriable("/workspace", {
       method: "PATCH",
-      body: { revision: state.revision, data: next },
+      body: { revision: state.revision, changes },
       headers: { "Idempotency-Key": uid() },
     });
   });

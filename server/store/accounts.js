@@ -5,6 +5,11 @@ export function accountStore(db) {
   const users = {
     any: async () => Boolean(await db.get("SELECT id FROM users LIMIT 1")),
     byEmail: (email) => db.get("SELECT * FROM users WHERE email=$1", [email]),
+    byId: (id) => db.get("SELECT * FROM users WHERE id=$1", [id]),
+    // A client joining a coach; release() in relationships is the reverse.
+    attach: (id, workspaceId, clientId) => db.run("UPDATE users SET workspace_id=$1, client_id=$2 WHERE id=$3", [workspaceId, clientId, id]),
+    release: (id) => db.run("UPDATE users SET workspace_id=NULL, client_id=NULL WHERE id=$1", [id]),
+    clientLoginsIn: (workspaceId) => db.all("SELECT id, client_id FROM users WHERE workspace_id=$1 AND role='client'", [workspaceId]),
     passwordOf: async (id) => (await db.get("SELECT password FROM users WHERE id=$1", [id]))?.password ?? null,
     emailTaken: async (email) => Boolean(await db.get("SELECT id FROM users WHERE email=$1", [email])),
     // Two sign-ups racing with one email: the second gets the same answer as a taken email.

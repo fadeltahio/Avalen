@@ -345,7 +345,8 @@ export function wearableService({ store, root, fetchImpl = globalThis.fetch, pub
   };
 
   async function days(user, data, client, count = 14) {
-    if (!data.clients.some((c) => c.id === client) || (user.role === 'client' && user.client_id !== client)) fail(404, 'Client not found.');
+    // A client who left keeps their readings; their former coach no longer sees them.
+    if (!data.clients.some((c) => c.id === client && !c.leftAt) || (user.role === 'client' && user.client_id !== client)) fail(404, 'Client not found.');
     const n = Math.min(Math.max(Number(count) || 14, 1), 90);
     const connections = await links.linksFor(user.workspace_id, client);
     return {
@@ -360,7 +361,7 @@ export function wearableService({ store, root, fetchImpl = globalThis.fetch, pub
     const from = shiftDay(new Date().toISOString().slice(0, 10), -14);
     const connections = await links.linksInWorkspace(user.workspace_id);
     const clients = {};
-    for (const c of data.clients) {
+    for (const c of data.clients.filter((client) => !client.leftAt)) {
       const rows = viewFor(user, data, c.id, await rowsFor(user.workspace_id, c.id, from));
       const connected = connections.filter((l) => l.client_id === c.id).map((l) => ({ provider: l.provider, lastSyncAt: l.last_sync_at, error: l.last_error }));
       if (rows.length || connected.length) clients[c.id] = { latest: latestDay(rows), connected };
@@ -395,14 +396,14 @@ export function wearableService({ store, root, fetchImpl = globalThis.fetch, pub
 
   // Account deletion: revoke access at each provider (best effort), then remove
   // links, readings and pending sign-ins. clientId null means the whole workspace.
-  async function forget(ws, clientId = null) {
+  async function forget(ws, clientId = null, { keepReadings = false } = {}) {
     for (const row of await links.linksMatching(ws, clientId)) {
       try {
         if (row.provider === 'whoop') await call(`${WHOOP.api}/user/access`, { method: 'DELETE', headers: { Authorization: `Bearer ${await accessToken(row)}` } }, 'WHOOP');
         else if (row.refresh_token) await call(GOOGLE.revoke, form({ token: box.open(row.refresh_token) }), 'Google');
       } catch {}
     }
-    await links.deleteAll(ws, clientId);
+    await links.deleteAll(ws, clientId, { keepReadings });
   }
 
   return { status, start, callback, sync, disconnect, upload, days, summary, webhook, runDue, configured, forget };

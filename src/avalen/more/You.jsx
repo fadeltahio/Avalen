@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { ArrowRight, ChevronRight, Download, MessageCircle, Settings, Shield } from 'lucide-react';
 import { AppContext } from '../context.js';
 import { useWorkspaceSave } from '../workspace-save.js';
-import { connection } from '../ecosystem/connection.js';
+import { connection, request } from '../ecosystem/connection.js';
 import { download } from '../store.js';
 import { MotionDetails } from '../motion.jsx';
 import { Avatar, Button, Field, Heading, Modal } from '../ui.jsx';
@@ -14,7 +14,7 @@ import { CoachingMemory } from '../ecosystem/memory.jsx';
 import { AISharingPreference } from '../ecosystem/updates.jsx';
 import { Appearance, ConnectedDevices } from '../preferences.jsx';
 import { openDevicesOnReturn } from '../wearables.jsx';
-import { SignOutSection } from '../ecosystem/accounts.jsx';
+import { LeaveCoachSection, SignOutSection } from '../ecosystem/accounts.jsx';
 
 export function You() {
   const { data, client, update, navigate } = React.useContext(AppContext);
@@ -22,6 +22,7 @@ export function You() {
   const [edit, setEdit] = useState(false),
     [reset, setReset] = useState(false),
     [privacy, setPrivacy] = useState(false),
+    [exportError, setExportError] = useState(''),
     [form, setForm] = useState({
       name: client.name,
       email: client.email,
@@ -57,7 +58,17 @@ export function You() {
         </button>
         <button
           className="simple-row"
-          onClick={() => {
+          onClick={async () => {
+            // With an account, the server holds the full history across every coach.
+            if (connection()) {
+              try {
+                const history = await request("/account/export");
+                download(new Blob([JSON.stringify(history, null, 2)], { type: "application/json" }), "avalen-my-history.json");
+              } catch (cause) {
+                setExportError(cause.message);
+              }
+              return;
+            }
             const mine = {
               profile: client,
               exportedAt: new Date().toISOString(),
@@ -93,6 +104,7 @@ export function You() {
           </span>
           <ChevronRight size={16} />
         </button>
+        {exportError && <p className="error" role="alert">{exportError}</p>}
         <label className="simple-row">
           <Settings size={19} />
           <span>
@@ -130,6 +142,7 @@ export function You() {
           {t('Start a fresh test profile')}
         </Button>
       </section>}
+      {connection() && <LeaveCoachSection />}
       <SignOutSection />
       {edit && (
         <Modal title={t('Your profile')} onClose={() => setEdit(false)} canClose={!saving}>

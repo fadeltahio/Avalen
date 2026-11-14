@@ -1,4 +1,5 @@
 import test, { mock } from "node:test";
+import { workspaceChanges } from "../src/avalen/ecosystem/changes.js";
 import assert from "node:assert/strict";
 import { createWorkspace } from "../src/avalen/seed.js";
 import { foundations } from "../src/avalen/ecosystem/memory.js";
@@ -55,7 +56,7 @@ test("a client can record their own time zone, but not an invalid one", async ()
       const current = await f.call("/api/workspace", { account: client });
       const data = structuredClone(current.data);
       data.clients[0].timezone = timezone;
-      return f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: current.revision, data } });
+      return f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: current.revision, changes: workspaceChanges(current.data, data) } });
     };
     assert.equal((await save("Africa/Cairo")).status, 200);
     assert.equal((await f.call("/api/workspace", { account: f.coach })).data.clients.find((c) => c.email === "zone@test.app").timezone, "Africa/Cairo");

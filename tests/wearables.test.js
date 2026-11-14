@@ -1,4 +1,5 @@
 import test from "node:test";
+import { workspaceChanges } from "../src/avalen/ecosystem/changes.js";
 import assert from "node:assert/strict";
 import { createHmac, randomBytes } from "node:crypto";
 import { fixture } from "./helpers/service.js";
@@ -158,7 +159,7 @@ test("server: client connects WHOOP and Apple Health; the coach sees only what i
     const ws = await f.call("/api/workspace", { account: client });
     const next = structuredClone(ws.data);
     next.clients[0].wearables = { share: { sleep: true, recovery: false, activity: true } };
-    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: ws.revision, data: next } })).status, 200);
+    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: ws.revision, changes: workspaceChanges(ws.data, next) } })).status, 200);
     const hidden = (await f.call(`/api/wearables/days?clientId=${clientId}`, { account: f.coach })).days.find((d) => d.provider === "whoop" && d.date === today);
     assert.equal(hidden.metrics.recoveryScore, undefined);
     assert.equal(hidden.metrics.hrvMs, undefined);

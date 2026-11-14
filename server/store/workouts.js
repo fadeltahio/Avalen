@@ -14,26 +14,39 @@ export function relationshipStore(db) {
   const forWorkspace = (workspaceId) => db.all("SELECT * FROM coaching_relationships WHERE workspace_id=$1", [workspaceId]);
   return {
     forWorkspace,
+    forPerson: (userId) => db.all("SELECT * FROM coaching_relationships WHERE client_user_id=$1 ORDER BY started_at", [userId]),
+    // Relationships whose client left with their own records (ended, but the client still
+    // has an account): their records are hidden from the former coach.
+    async departed(workspaceId) {
+      return new Set((await db.all("SELECT id FROM coaching_relationships WHERE workspace_id=$1 AND status='ended' AND client_user_id IS NOT NULL", [workspaceId])).map((r) => r.id));
+    },
     // Brings a workspace's relationships in line with its client list: every client
-    // (and any client a workout names) has one; a deleted or removed client's is ended;
-    // a client's login is linked once it exists. Returns client id → relationship id.
+    // (and any client a workout names) has one; a removed, departed or deleted client's is
+    // ended and their login released from this coach; a client's login is linked once it
+    // exists. Returns client id → relationship id.
     async sync(workspaceId, clients, workoutClientIds = []) {
       const now = new Date().toISOString();
+      // The client keeps their login (and their records) but no longer belongs to this coach.
+      const release = (clientId) => db.run("UPDATE users SET workspace_id=NULL, client_id=NULL WHERE workspace_id=$1 AND client_id=$2", [workspaceId, clientId]);
       const existing = new Map((await forWorkspace(workspaceId)).map((r) => [r.client_id, r]));
       const listed = new Map(clients.filter((c) => c && typeof c.id === "string").map((c) => [c.id, c]));
       for (const clientId of new Set([...listed.keys(), ...workoutClientIds.filter((id) => typeof id === "string")])) {
-        const client = listed.get(clientId), status = client && !client.deletedAt ? "active" : "ended", row = existing.get(clientId);
+        const client = listed.get(clientId), status = client && !client.deletedAt && !client.leftAt ? "active" : "ended", row = existing.get(clientId);
         if (!row)
           await db.run(
             "INSERT INTO coaching_relationships(id, workspace_id, client_id, status, started_at, ended_at) VALUES($1, $2, $3, $4, $5, $6)",
             [randomUUID(), workspaceId, clientId, status, now, status === "ended" ? now : null],
           );
-        else if (row.status !== status)
+        else if (row.status !== status) {
           await db.run("UPDATE coaching_relationships SET status=$1, ended_at=$2 WHERE id=$3", [status, status === "ended" ? now : null, row.id]);
+          if (status === "ended") await release(clientId);
+        }
       }
       for (const row of existing.values())
-        if (!listed.has(row.client_id) && row.status === "active")
+        if (!listed.has(row.client_id) && row.status === "active") {
           await db.run("UPDATE coaching_relationships SET status='ended', ended_at=$1 WHERE id=$2", [now, row.id]);
+          await release(row.client_id);
+        }
       await db.run(
         `UPDATE coaching_relationships SET client_user_id=(SELECT id FROM users WHERE users.workspace_id=coaching_relationships.workspace_id AND users.client_id=coaching_relationships.client_id)
          WHERE workspace_id=$1 AND client_user_id IS NULL`,
@@ -42,6 +55,7 @@ export function relationshipStore(db) {
       return new Map((await forWorkspace(workspaceId)).map((r) => [r.client_id, r.id]));
     },
     deleteWorkspace: (workspaceId) => db.run("DELETE FROM coaching_relationships WHERE workspace_id=$1", [workspaceId]),
+    endAll: (workspaceId) => db.run("UPDATE coaching_relationships SET status='ended', ended_at=$1 WHERE workspace_id=$2 AND status='active'", [new Date().toISOString(), workspaceId]),
   };
 }
 
@@ -62,20 +76,24 @@ export function workoutStore(db) {
 
   return {
     // The workspace's workouts in the order they were saved, exactly as recorded.
-    async forWorkspace(workspaceId) {
-      const rows = await db.all(`SELECT workout_sessions.id, workout_sessions.data, workout_sessions.seq FROM workout_sessions ${inWorkspace}`, [workspaceId]);
+    async forWorkspace(workspaceId, hidden = new Set()) {
+      const rows = (await db.all(`SELECT workout_sessions.id, workout_sessions.data, workout_sessions.seq, workout_sessions.relationship_id FROM workout_sessions ${inWorkspace}`, [workspaceId])).filter((r) => !hidden.has(r.relationship_id));
       return rows.sort((a, b) => Number(a.seq) - Number(b.seq) || (a.id < b.id ? -1 : 1)).map((r) => JSON.parse(r.data));
     },
     // Makes the stored workouts match `sessions`: new ones are added after the rest,
     // changed ones rewritten, and ones no longer listed removed with their sets.
-    async sync(workspaceId, sessions, relationshipFor) {
-      const stored = new Map((await db.all(`SELECT workout_sessions.id, workout_sessions.data, workout_sessions.seq FROM workout_sessions ${inWorkspace}`, [workspaceId])).map((r) => [r.id, r]));
-      let seq = Math.max(0, ...[...stored.values()].map((r) => Number(r.seq))) + 1;
+    async sync(workspaceId, sessions, relationshipFor, hidden = new Set()) {
+      const all = await db.all(`SELECT workout_sessions.id, workout_sessions.data, workout_sessions.seq, workout_sessions.relationship_id FROM workout_sessions ${inWorkspace}`, [workspaceId]);
+      const stored = new Map(all.filter((r) => !hidden.has(r.relationship_id)).map((r) => [r.id, r]));
+      let seq = Math.max(0, ...all.map((r) => Number(r.seq))) + 1;
       const listed = new Set();
       for (const session of sessions) {
         if (!session || typeof session.id !== "string") continue;
+        const relationship = relationshipFor(session.clientId) ?? null;
+        // A client who has just left took this workout with them; this save doesn't touch it.
+        if (hidden.has(relationship)) continue;
         listed.add(session.id);
-        const json = JSON.stringify(session), row = stored.get(session.id), relationship = relationshipFor(session.clientId) ?? null;
+        const json = JSON.stringify(session), row = stored.get(session.id);
         if (row?.data === json) continue;
         if (row)
           await db.run(
@@ -95,8 +113,21 @@ export function workoutStore(db) {
           await db.run("DELETE FROM workout_sessions WHERE id=$1", [id]);
         }
     },
-    async deleteWorkspace(workspaceId) {
-      const ids = (await db.all(`SELECT workout_sessions.id FROM workout_sessions ${inWorkspace}`, [workspaceId])).map((r) => r.id);
+    // A client's workouts under one relationship (deleting their account).
+    async deleteForRelationship(relationshipId) {
+      for (const { id } of await db.all("SELECT id FROM workout_sessions WHERE relationship_id=$1", [relationshipId])) {
+        await db.run("DELETE FROM workout_sets WHERE session_id=$1", [id]);
+        await db.run("DELETE FROM workout_sessions WHERE id=$1", [id]);
+      }
+    },
+    // Every workout a person logged, across every coach they've had.
+    async forPerson(userId) {
+      const rows = await db.all("SELECT s.data, s.training_date, s.seq FROM workout_sessions s JOIN coaching_relationships r ON r.id=s.relationship_id WHERE r.client_user_id=$1", [userId]);
+      return rows.sort((a, b) => String(a.training_date).localeCompare(String(b.training_date)) || Number(a.seq) - Number(b.seq)).map((r) => JSON.parse(r.data));
+    },
+    // All of a workspace's workouts, except those of `keep` relationships.
+    async deleteWorkspace(workspaceId, keep = new Set()) {
+      const ids = (await db.all(`SELECT workout_sessions.id, workout_sessions.relationship_id FROM workout_sessions ${inWorkspace}`, [workspaceId])).filter((r) => !keep.has(r.relationship_id)).map((r) => r.id);
       for (const id of ids) {
         await db.run("DELETE FROM workout_sets WHERE session_id=$1", [id]);
         await db.run("DELETE FROM workout_sessions WHERE id=$1", [id]);

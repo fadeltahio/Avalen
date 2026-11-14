@@ -77,9 +77,10 @@ export function integrationStore(db) {
       await db.run("DELETE FROM wearable_events WHERE at<$1", [now - 7 * 86400e3]);
       return (await db.run("INSERT INTO wearable_events(id, at) VALUES($1, $2) ON CONFLICT DO NOTHING", [id, now])).changes > 0;
     },
-    async deleteAll(ws, clientId) {
+    // keepReadings: the connection goes but the client's readings stay with their history.
+    async deleteAll(ws, clientId, { keepReadings = false } = {}) {
       const { where, args } = scope(ws, clientId);
-      for (const table of ["wearable_links", "wearable_days", "wearable_states"]) await db.run(`DELETE FROM ${table} WHERE ${where}`, args);
+      for (const table of keepReadings ? ["wearable_links", "wearable_states"] : ["wearable_links", "wearable_days", "wearable_states"]) await db.run(`DELETE FROM ${table} WHERE ${where}`, args);
     },
   };
 

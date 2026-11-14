@@ -1,4 +1,5 @@
 import test from "node:test";
+import { workspaceChanges } from "../src/avalen/ecosystem/changes.js";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -43,7 +44,7 @@ test("real accounts enforce client isolation, immutable memory, CSRF and revisio
         await f.call("/api/workspace", {
           method: "PATCH",
           account: client,
-          body: { revision: client.revision, data: forged },
+          body: { revision: client.revision, changes: workspaceChanges(client.data, forged) },
         })
       ).status,
       403,
@@ -92,7 +93,7 @@ test("real accounts enforce client isolation, immutable memory, CSRF and revisio
           body: { revision: 1, data: f.coach.data },
         })
       ).status,
-      409,
+      400, // the retired whole-workspace format is refused; current saves send only changes
     );
   } finally {
     await f.close();
@@ -123,6 +124,7 @@ test("private video is validated, streamed only to related accounts and deleted 
     ]);
     const clientId = f.coach.data.clients[0].id;
     let state = await f.call("/api/workspace", { account: f.coach });
+    const seen = structuredClone(state.data);
     const second = structuredClone(state.data.clients[0]);
     second.id = "other-client";
     second.name = "Client Two";
@@ -130,7 +132,7 @@ test("private video is validated, streamed only to related accounts and deleted 
     state = await f.call("/api/workspace", {
       method: "PATCH",
       account: f.coach,
-      body: { data: state.data, revision: state.revision },
+      body: { revision: state.revision, changes: workspaceChanges(seen, state.data) },
     });
     assert.equal(state.status, 200);
     const accounts = [];
@@ -271,7 +273,7 @@ test("replaying a workspace save after a lost acknowledgement does not duplicate
       method: "PATCH",
       account: f.coach,
       headers: { "Idempotency-Key": "same-save" },
-      body: { revision: f.coach.revision, data },
+      body: { revision: f.coach.revision, changes: workspaceChanges(f.coach.data, data) },
     };
     const first = await f.call("/api/workspace", options);
     assert.equal(first.status, 200);

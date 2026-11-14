@@ -1,6 +1,7 @@
 import { migrateDeviceMedia, collectDeviceMedia } from "./migration.js";
 import React, { useEffect, useState } from "react";
-import { ArrowLeft, Languages, LogOut } from "lucide-react";
+import { ArrowLeft, Download, Languages, LogOut, UserMinus } from "lucide-react";
+import { download } from "../store.js";
 import { Button, Field, Notice, Modal, SectionHead } from "../ui.jsx";
 import { leaveBoot } from "../BrandMark.jsx";
 import {
@@ -314,7 +315,7 @@ export function AccountSettings({ onClose }) {
 }
 
 // Apple requires that people can delete their account from inside the app.
-function DeleteAccount({ role }) {
+export function DeleteAccount({ role }) {
   const [open, setOpen] = useState(false),
     [password, setPassword] = useState(""),
     [confirm, setConfirm] = useState(""),
@@ -339,7 +340,7 @@ function DeleteAccount({ role }) {
       <summary>{t('Delete account')}</summary>
       <p>
         {coach
-          ? t('This permanently deletes your coaching workspace: every client’s records, logins, photos, videos, voice notes, wearable readings and your Paymob connection. Your clients will no longer be able to sign in.')
+          ? t('This permanently deletes your coaching workspace: your programmes, notes, client payments, messages, documents and your Paymob connection. Clients with their own account keep it, with their workouts, food logs, measurements, check-ins and photos, and can join another coach.')
           : t('This permanently deletes your account and everything about you: workouts, check-ins, messages, photos, voice notes, measurements and wearable readings. Connected wearables are disconnected. Your coach keeps payment records without your personal details.')}
       </p>
       <p className="muted">{t('This can’t be undone.')}</p>
@@ -352,6 +353,91 @@ function DeleteAccount({ role }) {
         </fieldset>
       </form>
     </details>
+  );
+}
+
+// The client's full history, across every coach they've had, as one file.
+async function downloadHistory() {
+  const history = await request("/account/export");
+  download(new Blob([JSON.stringify(history, null, 2)], { type: "application/json" }), "avalen-my-history.json");
+}
+
+// A client ends coaching. They keep their account and their own records; the coach
+// keeps payments, messages and their own notes.
+export function LeaveCoachSection() {
+  const [confirming, setConfirming] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState("");
+  async function leave() {
+    setBusy(true);
+    setError("");
+    try {
+      acceptConnection(await request("/account/leave-coach", { method: "POST", body: { confirm: true } }));
+    } catch (cause) {
+      setError(cause.message);
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="card list">
+      <button className="simple-row" onClick={() => setConfirming(true)}>
+        <UserMinus size={19} />
+        <span><b>{t('End coaching')}</b><small>{t('Keep your account and your history')}</small></span>
+      </button>
+      {confirming && (
+        <Modal title={t('End coaching with your coach?')} onClose={() => setConfirming(false)} canClose={!busy}>
+          <p>{t('You keep your account and your own records: workouts, food logs, measurements, check-ins and photos. Your coach keeps your payments, messages and their own notes, and won’t see your activity from now on.')}</p>
+          <p className="muted">{t('You can join another coach later with their coach code.')}</p>
+          {error && <p className="error" role="alert">{error}</p>}
+          <div className="button-row">
+            <Button disabled={busy} onClick={leave}>{busy ? t('Ending coaching…') : t('End coaching')}</Button>
+            <Button secondary disabled={busy} onClick={() => setConfirming(false)}>{t('Keep my coach')}</Button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// A client between coaches: their history is kept; they can join a coach with a code,
+// download what their account holds, sign out or delete their account.
+export function CoachlessHome({ coachless }) {
+  const [code, setCode] = useState(""), [busy, setBusy] = useState(false), [error, setError] = useState(""), [exportError, setExportError] = useState("");
+  const kept = coachless.kept || {};
+  async function join(e) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      acceptConnection(await request("/account/join-coach", { method: "POST", body: { code } }));
+    } catch (cause) {
+      setError(cause.message);
+      setBusy(false);
+    }
+  }
+  return (
+    <>
+      <section className="card coachless">
+        <SectionHead title={t('You’re not connected to a coach')} />
+        <p>{t('Your account and your history are kept: {workouts} workouts, {foodLogs} food logs, {measurements} measurements, {checkins} check-ins and {photos} photos.', { workouts: kept.workouts ?? 0, foodLogs: kept.foodLogs ?? 0, measurements: kept.measurements ?? 0, checkins: kept.checkins ?? 0, photos: kept.photos ?? 0 })}</p>
+        <form onSubmit={join}>
+          <fieldset disabled={busy} className="save-fields">
+            <Field label={t('Coach code')} autoComplete="off" autoCapitalize="characters" required value={code} onChange={(e) => setCode(e.target.value)} />
+            <p className="muted">{t('Your new coach starts fresh. Your earlier history stays in your account and isn’t shared with them.')}</p>
+            {error && <p className="error" role="alert">{error}</p>}
+            <Button type="submit" disabled={!code.trim()}>{busy ? t('Joining…') : t('Join coach')}</Button>
+          </fieldset>
+        </form>
+      </section>
+      <div className="card list">
+        <button className="simple-row" onClick={() => downloadHistory().catch((cause) => setExportError(cause.message))}>
+          <Download size={19} />
+          <span><b>{t('Download your history')}</b><small>{t('Every workout and record from all your coaches')}</small></span>
+        </button>
+        {exportError && <p className="error" role="alert">{exportError}</p>}
+      </div>
+      <SignOutSection />
+      <DeleteAccount role="client" />
+    </>
   );
 }
 

@@ -1,4 +1,5 @@
 import test from "node:test";
+import { workspaceChanges } from "../src/avalen/ecosystem/changes.js";
 import assert from "node:assert/strict";
 import { join } from "node:path";
 import pg from "pg";
@@ -39,7 +40,7 @@ test("postgres: a SQLite workspace converts exactly, and the converted server si
     const current = await f.call("/api/workspace", { account: client });
     const data = structuredClone(current.data);
     data.sessions.push({ id: "converted-workout", clientId: client.user.clientId, date: today, dayId: data.clients[0].program.days[0].id, title: "Upper Body A", sets: [{ name: "Bench press", exerciseId: "bench", set: 1, weight: 60, reps: 8, kind: "Standard", skipped: false }], startedAt: Date.now(), finishedAt: new Date().toISOString(), duration: 1200, prs: [] });
-    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: current.revision, data } })).status, 200);
+    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: current.revision, changes: workspaceChanges(current.data, data) } })).status, 200);
     const before = await f.store.workspaces.all();
 
     const report = await sqliteToPostgres(join(f.root, "avalen.sqlite"), target.url);

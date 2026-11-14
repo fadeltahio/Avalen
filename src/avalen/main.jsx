@@ -27,7 +27,7 @@ import { MotionProvider, MovingIndicator, useSectionReveal } from "./motion.jsx"
 import { watchViewport } from "./viewport.js";
 import { MotionDetails } from "./motion.jsx";
 import { useAppRoute } from "./navigation.js";
-import { AccountGate, AccountSettings, SignOutSection } from "./ecosystem/accounts.jsx";
+import { AccountGate, AccountSettings, CoachlessHome, SignOutSection } from "./ecosystem/accounts.jsx";
 import { connection, connectedCommand, unsavedAction, retryUnsent, discardUnsent, refreshConnection } from "./ecosystem/connection.js";
 import { command } from "./ecosystem/actions.js";
 import { CoachingMemory } from "./ecosystem/memory.jsx";
@@ -169,7 +169,7 @@ function App() {
   // Records the client's own time zone from their phone (again if they travel), so
   // check-in days and reminders follow their clock instead of UTC.
   useEffect(() => {
-    if (role !== 'client' || noClients || recovery) return;
+    if (role !== 'client' || noClients || recovery || data.coachless) return;
     const zone = deviceTimezone();
     if (client.timezone !== zone) update(d => { const own = d.clients.find(c => c.id === client.id); if (own) own.timezone = zone; });
   }, [role, client.id, client.timezone, noClients, recovery]);
@@ -375,7 +375,7 @@ function App() {
             >
               {storageError && <Notice>{storageError}{unsavedAction()&&<div className="button-row"><Button small onClick={async()=>{try{await retryUnsent();notify(t('Action saved. Reload this view before repeating it.'));}catch(e){notify(e.message);}}}>{t('Retry unsaved action')}</Button><Button small secondary onClick={()=>download(new Blob([JSON.stringify(unsavedAction(),null,2)],{type:'application/json'}),'avalen-unsaved-action.json')}>{t('Download recovery copy')}</Button><button className="text-link muted" onClick={()=>{discardUnsent();notify(t('Unconfirmed action removed from this device. Reload to check the server before entering it again.'));}}>{t('Discard local retry')}</button></div>}</Notice>}
               <Suspense fallback={<div className="route-loader" role="status" aria-label={t('Loading workspace')} aria-busy="true"><BrandMark/></div>}>
-              {noClients ? <FirstClient onAccount={() => setAccountSettings(true)} /> : exerciseDetail ? <ExerciseDetail key={exerciseDetail.name} exercise={exerciseDetail} client={viewedClient} coachView={role === 'coach'} onBack={closeExercise}/> : sessionDetail ? <SessionDetail key={sessionDetail.day.id} session={sessionDetail} onBack={closeSession}/> : screen === "today" ? (
+              {data.coachless ? <CoachlessHome coachless={data.coachless} /> : noClients ? <FirstClient onAccount={() => setAccountSettings(true)} /> : exerciseDetail ? <ExerciseDetail key={exerciseDetail.name} exercise={exerciseDetail} client={viewedClient} coachView={role === 'coach'} onBack={closeExercise}/> : sessionDetail ? <SessionDetail key={sessionDetail.day.id} session={sessionDetail} onBack={closeSession}/> : screen === "today" ? (
                 <EditorialHome />
               ) : screen === "plan" ? (
                 <Plan />
@@ -406,7 +406,7 @@ function App() {
               </footer>
             </main>
             {role === 'client' && screen !== 'today' && !(screen === 'plan' && ['', 'Training'].includes(subtab) && (!route.viewDate || route.viewDate === dayKey())) && data.drafts[client.id] && <ResumeWorkout compact />}
-            <nav ref={bottomNav} className={`bottom-nav ${noClients ? 'is-hidden' : ''}`} aria-label={t('Main navigation')} style={{'--nav-count': nav.length}}>
+            <nav ref={bottomNav} className={`bottom-nav ${noClients || data.coachless ? 'is-hidden' : ''}`} aria-label={t('Main navigation')} style={{'--nav-count': nav.length}}>
               
               <MovingIndicator container={bottomNav} value={screen} selector='[aria-current="page"]' className="motion-nav-indicator"/>
               {nav.map(([id, label, Icon]) => (

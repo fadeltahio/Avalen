@@ -104,4 +104,12 @@ export default {
   'Send between 1 and 60 days of readings.': 'يلزم إرسال قراءات من يوم واحد إلى 60 يومًا.',
   'Each reading needs a recent date.': 'تحتاج كل قراءة إلى تاريخ حديث.',
   'Send one entry per date.': 'يُسمح بإدخال واحد لكل تاريخ.',
+  'Someone else changed this just now. Reload and review before saving.': 'غيّر شخص آخر هذا للتو. يُرجى إعادة التحميل والمراجعة قبل الحفظ.',
+  'Choose a valid time zone.': 'اختر منطقة زمنية صالحة.',
+  'You’re not connected to a coach. Join one with their coach code.': 'لست مرتبطًا بمدرّب. انضم إلى مدرّب باستخدام رمز المدرّب الخاص به.',
+  'You’re not connected to a coach.': 'لست مرتبطًا بمدرّب.',
+  'You’re already connected to a coach.': 'أنت مرتبط بمدرّب بالفعل.',
+  'Confirm that you want to end coaching.': 'يُرجى تأكيد رغبتك في إنهاء التدريب.',
+  'Coaches export their workspace from More.': 'يصدّر المدرّبون مساحة عملهم من قائمة المزيد.',
+  'This version of the app can’t save. Update Avalen to continue.': 'لا يمكن لهذا الإصدار من التطبيق حفظ التغييرات. يُرجى تحديث Avalen للمتابعة.',
 };

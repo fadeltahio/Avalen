@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { workspaceChanges } from '../src/avalen/ecosystem/changes.js';
 import assert from 'node:assert/strict';
 import {fixture} from './helpers/service.js';
 
@@ -10,7 +11,7 @@ test('a client sends their own intake but cannot clear its health flag or review
     const client = await service.call('/api/join', {method: 'POST', body: {invite: invite.invite, email: 'client@test.app', password: 'client-password-123'}});
     const saved = structuredClone(client.data);
     saved.clients[0].intake = {answers: {experience: 'Under a year', health: 'Yes'}, flagged: false, submittedAt: '2026-11-01T10:00:00.000Z', reviewedAt: '2026-11-01T10:00:00.000Z'};
-    const result = await service.call('/api/workspace', {method: 'PATCH', account: client, body: {revision: client.revision, data: saved}});
+    const result = await service.call('/api/workspace', {method: 'PATCH', account: client, body:{revision:client.revision,changes:workspaceChanges(client.data,saved)}});
     assert.equal(result.status, 200);
     const stored = await service.call('/api/workspace', {account: service.coach});
     assert.equal(stored.data.clients[0].intake.flagged, true);
@@ -19,7 +20,7 @@ test('a client sends their own intake but cannot clear its health flag or review
 
     const oversized = structuredClone(result.data);
     oversized.clients[0].intake = {answers: {notes: 'x'.repeat(7000)}};
-    const rejected = await service.call('/api/workspace', {method: 'PATCH', account: client, body: {revision: result.revision, data: oversized}});
+    const rejected = await service.call('/api/workspace', {method: 'PATCH', account: client, body:{revision:result.revision,changes:workspaceChanges(result.data,oversized)}});
     assert.equal(rejected.status, 400);
   } finally {
     await service.close();

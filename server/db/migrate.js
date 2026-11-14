@@ -20,15 +20,28 @@ export async function migrate(db) {
   const ran = [];
   for (const file of migrationFiles(db.dialect)) {
     if (applied.has(file.version)) continue;
-    await db.transaction(async () => {
-      // Two servers starting together: the second waits here, then skips what the first applied.
-      if (db.dialect === "postgres") {
-        await db.get("SELECT pg_advisory_xact_lock(724301)");
-        if (await db.get("SELECT version FROM schema_migrations WHERE version=$1", [file.version])) return;
-      }
-      await db.exec(file.sql);
-      await db.run("INSERT INTO schema_migrations(version, name, applied_at) VALUES($1, $2, $3)", [file.version, file.name, new Date().toISOString()]);
-    });
+    // A SQLite migration that rebuilds a table referenced by others starts with
+    // "-- sqlite: foreign keys off". SQLite only allows switching reference checks off
+    // outside a transaction, so every reference is verified before the change commits.
+    const rebuild = db.dialect === "sqlite" && file.sql.startsWith("-- sqlite: foreign keys off");
+    if (rebuild) await db.exec("PRAGMA foreign_keys=OFF");
+    try {
+      await db.transaction(async () => {
+        // Two servers starting together: the second waits here, then skips what the first applied.
+        if (db.dialect === "postgres") {
+          await db.get("SELECT pg_advisory_xact_lock(724301)");
+          if (await db.get("SELECT version FROM schema_migrations WHERE version=$1", [file.version])) return;
+        }
+        await db.exec(file.sql);
+        if (rebuild) {
+          const broken = await db.all("PRAGMA foreign_key_check");
+          if (broken.length) throw new Error(`Migration ${file.version} would leave ${broken.length} broken references (first in ${broken[0].table}).`);
+        }
+        await db.run("INSERT INTO schema_migrations(version, name, applied_at) VALUES($1, $2, $3)", [file.version, file.name, new Date().toISOString()]);
+      });
+    } finally {
+      if (rebuild) await db.exec("PRAGMA foreign_keys=ON");
+    }
     ran.push(file.version);
   }
   return ran;

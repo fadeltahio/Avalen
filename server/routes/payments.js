@@ -14,11 +14,18 @@ async function paymobCallback(ctx, req, url) {
   const reference = String(obj?.order?.merchant_order_id ?? obj?.merchant_order_id ?? "");
   const paymentId = reference.split(".")[0];
   let found = null;
-  if (/^[\w-]{1,100}\.\d{1,3}$/.test(reference))
-    for (const row of await store.workspaces.all()) {
-      const payment = (row.data.payments || []).find((p) => p.id === paymentId && p.paymob?.attempts?.some((a) => a.ref === reference));
-      if (payment) { found = { workspace: row.id, payment }; break; }
-    }
+  if (/^[\w-]{1,100}\.\d{1,3}$/.test(reference)) {
+    const workspaceId = await store.records.workspaceOfPayment(paymentId);
+    const row = workspaceId && (await store.workspaces.get(workspaceId));
+    const payment = row && (row.data.payments || []).find((p) => p.id === paymentId && p.paymob?.attempts?.some((a) => a.ref === reference));
+    if (payment) found = { workspace: row.id, payment };
+    // A workspace whose lists couldn't be moved at startup still holds payments inline.
+    if (!found)
+      for (const other of await store.workspaces.all()) {
+        const inline = (other.data.payments || []).find((p) => p.id === paymentId && p.paymob?.attempts?.some((a) => a.ref === reference));
+        if (inline) { found = { workspace: other.id, payment: inline }; break; }
+      }
+  }
   if (!found) fail(404, "Unknown payment.");
   if (!(await paymob.verify(found.workspace, obj, url.searchParams.get("hmac")))) fail(401, "Invalid signature.");
   const change = settle(found.payment, obj);

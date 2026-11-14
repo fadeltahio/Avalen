@@ -6,6 +6,7 @@ import { DatabaseSync } from "node:sqlite";
 import { createHash } from "node:crypto";
 import { postgresDriver } from "./postgres.js";
 import { migrate } from "./migrate.js";
+import { AREAS } from "../store/records.js";
 
 // Parents before children, each with the columns that identify a row.
 export const TABLES = [
@@ -14,6 +15,7 @@ export const TABLES = [
   ["coaching_relationships", ["id"]],
   ["workout_sessions", ["id"]],
   ["workout_sets", ["session_id", "position"]],
+  ...AREAS.map((area) => [area.table, ["workspace_id", "record_key"]]),
   ["sessions", ["token"]],
   ["invitations", ["token"]],
   ["coach_codes", ["code"]],

@@ -1,4 +1,5 @@
 import test from "node:test";
+import { workspaceChanges } from "../src/avalen/ecosystem/changes.js";
 import assert from "node:assert/strict";
 import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
@@ -42,7 +43,7 @@ test("server: a client deletes their account and everything about them; the coac
     const next = structuredClone(ws.data);
     next.habitLogs = [{ clientId, date: today, values: { steps: 5000 } }];
     next.messages = [...next.messages, { id: "m1", clientId, from: "client", text: "Private note", at: new Date().toISOString() }];
-    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: ws.revision, data: next } })).status, 200);
+    assert.equal((await f.call("/api/workspace", { method: "PATCH", account: client, body: { revision: ws.revision, changes: workspaceChanges(ws.data, next) } })).status, 200);
     const media = join(f.root, "media", "photo-1");
     writeFileSync(media, "x");
     const workspaceId = (await f.db.get("SELECT workspace_id FROM users WHERE email='client@test.app'")).workspace_id;
@@ -72,16 +73,19 @@ test("server: a client deletes their account and everything about them; the coac
   }
 });
 
-test("server: the coach deletes the whole workspace, including every client login", async () => {
+test("server: the coach deletes their whole workspace; clients with an account keep it and their own records", async () => {
   const f = await fixture();
   try {
     const { client } = await withClient(f);
+    const workspaceId = (await f.db.get("SELECT workspace_id FROM users WHERE role='coach'")).workspace_id;
     assert.equal((await f.call("/api/account/delete", { method: "POST", account: f.coach, body: { password: "strong-password-123", confirm: "DELETE" } })).status, 200);
-    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM workspaces")).n, 0);
-    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM users")).n, 0);
-    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM sessions")).n, 0);
-    assert.equal((await f.call("/api/workspace", { account: client })).status, 401);
-    assert.equal((await f.call("/api/status")).configured, false);
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM users WHERE role='coach'")).n, 0, "the coach's login is gone");
+    assert.equal((await f.db.get("SELECT COUNT(*) AS n FROM coach_codes")).n, 0);
+    assert.equal(await f.store.workspaces.retired(workspaceId), true, "the workspace stays only as a marker for the former client's records");
+    assert.deepEqual(await f.store.workspaces.ids(), [], "and no background work runs on it");
+    const after = await f.call("/api/workspace", { account: client });
+    assert.equal(after.status, 200, "the client can still sign in");
+    assert.ok(after.data.coachless, "and is told they're between coaches");
   } finally {
     await f.close();
   }

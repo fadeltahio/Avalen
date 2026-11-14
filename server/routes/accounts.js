@@ -148,7 +148,83 @@ export function createOpenAccountRoutes(ctx) {
 // Routes that require a signed-in session: everything about the account itself,
 // as opposed to the coaching workspace it owns.
 export function createAccountRoutes(ctx) {
-  const { store, files, limit, checkPassword, clearSessionCookie, foundations, wearables, transaction } = ctx;
+  const { store, files, limit, checkPassword, clearSessionCookie, foundations, wearables, transaction, commit, memory } = ctx;
+
+  const removeFiles = async (ids) => {
+    const all = [...ids];
+    for (const id of ids) all.push(...(await store.media.children(id)));
+    return all;
+  };
+  const endLogin = async (id) => {
+    await store.sessions.endAllFor(id);
+    await store.requests.deleteFor(id);
+  };
+
+  // A client's account and everything that was theirs, with every coach they've had. Each
+  // coach keeps an anonymous entry and payment records without personal details.
+  async function deleteClientAccount(user) {
+    const coaching = (await store.relationships.forPerson(user.id)).map((r) => ({ ws: r.workspace_id, clientId: r.client_id, relationship: r.id }));
+    if (user.workspace_id && !coaching.some((c) => c.ws === user.workspace_id && c.clientId === user.client_id))
+      coaching.push({ ws: user.workspace_id, clientId: user.client_id, relationship: null });
+    const mediaIds = [];
+    for (const c of coaching) {
+      await wearables.forget(c.ws, c.clientId);
+      mediaIds.push(...(await store.media.idsForClient(c.ws, c.clientId)));
+    }
+    const fileIds = await removeFiles(mediaIds);
+    await transaction(async () => {
+      for (const id of mediaIds) await store.media.purge(id);
+      for (const c of coaching) {
+        if (c.relationship) {
+          await store.records.deleteClientRecords(c.relationship);
+          await store.workouts.deleteForRelationship(c.relationship);
+        }
+        await store.invitations.deleteForClient(c.ws, c.clientId);
+        await store.jobs.deleteForClient(c.ws, c.clientId);
+        if (await store.workspaces.retired(c.ws)) await store.records.deleteProfile(c.ws, c.clientId);
+        else {
+          const row = await store.workspaces.getForUpdate(c.ws);
+          if (!row) continue;
+          const data = removeClientData(foundations(row.data), c.clientId);
+          data.updatedAt = new Date().toISOString();
+          await store.workspaces.save(c.ws, data);
+        }
+      }
+      await endLogin(user.id);
+      await store.users.delete(user.id);
+    });
+    for (const id of fileIds) await files.remove(id);
+  }
+
+  // A coach's account, workspace and everything of theirs. Clients with their own account
+  // keep it, together with their own records; clients without one are removed.
+  async function deleteCoachAccount(user) {
+    const ws = user.workspace_id;
+    const keeping = await store.users.clientLoginsIn(ws), kept = new Set(keeping.map((k) => k.client_id));
+    for (const k of keeping) await wearables.forget(ws, k.client_id, { keepReadings: true });
+    const all = await store.media.idsInWorkspace(ws), keptMedia = new Set();
+    for (const clientId of kept) for (const id of await store.media.idsForClient(ws, clientId)) keptMedia.add(id);
+    const mediaIds = all.filter((id) => !keptMedia.has(id));
+    const fileIds = (await removeFiles(mediaIds)).filter((id) => !keptMedia.has(id));
+    await transaction(async () => {
+      for (const id of mediaIds) await store.media.purge(id);
+      const relationships = await store.relationships.forWorkspace(ws);
+      for (const client of relationships.filter((r) => !kept.has(r.client_id))) await wearables.forget(ws, client.client_id);
+      for (const k of keeping) await store.users.release(k.id);
+      await store.relationships.endAll(ws);
+      for (const id of await store.users.idsInWorkspace(ws)) await endLogin(id);
+      await store.users.deleteWorkspace(ws);
+      await store.invitations.deleteWorkspace(ws);
+      await store.coachCodes.deleteWorkspace(ws);
+      await store.jobs.deleteWorkspace(ws);
+      await store.imports.deleteWorkspace(ws);
+      await store.paymentAccounts.delete(ws);
+      const keep = new Set(relationships.filter((r) => kept.has(r.client_id)).map((r) => r.id));
+      if (keep.size) await store.workspaces.retire(ws, keep);
+      else await store.workspaces.delete(ws); // with its workouts and relationships
+    });
+    for (const id of fileIds) await files.remove(id);
+  }
 
   return async function handleAccountRoutes(req, res, url, user) {
     if (url.pathname === "/api/logout" && req.method === "POST") {
@@ -167,6 +243,66 @@ export function createAccountRoutes(ctx) {
       return { code: formatCode(await transaction(() => ctx.codes.replace(user.workspace_id))) };
     }
 
+    // A client ends coaching with their coach. They keep their login and their own records;
+    // the coach keeps payments, messages, documents and their own notes and plans.
+    if (url.pathname === "/api/account/leave-coach" && req.method === "POST") {
+      if (user.role !== "client" || !user.workspace_id) fail(409, "You’re not connected to a coach.");
+      limit(req, "leave-coach");
+      const input = await body(req, 4096);
+      if (input.confirm !== true) fail(400, "Confirm that you want to end coaching.");
+      await wearables.forget(user.workspace_id, user.client_id, { keepReadings: true });
+      await commit(user, undefined, (data) => {
+        const client = data.clients.find((c) => c.id === user.client_id);
+        if (!client) fail(404, "Client not found.");
+        Object.assign(client, { leftAt: new Date().toISOString(), paused: true });
+        memory(data, client.id, "Account", "Ended coaching", "The client ended coaching and took their own records with them.", { by: "client" });
+        return data;
+      });
+      return { user: { id: user.id, email: user.email, role: user.role, clientId: null }, ...(await ctx.loadProjected({ ...user, workspace_id: null, client_id: null })) };
+    }
+
+    // A client between coaches joins a new one with a coach code. The new coach starts
+    // fresh: earlier history stays with the client and isn't shared.
+    if (url.pathname === "/api/account/join-coach" && req.method === "POST") {
+      if (user.role !== "client" || user.workspace_id) fail(409, "You’re already connected to a coach.");
+      limit(req, "join");
+      const input = await body(req, 4096);
+      const workspaceId = await ctx.codes.find(input.code);
+      if (!workspaceId) fail(404, "This coach code was not found. Check it with your coach.");
+      const past = await store.relationships.forPerson(user.id), last = past.at(-1);
+      const profile = last ? await store.records.clientRecord(last.workspace_id, last.client_id) : null;
+      const name = profile?.name && profile.name !== "Deleted client" ? profile.name : user.email.split("@")[0];
+      let clientId;
+      await transaction(async () => {
+        const row = await store.workspaces.getForUpdate(workspaceId);
+        if (!row) fail(404, "This coach code was not found. Check it with your coach.");
+        const data = foundations(row.data), client = ctx.freshClient(name, user.email);
+        data.clients.push(client);
+        data.activeClientId ||= client.id;
+        memory(data, client.id, "Account", "Joined with your coach code", "", { by: "client" });
+        clientId = client.id;
+        await store.users.attach(user.id, workspaceId, client.id);
+        await store.workspaces.save(workspaceId, data);
+      });
+      return { user: { id: user.id, email: user.email, role: user.role, clientId }, ...(await ctx.loadProjected({ ...user, workspace_id: workspaceId, client_id: clientId })) };
+    }
+
+    // Everything a client's account holds, across every coach they've had.
+    if (url.pathname === "/api/account/export" && req.method === "GET") {
+      if (user.role !== "client") fail(403, "Coaches export their workspace from More.");
+      const relationships = await store.relationships.forPerson(user.id);
+      const wearableReadings = [];
+      for (const r of relationships) wearableReadings.push(...(await store.wearables.daysSince(r.workspace_id, r.client_id, "0000-00-00")).map((d) => ({ provider: d.provider, date: d.date, metrics: JSON.parse(d.metrics) })));
+      return {
+        exportedAt: new Date().toISOString(),
+        account: { email: user.email },
+        coaching: relationships.map((r) => ({ startedAt: r.started_at, endedAt: r.ended_at, status: r.status })),
+        workouts: await store.workouts.forPerson(user.id),
+        ...(await store.records.forPerson(user.id)),
+        wearableReadings,
+      };
+    }
+
     if (url.pathname === "/api/account/delete" && req.method === "POST") {
       limit(req, "account-delete");
       const input = await body(req, 4096);
@@ -174,42 +310,8 @@ export function createAccountRoutes(ctx) {
       const stored = await store.users.passwordOf(user.id);
       if (typeof input.password !== "string" || !stored || !checkPassword(input.password, stored))
         fail(401, "Your password is incorrect.");
-      const ws = user.workspace_id, clientId = user.role === "client" ? user.client_id : null;
-      await wearables.forget(ws, clientId);
-      const ids = clientId ? await store.media.idsForClient(ws, clientId) : await store.media.idsInWorkspace(ws);
-      const fileIds = [...ids];
-      for (const id of ids) fileIds.push(...(await store.media.children(id)));
-      await transaction(async () => {
-        for (const id of ids) await store.media.purge(id);
-        if (clientId) {
-          // The client's login and everything about them; the coach keeps an anonymous entry.
-          for (const id of await store.users.idsForClient(ws, clientId)) {
-            await store.sessions.endAllFor(id);
-            await store.requests.deleteFor(id);
-            await store.users.delete(id);
-          }
-          await store.invitations.deleteForClient(ws, clientId);
-          await store.jobs.deleteForClient(ws, clientId);
-          const row = await store.workspaces.getForUpdate(ws);
-          const data = removeClientData(foundations(row.data), clientId);
-          data.updatedAt = new Date().toISOString();
-          await store.workspaces.save(ws, data);
-        } else {
-          // The owner deletes the whole workspace, including every client login.
-          for (const id of await store.users.idsInWorkspace(ws)) {
-            await store.sessions.endAllFor(id);
-            await store.requests.deleteFor(id);
-          }
-          await store.users.deleteWorkspace(ws);
-          await store.invitations.deleteWorkspace(ws);
-          await store.coachCodes.deleteWorkspace(ws);
-          await store.jobs.deleteWorkspace(ws);
-          await store.imports.deleteWorkspace(ws);
-          await store.paymentAccounts.delete(ws);
-          await store.workspaces.delete(ws); // with its workouts and relationships
-        }
-      });
-      for (const id of fileIds) await files.remove(id);
+      if (user.role === "client") await deleteClientAccount(user);
+      else await deleteCoachAccount(user);
       clearSessionCookie(res);
       return { deleted: true };
     }

@@ -6,6 +6,8 @@ import { validateMediaChanges } from "../media-permissions.js";
 import { coachOnly, fail, mergeEdit, projection, requireClient } from "../permissions.js";
 import { recordChanges } from "../../src/avalen/ecosystem/memory.js";
 import { parseWorkspace } from "../../src/avalen/persistence.js";
+import { applyChanges } from "../../src/avalen/ecosystem/changes.js";
+import { changedAreas } from "../store/workspaces.js";
 import { NOT_HANDLED, body } from "../http-utils.js";
 
 export function createWorkspaceRoutes(ctx) {
@@ -17,20 +19,24 @@ export function createWorkspaceRoutes(ctx) {
 
     if (url.pathname === "/api/workspace" && req.method === "PATCH") {
       const input = await body(req);
-      if (!Number.isInteger(input.revision))
-        fail(400, "Workspace revision is required.");
       const key = req.headers["idempotency-key"];
       if (!key || key.length > 200) fail(400, "A retry key is required.");
-      return commit(
-        user,
-        input.revision,
-        (data, files) => {
-          const result = mergeEdit(data, input.data, user);
-          validateMediaChanges(data, result, user, files.permitted, files.granted);
-          return result;
-        },
-        key,
-      );
+      // Current app: only the records it changed, applied to the latest workspace. It is
+      // refused only if someone else changed one of those same records meanwhile.
+      if (input.changes && typeof input.changes === "object" && !Array.isArray(input.changes))
+        return commit(
+          user,
+          undefined,
+          (data, files) => {
+            const { merged, conflicts } = applyChanges(projection(data, user), input.changes);
+            if (conflicts.length) fail(409, "Someone else changed this just now. Reload and review before saving.");
+            const result = mergeEdit(data, merged, user);
+            validateMediaChanges(data, result, user, files.permitted, files.granted);
+            return result;
+          },
+          key,
+        );
+      fail(400, "This version of the app can’t save. Update Avalen to continue.");
     }
 
     // A named action from src/avalen/ecosystem/actions.js, replayed server-side
@@ -43,10 +49,10 @@ export function createWorkspaceRoutes(ctx) {
         fail(400, "Workspace revision is required.");
       if (!key || key.length > 200) fail(400, "A retry key is required.");
       return transaction(async () => {
+        // A named action is replayed against the latest workspace and checks its own
+        // conditions, so changes elsewhere since the app loaded don't block it.
         const state = await load(user, { lock: true });
         if (await store.requests.seen(user.id, key)) return { data: projection(state.data, user), revision: state.revision };
-        if (input.revision !== undefined && state.revision !== input.revision)
-          fail(409, "Your workspace changed. Reload before saving.");
         const before = structuredClone(state.data);
         const commandHandler = ctx.getCommandHandler();
         if (!commandHandler) fail(503, "Coaching services are starting.");
@@ -61,7 +67,7 @@ export function createWorkspaceRoutes(ctx) {
         }
         recordChanges(before, state.data, { id: user.id, role: user.role });
         state.data.updatedAt = new Date().toISOString();
-        await store.workspaces.save(user.workspace_id, state.data);
+        await store.workspaces.save(user.workspace_id, state.data, { changed: changedAreas(before, state.data) });
         const result = { data: projection(state.data, user), revision: state.revision + 1 };
         await store.requests.record(user.id, key, { revision: result.revision });
         return result;

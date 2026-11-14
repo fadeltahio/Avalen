@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { fixture } from "./helpers/service.js";
+import { workspaceChanges } from "../src/avalen/ecosystem/changes.js";
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -214,6 +215,7 @@ test("client schedule proposal requires coach approval and updates the calendar 
         .toISOString()
         .slice(0, 10);
   let state = await service.call("/api/workspace", { account: service.coach });
+  const seen = structuredClone(state.data);
   const c = state.data.clients[0],
     clientId = c.id,
     originalProgram = structuredClone(c.program);
@@ -224,7 +226,7 @@ test("client schedule proposal requires coach approval and updates the calendar 
   state = await service.call("/api/workspace", {
     method: "PATCH",
     account: service.coach,
-    body: { revision: state.revision, data: state.data },
+    body: { revision: state.revision, changes: workspaceChanges(seen, state.data) },
   });
   expect(state.status).toBe(200);
   await clientAccount();
