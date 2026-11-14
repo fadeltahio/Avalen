@@ -54,6 +54,10 @@ test("every missing or invalid production setting is named, and no value is ever
   assert.match(configProblems(production({ AVALEN_SECURE_COOKIE: "false" })).join(), /AVALEN_SECURE_COOKIE/);
   assert.match(configProblems(production({ AVALEN_CLIENT_IP_HEADER: "" })).join(), /AVALEN_CLIENT_IP_HEADER is not set/);
   assert.match(configProblems(production({ AVALEN_DB_POOL_MAX: "500" })).join(), /AVALEN_DB_POOL_MAX/);
+  assert.deepEqual(configProblems(production({ AVALEN_EMAIL_API_KEY: "re_key", AVALEN_EMAIL_FROM: "Avalen <no-reply@avalen.example>" })), [], "email is optional but accepted when complete");
+  assert.match(configProblems(production({ AVALEN_EMAIL_API_KEY: "re_key" })).join(), /AVALEN_EMAIL_FROM is not set/);
+  assert.match(configProblems(production({ AVALEN_EMAIL_FROM: "no-reply@avalen.example" })).join(), /AVALEN_EMAIL_API_KEY is not set/);
+  assert.match(configProblems(production({ AVALEN_EMAIL_API_KEY: "re_key", AVALEN_EMAIL_FROM: "Avalen" })).join(), /AVALEN_EMAIL_FROM is not valid/);
 
   const everything = configProblems({ NODE_ENV: "production" });
   assert.equal(everything.length, 9, "all problems are listed together");

@@ -13,6 +13,7 @@ import { workspaceChanges } from "../src/avalen/ecosystem/changes.js";
 import { backupDatabase } from "../tools/backup-database.mjs";
 import { restoreBackup } from "../tools/restore-backup.mjs";
 import { createService } from "../server/app.js";
+import { migrationFiles } from "../server/db/migrate.js";
 import { fixture, testingPostgres } from "./helpers/service.js";
 import { fakeR2 } from "./helpers/fake-r2.js";
 
@@ -55,7 +56,7 @@ test("a backup restores completely into an empty database, and the app runs on t
     assert.ok(r2.objects.has(manifest.key) && r2.objects.has(`${manifest.key}.manifest.json`), "dump and manifest uploaded");
     assert.equal(manifest.counts.users, 2);
     assert.equal(manifest.counts.workout_sets, 1);
-    assert.equal(manifest.schemaVersion, 5);
+    assert.equal(manifest.schemaVersion, migrationFiles("postgres").at(-1).version, "the newest migration");
 
     const report = await restoreBackup({ key: manifest.key, targetUrl: target.url, env });
     assert.equal(report.complete, true, JSON.stringify(report.differences));

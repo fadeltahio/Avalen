@@ -136,6 +136,7 @@ export async function createService(options = {}) {
     root: ctx.root,
     bootstrap: ctx.bootstrap,
     production: ctx.production,
+    emailConfigured: ctx.email.configured,
     health,
     load: ctx.load,
     commit: ctx.commit,

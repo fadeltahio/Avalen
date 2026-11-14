@@ -4,18 +4,35 @@ import { coachOnly, fail } from "../permissions.js";
 import { formatCode } from "../coach-codes.js";
 import { createWorkspace, newClient } from "../../src/avalen/seed.js";
 import { removeClientData } from "../../src/avalen/account-deletion.js";
+import { randomInt, timingSafeEqual } from "node:crypto";
 import { NOT_HANDLED, body } from "../http-utils.js";
+import { resetCodeEmail, passwordChangedEmail } from "../email.js";
+import { log, errorFields } from "../log.js";
+
+// Password reset by emailed code. A code is 6 random digits, stored only as a hash,
+// valid for 15 minutes, allows 5 wrong guesses and works once. At most 3 codes an hour
+// are sent per account, on top of the per-address request limit. Replies never say
+// whether an email has an account, and email is sent in the background so the time
+// taken doesn't say either.
+const RESET_MINUTES = 15, RESET_GUESSES = 5, RESET_PER_HOUR = 3;
+const resetMessage = "If an account exists for that email, we’ve sent a 6-digit code. It works for 15 minutes.";
+const badCode = "That code is wrong or has expired. Check the latest email, or ask for a new code.";
+const validEmail = (value) => typeof value === "string" && value.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 
 // Routes that work without a signed-in session: checking the service, signing in,
 // and every way of creating an account.
 export function createOpenAccountRoutes(ctx) {
-  const { store, bootstrap, coachSignup, hash, passwordHash, checkPassword, account, limit, session, login, loadProjected, foundations, emptyWorkspace, freshClient, emailTaken, insertUser, randomUUID, transaction, memory } = ctx;
+  const { store, bootstrap, coachSignup, hash, passwordHash, checkPassword, account, limit, session, login, loadProjected, foundations, emptyWorkspace, freshClient, emailTaken, insertUser, randomUUID, transaction, memory, email } = ctx;
+  const codeHash = (userId, code) => hash(`${userId}:${code}`);
+  const sendQuietly = (to, message, what) =>
+    email.send({ to, ...message }).catch((error) => log("error", `could not send ${what} email`, errorFields(error, { stack: false })));
 
   return async function handleOpenAccountRoutes(req, res, url) {
     if (url.pathname === "/api/status")
       return {
         configured: await store.users.any(),
         coachSignup,
+        passwordReset: email.configured,
         transcription: Boolean(process.env.AVALEN_TRANSCRIPTION_URL),
         ai: Boolean(process.env.AVALEN_AI_URL),
         privateStorage: true,
@@ -40,6 +57,52 @@ export function createOpenAccountRoutes(ctx) {
       if (!user || !checkPassword(data.password, user.password))
         fail(401, "Email or password is incorrect.");
       return login(res, user);
+    }
+
+    if (url.pathname === "/api/password/forgot" && req.method === "POST") {
+      limit(req, "password-forgot");
+      if (!email.configured) fail(503, "Password reset by email isn’t set up on this service yet. Contact support.");
+      const input = await body(req, 4096);
+      if (!validEmail(input.email)) fail(400, "Enter the email you signed up with.");
+      const user = await store.users.byEmail(input.email.trim().toLowerCase());
+      const now = Date.now();
+      if (user && (await store.passwordResets.sentSince(user.id, now - 3600000)) < RESET_PER_HOUR) {
+        const code = String(randomInt(0, 1000000)).padStart(6, "0");
+        await transaction(async () => {
+          // A new code replaces any earlier one.
+          await store.passwordResets.retireOthers(user.id, now);
+          await store.passwordResets.create({ id: randomUUID(), userId: user.id, codeHash: codeHash(user.id, code), created: now, expires: now + RESET_MINUTES * 60000 });
+        });
+        sendQuietly(user.email, resetCodeEmail(code), "password reset");
+      }
+      return { ok: true, message: resetMessage };
+    }
+
+    if (url.pathname === "/api/password/reset" && req.method === "POST") {
+      limit(req, "password-reset");
+      const input = await body(req, 4096);
+      if (!validEmail(input.email) || typeof input.code !== "string" || !/^\d{6}$/.test(input.code.trim())) fail(400, badCode);
+      if (typeof input.password !== "string" || input.password.length < 12 || input.password.length > 200)
+        fail(400, "Choose a password with 12–200 characters.");
+      const user = await store.users.byEmail(input.email.trim().toLowerCase());
+      const now = Date.now();
+      const reset = user && (await store.passwordResets.current(user.id, now));
+      if (!reset || reset.attempts >= RESET_GUESSES) fail(400, badCode);
+      const given = Buffer.from(codeHash(user.id, input.code.trim())), stored = Buffer.from(reset.code_hash);
+      if (given.length !== stored.length || !timingSafeEqual(given, stored)) {
+        // The fifth wrong guess ends this code.
+        if ((await store.passwordResets.wrongGuess(reset.id)) >= RESET_GUESSES) await store.passwordResets.use(reset.id, now);
+        fail(400, badCode);
+      }
+      await transaction(async () => {
+        if (!(await store.passwordResets.use(reset.id, now))) fail(400, badCode);
+        await store.users.setPassword(user.id, passwordHash(input.password));
+        await store.passwordResets.retireOthers(user.id, now);
+        // Every device signed in with the old password is signed out.
+        await store.sessions.endAllFor(user.id);
+      });
+      sendQuietly(user.email, passwordChangedEmail(), "password changed");
+      return { ok: true };
     }
 
     if (url.pathname === "/api/setup" && req.method === "POST") {
@@ -158,6 +221,7 @@ export function createAccountRoutes(ctx) {
   const endLogin = async (id) => {
     await store.sessions.endAllFor(id);
     await store.requests.deleteFor(id);
+    await store.passwordResets.deleteFor(id);
   };
 
   // A client's account and everything that was theirs, with every coach they've had. Each

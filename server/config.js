@@ -45,6 +45,11 @@ export function configProblems(env = process.env) {
   if (env.AVALEN_SECURE_COOKIE === "false") problems.push("AVALEN_SECURE_COOKIE is false. Sign-in cookies must only travel over HTTPS in production.");
   if (!env.AVALEN_CLIENT_IP_HEADER && env.AVALEN_TRUST_PROXY !== "true")
     problems.push("AVALEN_CLIENT_IP_HEADER is not set. Behind a host's proxy every request looks like the same address, so sign-in limits would lock everyone out together (on Render: cf-connecting-ip).");
+  // Email (password reset) is optional, but half a configuration is a mistake.
+  if (Boolean(env.AVALEN_EMAIL_API_KEY) !== Boolean(env.AVALEN_EMAIL_FROM))
+    problems.push(`${env.AVALEN_EMAIL_API_KEY ? "AVALEN_EMAIL_FROM" : "AVALEN_EMAIL_API_KEY"} is not set. Password reset emails need both AVALEN_EMAIL_API_KEY and AVALEN_EMAIL_FROM.`);
+  else if (env.AVALEN_EMAIL_FROM && !/^[^<>]*<[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+>$|^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(env.AVALEN_EMAIL_FROM.trim()))
+    problems.push("AVALEN_EMAIL_FROM is not valid. Use an address on your verified domain, e.g. Avalen <no-reply@yourdomain.com>.");
   if (env.AVALEN_DB_POOL_MAX && !/^([1-9]|[1-9]\d)$/.test(env.AVALEN_DB_POOL_MAX))
     problems.push("AVALEN_DB_POOL_MAX is not valid. Use a whole number from 1 to 99 that fits the database plan's connection limit.");
   return problems;

@@ -1,4 +1,4 @@
 /* Permission messages iOS shows the first time Avalen asks. */
-"NSCameraUsageDescription" = "Avalen uses the camera when you take a meal or progress photo, scan a food barcode or record a form video for your coach.";
+"NSCameraUsageDescription" = "Avalen uses the camera when you take a meal or progress photo or record a form video for your coach.";
 "NSPhotoLibraryUsageDescription" = "Avalen opens your photos when you choose a meal photo, progress photo or video to share with your coach.";
 "NSMicrophoneUsageDescription" = "Avalen uses the microphone when you record a voice check-in or a form video with sound for your coach.";

@@ -17,6 +17,7 @@ export const TABLES = [
   ["workout_sets", ["session_id", "position"]],
   ...AREAS.map((area) => [area.table, ["workspace_id", "record_key"]]),
   ["sessions", ["token"]],
+  ["password_resets", ["id"]],
   ["invitations", ["token"]],
   ["coach_codes", ["code"]],
   ["media", ["id"]],

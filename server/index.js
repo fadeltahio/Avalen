@@ -36,6 +36,8 @@ try {
   process.exit(1);
 }
 service.setCommandHandler(command);
+if (service.production && !service.emailConfigured)
+  log("warn", "password reset is off: set AVALEN_EMAIL_API_KEY and AVALEN_EMAIL_FROM to send reset codes");
 const stopWorker = await startWorker(service);
 const port = Number(process.env.PORT || 5180),
   host = process.env.HOST || "127.0.0.1";

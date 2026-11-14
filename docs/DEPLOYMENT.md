@@ -23,6 +23,7 @@ It never falls back to SQLite or to the local media folder in production.
 | `AVALEN_SECURE_COOKIE` | no | Cookies are HTTPS-only in production by default. Setting it to `false` is refused. |
 | `AVALEN_DB_POOL_MAX` | no | Connections per instance (default 10). Keep instances × this below the plan's limit. |
 | `AVALEN_LOG_REQUESTS` | no | Request logs are on in production; `false` turns them off. |
+| `AVALEN_EMAIL_API_KEY`, `AVALEN_EMAIL_FROM` | no | Password reset codes by email (Resend). Both or neither; without them the app doesn't offer "Forgot password?". |
 
 ## Render staging
 
@@ -48,6 +49,25 @@ Render's private network, and a daily backup cron job.
 
 Production is the same setup with its own database, buckets, tokens and secrets key.
 Never point staging at production data.
+
+## Email (password reset)
+
+Forgotten passwords are reset with a 6-digit code sent by email through
+[Resend](https://resend.com). The free plan covers 3,000 emails a month (100 a day).
+
+1. Create a Resend account and add your domain (Domains → Add domain, e.g.
+   `yourdomain.com`). Add the DNS records Resend shows at your registrar and wait until
+   the domain says **Verified**.
+2. API Keys → Create API key, with **Sending access** only, for that domain. Copy it.
+3. In Render, set `AVALEN_EMAIL_API_KEY` to the key and `AVALEN_EMAIL_FROM` to
+   `Avalen <no-reply@yourdomain.com>`, then redeploy.
+4. Check: the sign-in screen now shows **Forgot password?** Request a code for your own
+   account and confirm it arrives (look in spam the first time).
+
+How it behaves: codes are 6 digits, stored only as a hash, valid for 15 minutes, allow 5
+wrong guesses and work once. At most 3 codes an hour are sent per account. Replies never
+say whether an email has an account. A successful reset signs out every device and
+emails a "password changed" notice. `tests/password-reset.test.js` covers these rules.
 
 ## Health and logs
 
@@ -155,6 +175,8 @@ been run yet.
 - [ ] Owner setup with the setup token. Coach sign-up, sign-in, sign-out.
 - [ ] Client joins by coach code and by invitation. The invitation can't be reused.
 - [ ] Wrong password is refused.
+- [ ] Forgot password: the code arrives by email, a wrong code is refused, the right one
+      sets the new password, and the old password and other signed-in devices stop working.
 
 **Persistence**
 - [ ] Coach edits a programme and nutrition target. Client logs a workout, a meal and a

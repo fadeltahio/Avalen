@@ -44,7 +44,7 @@
     </dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Avalen uses the camera when you take a meal or progress photo, scan a food barcode or record a form video for your coach.</string>
+	<string>Avalen uses the camera when you take a meal or progress photo or record a form video for your coach.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Avalen opens your photos when you choose a meal photo, progress photo or video to share with your coach.</string>
 	<key>NSMicrophoneUsageDescription</key>

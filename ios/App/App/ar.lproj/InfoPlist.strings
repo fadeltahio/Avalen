@@ -1,5 +1,5 @@
 /* رسائل الأذونات التي يعرضها iOS عند أول طلب من Avalen. */
-"NSCameraUsageDescription" = "يستخدم Avalen الكاميرا عند التقاط صورة وجبة أو صورة تقدّم، أو مسح باركود طعام، أو تسجيل فيديو أداء لمدرّبك.";
+"NSCameraUsageDescription" = "يستخدم Avalen الكاميرا عند التقاط صورة وجبة أو صورة تقدّم، أو تسجيل فيديو أداء لمدرّبك.";
 "NSPhotoLibraryUsageDescription" = "يفتح Avalen صورك عند اختيار صورة وجبة أو صورة تقدّم أو فيديو لمشاركته مع مدرّبك.";
 "NSMicrophoneUsageDescription" = "يستخدم Avalen الميكروفون عند تسجيل متابعة صوتية أو فيديو أداء بالصوت لمدرّبك.";
 "CFBundleDisplayName" = "Avalen";

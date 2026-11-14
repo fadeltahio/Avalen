@@ -47,8 +47,10 @@ export function AccountGate({ children }) {
     [status, setStatus] = useState(null),
     [mode, setModeState] = useState(startMode),
     [error, setError] = useState(""),
+    [notice, setNotice] = useState(""),
+    [resetEmail, setResetEmail] = useState(""),
     [busy, setBusy] = useState(false);
-  const setMode = (next) => { setModeState(next); setError(""); };
+  const setMode = (next) => { setModeState(next); setError(""); setNotice(""); };
   async function checkConnection() {
     let signedIn = false;
     setBusy(true);
@@ -94,6 +96,32 @@ export function AccountGate({ children }) {
       setBusy(false);
     }
   }
+  // Forgot password: an emailed 6-digit code, then a new password. Success is shown only
+  // after the server confirms; on failure the typed values stay.
+  async function submitReset(e) {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError("");
+    try {
+      const fields = Object.fromEntries(new FormData(e.currentTarget));
+      if (mode === "forgot") {
+        const result = await request("/password/forgot", { method: "POST", body: { email: fields.email } });
+        setResetEmail(fields.email);
+        setModeState("reset");
+        setNotice(t(result.message || "If an account exists for that email, we’ve sent a 6-digit code. It works for 15 minutes."));
+      } else {
+        await request("/password/reset", { method: "POST", body: { email: fields.email, code: String(fields.code || "").trim(), password: fields.password } });
+        setResetEmail(fields.email);
+        setModeState("login");
+        setNotice(t("Password changed. Sign in with your new password."));
+      }
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
   if (ready) return children;
   const copy = {
     welcome: [t('Welcome to Avalen.'), t('Your training, nutrition and coach in one place.')],
@@ -102,7 +130,10 @@ export function AccountGate({ children }) {
     client: [t('Join your coach.'), t('Enter the code your coach gave you to connect with them.')],
     join: [t('Your next chapter.'), t('Accept your coach’s invitation.')],
     setup: [t('Build your coaching workspace.'), t('Create the owner account using your service setup token.')],
+    forgot: [t('Reset your password.'), t('Enter the email you signed up with. We’ll send you a 6-digit code.')],
+    reset: [t('Check your email.'), t('Enter the code we sent and choose a new password.')],
   }[mode];
+  const resetting = mode === "forgot" || mode === "reset";
   const unavailable = !status && error;
   return (
     <main className="account-screen">
@@ -111,7 +142,7 @@ export function AccountGate({ children }) {
         <LanguageSwitch mode={mode} />
       </div>
       {mode !== "welcome" && mode !== "setup" && (
-        <button type="button" className="text-link account-back" onClick={() => setMode("welcome")}><ArrowLeft size={16}/>{t('Back')}</button>
+        <button type="button" className="text-link account-back" onClick={() => setMode(resetting ? "login" : "welcome")}><ArrowLeft size={16}/>{t('Back')}</button>
       )}
       <span className="eyebrow">{t('YOUR COACHING, CONNECTED')}</span>
       <h1>{copy[0]}</h1>
@@ -123,8 +154,26 @@ export function AccountGate({ children }) {
           <Button secondary disabled={busy || !status} onClick={() => setMode("client")}>{t('I have a coach code')}<small>{t('Create a client account')}</small></Button>
           {error && <p role="alert" className="error">{error}</p>}
         </div>
+      ) : resetting ? (
+        <form key={mode} onSubmit={submitReset}>
+          <fieldset className="save-fields" disabled={busy}>
+          {notice && <p role="status" className="account-notice">{notice}</p>}
+          <Field label={t('Email')} name="email" type="email" required autoComplete="email" dir="ltr" defaultValue={resetEmail} />
+          {mode === "reset" && (
+            <>
+              <Field label={t('6-digit code')} name="code" required inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} dir="ltr" className="coach-code-input" />
+              <Field label={t('New password')} name="password" type="password" required minLength={12} maxLength={200} autoComplete="new-password" hint={t('At least 12 characters')} />
+            </>
+          )}
+          {error && <p role="alert" className="error">{error}</p>}
+          <Button type="submit" disabled={busy || !status}>
+            {busy ? t('Sending…') : mode === "forgot" ? t('Send code') : t('Change password')}
+          </Button>
+          </fieldset>
+          {mode === "reset" && <button type="button" className="text-link" disabled={busy} onClick={() => setMode("forgot")}>{t('Send a new code')}</button>}
+        </form>
       ) : (
-        <form onSubmit={submit}>
+        <form key={mode} onSubmit={submit}>
           <fieldset className="save-fields" disabled={busy}>
           {mode === "setup" && (
             <>
@@ -142,7 +191,8 @@ export function AccountGate({ children }) {
           {(mode === "coach" || mode === "client") && (
             <Field label={t('Your name')} name="name" required maxLength={100} autoComplete="name" defaultValue={draft.fields?.name} />
           )}
-          <Field label={t('Email')} name="email" type="email" required autoComplete="email" dir="ltr" defaultValue={draft.fields?.email} />
+          {notice && <p role="status" className="account-notice">{notice}</p>}
+          <Field label={t('Email')} name="email" type="email" required autoComplete="email" dir="ltr" defaultValue={(mode === "login" && resetEmail) || draft.fields?.email} />
           <Field
             label={t('Password')}
             name="password"
@@ -160,6 +210,7 @@ export function AccountGate({ children }) {
               : { setup: t('Create workspace'), join: t('Accept invitation'), coach: t('Create coach account'), client: t('Join your coach'), login: t('Sign in') }[mode]}
           </Button>
           </fieldset>
+          {mode === "login" && status?.passwordReset && <button type="button" className="text-link" onClick={() => setMode("forgot")}>{t('Forgot password?')}</button>}
           {mode === "login" && <button type="button" className="text-link" onClick={() => setMode("client")}>{t('New here? Join with a coach code')}</button>}
           {(mode === "coach" || mode === "client") && <button type="button" className="text-link" onClick={() => setMode("login")}>{t('I already have an account')}</button>}
         </form>

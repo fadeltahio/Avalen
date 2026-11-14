@@ -18,6 +18,7 @@ import { foundations, recordChanges, memory } from "../src/avalen/ecosystem/memo
 import { createWorkspace, newClient } from "../src/avalen/seed.js";
 import { projection } from "./permissions.js";
 import { hash, token, passwordHash, checkPassword } from "./crypto-utils.js";
+import { emailService } from "./email.js";
 
 export async function createContext({
   root = resolve(process.env.AVALEN_DATA_DIR || ".avalen-data"),
@@ -36,6 +37,7 @@ export async function createContext({
   secretsKey,
   wearableEnv = process.env,
   fileEnv = process.env,
+  emailEnv = process.env,
 } = {}) {
   mkdirSync(root, { recursive: true, mode: 0o700 });
   const store = await openStore(root, { databaseUrl, production, poolMax }),
@@ -43,6 +45,7 @@ export async function createContext({
     files = openFiles({ mediaRoot, env: fileEnv, production });
   const paymob = paymobService({ store, root, fetchImpl, publicUrl, secretsKey });
   const wearables = wearableService({ store, root, fetchImpl, publicUrl, secretsKey, env: wearableEnv });
+  const email = emailService({ env: emailEnv, fetchImpl });
   const bootstrap = setupToken || token(),
     attempts = new Map(),
     codes = coachCodes(store);
@@ -230,7 +233,7 @@ export async function createContext({
   }
 
   return {
-    store, db: store.db, files, root, mediaRoot, dist, paymob, wearables, codes, bootstrap, secure, production, coachSignup,
+    store, db: store.db, files, root, mediaRoot, dist, paymob, wearables, email, codes, bootstrap, secure, production, coachSignup,
     hash, token, passwordHash, checkPassword,
     account, limit, session, login, clearSessionCookie, authenticate,
     load, loadProjected, coachlessView, commit, permittedMedia, mediaLookup,

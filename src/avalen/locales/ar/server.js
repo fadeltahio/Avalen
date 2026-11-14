@@ -112,4 +112,10 @@ export default {
   'Confirm that you want to end coaching.': 'يُرجى تأكيد رغبتك في إنهاء التدريب.',
   'Coaches export their workspace from More.': 'يصدّر المدرّبون مساحة عملهم من قائمة المزيد.',
   'This version of the app can’t save. Update Avalen to continue.': 'لا يمكن لهذا الإصدار من التطبيق حفظ التغييرات. يُرجى تحديث Avalen للمتابعة.',
+  // Password reset
+  'If an account exists for that email, we’ve sent a 6-digit code. It works for 15 minutes.': 'إذا كان هناك حساب بهذا البريد الإلكتروني، فقد أرسلنا رمزًا من 6 أرقام. يعمل الرمز لمدة 15 دقيقة.',
+  'That code is wrong or has expired. Check the latest email, or ask for a new code.': 'هذا الرمز غير صحيح أو انتهت صلاحيته. تحقّق من أحدث رسالة، أو اطلب رمزًا جديدًا.',
+  'Choose a password with 12–200 characters.': 'اختر كلمة مرور من 12 إلى 200 حرف.',
+  'Enter the email you signed up with.': 'أدخل البريد الإلكتروني الذي سجّلت به.',
+  'Password reset by email isn’t set up on this service yet. Contact support.': 'إعادة تعيين كلمة المرور عبر البريد الإلكتروني غير مفعّلة على هذه الخدمة بعد. تواصل مع الدعم.',
 };

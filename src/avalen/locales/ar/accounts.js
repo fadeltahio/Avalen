@@ -76,4 +76,17 @@ export default {
   'Join coach': 'الانضمام إلى المدرّب',
   'Download your history': 'تنزيل سجلّك',
   'Every workout and record from all your coaches': 'كل التمارين والسجلات مع جميع مدرّبيك',
+  // Forgot password
+  'Forgot password?': 'نسيت كلمة المرور؟',
+  'Reset your password.': 'أعد تعيين كلمة المرور.',
+  'Enter the email you signed up with. We’ll send you a 6-digit code.': 'أدخل البريد الإلكتروني الذي سجّلت به، وسنرسل لك رمزًا من 6 أرقام.',
+  'Check your email.': 'تحقّق من بريدك الإلكتروني.',
+  'Enter the code we sent and choose a new password.': 'أدخل الرمز الذي أرسلناه واختر كلمة مرور جديدة.',
+  '6-digit code': 'رمز من 6 أرقام',
+  'New password': 'كلمة المرور الجديدة',
+  'Sending…': 'جارٍ الإرسال…',
+  'Send code': 'إرسال الرمز',
+  'Change password': 'تغيير كلمة المرور',
+  'Send a new code': 'إرسال رمز جديد',
+  'Password changed. Sign in with your new password.': 'تم تغيير كلمة المرور. سجّل الدخول بكلمة المرور الجديدة.',
 };

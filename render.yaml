@@ -46,6 +46,12 @@ services:
         sync: false
       - key: AVALEN_R2_SECRET_ACCESS_KEY
         sync: false
+      # Password reset codes by email (Resend). Optional: leave both empty and the app
+      # doesn't offer "Forgot password?". See docs/DEPLOYMENT.md, "Email".
+      - key: AVALEN_EMAIL_API_KEY
+        sync: false
+      - key: AVALEN_EMAIL_FROM
+        sync: false
 
   - type: cron
     name: avalen-staging-backup
