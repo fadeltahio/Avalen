@@ -1,4 +1,5 @@
 import { uid } from "../id.js";
+import { sameData } from "./canonical.js";
 export const ecosystemCollections = [
   "revisions",
   "scheduleProposals",
@@ -7,7 +8,8 @@ export const ecosystemCollections = [
   "notifications",
   "clientPreferences",
 ];
-export const equal = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+// Same data, whatever the key order (see canonical.js for why order can differ).
+export const equal = sameData;
 export const newId = uid;
 export function foundations(data) {
   if (!data.clientPreferences)

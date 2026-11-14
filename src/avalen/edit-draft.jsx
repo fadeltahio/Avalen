@@ -3,16 +3,19 @@ import { Check, RotateCcw } from 'lucide-react';
 import { Button, Modal } from './ui.jsx';
 
 import { t } from './i18n.js';
+import { canonicalJson } from './ecosystem/canonical.js';
 export function useEditDraft(key, initial) {
   const storageKey = `avalen.edit.${key}`;
-  const initialJSON = JSON.stringify(initial);
+  // Compared by data, not key order: a save reply from the iPhone app's native layer
+  // holds the same record with keys reordered, which must not look like an edit.
+  const initialJSON = canonicalJson(initial);
   const [loaded] = useState(() => {
     try { const value = JSON.parse(localStorage.getItem(storageKey)); return value?.version === 1 && value.value && Object.keys(initial).every(k => Object.hasOwn(value.value,k)) ? value : null; } catch { return null; }
   });
   const [value, setValue] = useState(() => loaded?.value || structuredClone(initial));
   const [error, setError] = useState('');
   const [base,setBase] = useState(loaded?.base || initialJSON);
-  const dirty = JSON.stringify(value) !== initialJSON;
+  const dirty = canonicalJson(value) !== initialJSON;
   const conflict = dirty && base !== initialJSON;
   useEffect(() => { if (!dirty) setBase(initialJSON); }, [dirty,initialJSON]);
   useEffect(() => {

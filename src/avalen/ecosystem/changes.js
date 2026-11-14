@@ -6,7 +6,11 @@
 // app last loaded it. Edits to other records, other clients or other areas go through,
 // so a client logging food no longer clashes with their coach editing a programme.
 
-const json = (value) => JSON.stringify(value);
+import { sameData } from "./canonical.js";
+
+// Records are compared by their data, not their text: the iPhone app's native HTTP layer
+// returns the same records with keys in a different order (see canonical.js).
+const differs = (a, b) => !sameData(a, b);
 const isRecordList = (value) => Array.isArray(value) && value.every((row) => row && typeof row === "object" && !Array.isArray(row));
 
 // A stable identity for each row: its id, or the fields that identify rows without one
@@ -32,7 +36,7 @@ export function workspaceChanges(before, after) {
   const changes = {};
   for (const area of new Set([...Object.keys(before || {}), ...Object.keys(after || {})])) {
     const was = before?.[area], now = after?.[area];
-    if (json(was) === json(now)) continue;
+    if (!differs(was, now)) continue;
     if (isRecordList(was ?? []) && isRecordList(now ?? [])) {
       const oldRows = was ?? [], newRows = now ?? [];
       const oldKeys = rowKeys(oldRows), newKeys = rowKeys(newRows);
@@ -40,7 +44,7 @@ export function workspaceChanges(before, after) {
       const rows = [];
       newKeys.forEach((key, i) => {
         const previous = old.get(key);
-        if (!previous || json(previous) !== json(newRows[i])) rows.push({ key, before: previous ?? null, after: newRows[i], prev: i ? newKeys[i - 1] : null });
+        if (!previous || differs(previous, newRows[i])) rows.push({ key, before: previous ?? null, after: newRows[i], prev: i ? newKeys[i - 1] : null });
       });
       const kept = new Set(newKeys);
       for (const [key, row] of old) if (!kept.has(key)) rows.push({ key, before: row, after: null });
@@ -61,7 +65,7 @@ export function applyChanges(current, changes) {
   const merged = { ...current }, conflicts = [];
   for (const [area, change] of Object.entries(changes || {})) {
     if (change?.value) {
-      if (json(current[area] ?? null) !== json(change.value.before)) conflicts.push(area);
+      if (differs(current[area] ?? null, change.value.before)) conflicts.push(area);
       else if (change.value.after === null) delete merged[area];
       else merged[area] = change.value.after;
       continue;
@@ -78,14 +82,14 @@ export function applyChanges(current, changes) {
       if (op.before === null) {
         // A new record: fine unless someone else added a different one with the same identity.
         if (existing !== undefined) {
-          if (json(existing) !== json(op.after)) clash = true;
+          if (differs(existing, op.after)) clash = true;
           continue;
         }
         const after = op.prev ? keyed().get(op.prev) : undefined;
         if (after !== undefined) rows.splice(after + 1, 0, op.after);
         else if (op.prev === null) rows.unshift(op.after);
         else rows.push(op.after);
-      } else if (existing === undefined || json(existing) !== json(op.before)) clash = true;
+      } else if (existing === undefined || differs(existing, op.before)) clash = true;
       else if (op.after === null) rows.splice(at, 1);
       else rows[at] = op.after;
     }

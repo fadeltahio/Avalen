@@ -3,6 +3,7 @@ import { t, locale } from './i18n.js';
 // Money goes from the client to the coach's own Paymob account. Avalen only keeps
 // the record, and only Paymob's signed confirmation can mark a payment verified.
 import { uid } from './id.js';
+import { sameData } from './ecosystem/canonical.js';
 
 export const REGIONS = {
   egypt: { label: t('Egypt'), host: 'https://accept.paymob.com', currency: 'EGP' },
@@ -61,7 +62,7 @@ export function paymentError(p) {
 }
 
 const frozen = (p) => Boolean(p.verified || p.paymob?.transactionId);
-const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const same = sameData;
 const without = (p, keys) => Object.fromEntries(Object.entries(p).filter(([k]) => !keys.includes(k)));
 
 // Who may change what. Clients never edit payments; coaches add requests and manual
